@@ -1,0 +1,220 @@
+\documentclass{scrreprt}
+\usepackage{listings}
+\usepackage{underscore}
+\usepackage{graphicx}
+\usepackage[bookmarks=true]{hyperref}
+\usepackage[utf8]{inputenc}
+\usepackage[brazil]{babel}
+
+\hypersetup{
+    bookmarks=false,    % mostrar barra de favoritos?
+    pdftitle={Especificação de Requisitos de Software},    % título
+    pdfauthor={Lucas, Maya, Miguel},                     % autores
+    colorlinks=true,       % false: links em caixas; true: links coloridos
+    linkcolor=blue,       % cor dos links internos
+    citecolor=black,       % cor dos links para bibliografia
+    filecolor=black,        % cor dos links de arquivo
+    urlcolor=purple,        % cor dos links externos
+    linktoc=page            % apenas página é linkada
+}
+
+\def\myversion{1.0 }
+\date{}
+
+\usepackage{hyperref}
+\begin{document}
+
+\begin{flushright}
+    \rule{16cm}{5pt}\vskip1cm
+    \begin{bfseries}
+        \Huge{ESPECIFICAÇÃO DE\\REQUISITOS DE SOFTWARE}\\
+        \vspace{1.25cm}
+        para\\
+        \vspace{1.25cm}
+        CARTAS DE AMOR\\
+        \vspace{1.25cm}
+        \LARGE{Versão \myversion}\\
+        \vspace{1.25cm}
+        Preparado por:\\
+        1. Lucas Cardoso dos Santos (9865492)\\
+        2. Maya Monteiro Lima (13671942)\\
+        3. Miguel de Carvalho Oliveira  (13672172)\\
+        \vspace{1.25cm}
+        Submetido a:\\
+        Prof. Dr. Clever Ricardo Guareis de Farias\\
+        Prof. Dr. Evandro Eduardo Seron Ruiz\\
+        \vspace{1.25cm}
+        \today\\
+    \end{bfseries}
+\end{flushright}
+
+\tableofcontents
+
+\chapter{Introdução}
+
+\section{Objetivo}
+O objetivo deste documento é especificar os requisitos para o desenvolvimento de uma versão web multiplayer do jogo de cartas \textit{Love Letter}. A aplicação permitirá que usuários se registrem, criem e entrem em salas de jogo, e joguem partidas em tempo real. Além disso, o sistema fornecerá estatísticas de usuários e rankings, promovendo engajamento e competição.
+
+\section{Público-alvo e Sugestões de Leitura}
+Este documento é destinado aos desenvolvedores do projeto, instrutores e testadores. Os desenvolvedores devem usar esta especificação para guiar a implementação do front-end, back-end e lógica de comunicação. Os instrutores a utilizarão para avaliar a conformidade do sistema com os requisitos do curso. Os testadores podem consultar este documento para validar as funcionalidades e aspectos não funcionais do sistema.
+
+\section{Escopo do Projeto}
+O sistema consistirá em uma interface gráfica baseada em navegador para o jogo de cartas \textit{Love Letter}, um servidor back-end responsável pelo gerenciamento da lógica do jogo e armazenamento persistente de dados, e uma camada de comunicação usando WebSockets para funcionalidade multiplayer em tempo real. A API RESTful também dará suporte ao gerenciamento de contas, histórico de partidas e recursos de ranking.
+
+\chapter{Descrição Geral}
+
+\section{Perspectiva do Produto}
+O sistema é uma aplicação web independente desenvolvida do zero. Segue uma arquitetura multicamadas com clara separação de responsabilidades:
+\begin{itemize}
+    \item \textbf{Camada de Apresentação}: Interface web para interação com o jogo e a plataforma.
+    \item \textbf{Camada de Lógica}: Servidor back-end responsável pelas regras do jogo, gerenciamento de usuários e controle de sessões.
+    \item \textbf{Camada de Dados}: Armazenamento persistente de dados de usuários, estatísticas de jogos e rankings.
+\end{itemize}
+
+\section{Classes e Características dos Usuários}
+
+O sistema prevê basicamente duas classes de usuários:
+
+\begin{itemize}
+    \item \textbf{Jogadores}
+    \begin{itemize}
+        \item \textbf{Jogador Registrado}: Pode acessar todas as funcionalidades do jogo, participar de partidas, consultar histórico e estatísticas, aparecer nos rankings e personalizar seu perfil.
+        \item \textbf{Visitante}: Não possui conta e, ao acessar o sistema sem estar logado, tem acesso apenas à tela de login. Não pode visualizar informações do jogo, rankings, nem navegar por outras áreas do sistema.
+    \end{itemize}
+\end{itemize}
+
+\section{Funções do Produto}
+O sistema fornecerá as seguintes funcionalidades principais:
+\begin{itemize}
+    \item Registro e login de contas de usuário.
+    \item Criação e entrada em salas de jogo.
+    \item Jogabilidade multiplayer em tempo real usando WebSockets.
+    \item Aplicação das regras oficiais do jogo \textit{Love Letter}.
+    \item Registro do histórico de partidas.
+    \item Visualização de estatísticas dos jogadores e ranking global.
+\end{itemize}
+
+\section{Ambiente Operacional}
+\begin{itemize}
+    \item \textbf{Cliente}: Qualquer navegador web moderno (Chrome, Firefox, Edge, etc.).
+    \item \textbf{Servidor}: Ambiente de execução .NET, API RESTful (ASP.NET Core), servidor WebSocket.
+    \item \textbf{Banco de Dados}: PostgreSQL.
+\end{itemize}
+
+\section{Design}
+A aplicação seguirá uma abordagem de design responsivo para acessibilidade em desktops e dispositivos móveis. O estado do jogo e atualizações serão gerenciados via WebSockets para interação em tempo real e baixa latência. A API RESTful gerenciará dados de usuários, autenticação e funcionalidades não em tempo real.
+
+\chapter{Funcionalidades do Sistema}
+
+\section{Descrição e Prioridade}
+Todas as funcionalidades principais da aplicação são essenciais. A implementação da jogabilidade e comunicação em tempo real são prioridades máximas. Gerenciamento de contas, estatísticas e rankings são secundários, mas necessários para a completude.
+
+\section{Requisitos Funcionais}
+\begin{itemize}
+    \item \textbf{RF01}: O sistema deve permitir que usuários se registrem com nome de usuário, e-mail e senha.
+    \item \textbf{RF02}: O sistema deve permitir que usuários façam login e mantenham sessões autenticadas.
+    \item \textbf{RF03}: O sistema deve permitir que usuários criem novas salas de jogo.
+    \item \textbf{RF04}: O sistema deve exibir salas de jogo disponíveis para entrada.
+    \item \textbf{RF05}: Uma sala de jogo deve suportar até quatro jogadores.
+    \item \textbf{RF06}: O jogo deve iniciar quando todos os jogadores de uma sala confirmarem prontidão.
+    \item \textbf{RF07}: O estado do jogo deve ser sincronizado entre todos os jogadores via WebSockets.
+    \item \textbf{RF08}: O sistema deve aplicar as regras oficiais do \textit{Love Letter} durante o jogo. Um resumo das regras principais está abaixo, e a especificação completa dos efeitos das cartas e regras de interação está no Apêndice~\ref{appendix:rules}.
+    \begin{itemize}
+        \item O jogo é jogado com 2 a 6 jogadores.
+        \item Cada jogador começa com uma carta na mão.
+        \item Em cada turno, um jogador compra uma carta e joga uma das duas cartas da mão.
+        \item Cada carta tem um efeito aplicado imediatamente (ex: adivinhar a carta de outro jogador, comparar mãos, proteção, etc.).
+        \item Jogadores são eliminados se forem alvo de efeitos específicos de cartas ou se tiverem a carta de menor valor em caso de empate.
+        \item A rodada termina quando o baralho acaba ou resta apenas um jogador.
+        \item O jogador com a carta de maior valor ao final da rodada ganha um token de afeição.
+        \item O primeiro jogador a ganhar um número definido de tokens (ex: 3) vence o jogo.
+    \end{itemize}
+    \item \textbf{RF09}: O sistema deve registrar os resultados das partidas concluídas no banco de dados.
+    \item \textbf{RF10}: O sistema deve fornecer a cada usuário acesso ao seu histórico de partidas e estatísticas.
+    \item \textbf{RF11}: O sistema deve fornecer um ranking global baseado em vitórias em partidas.
+\end{itemize}
+
+\chapter{Outros Requisitos Não Funcionais}
+
+\section{Requisitos de Desempenho}
+\begin{itemize}
+    \item A comunicação em tempo real durante as partidas deve ter latência inferior a 1s.
+    \item O sistema deve suportar pelo menos 10 usuários simultâneos sem degradação.
+\end{itemize}
+
+\section{Requisitos de Segurança}
+\begin{itemize}
+    \item Senhas de usuários devem ser armazenadas usando hash seguro.
+    \item Todos os dados transmitidos pela rede devem ser criptografados (HTTPS/WSS).
+    \item Sessões de usuários devem expirar após inatividade e suportar tokens de login seguros.
+\end{itemize}
+
+\section{Atributos de Qualidade de Software}
+\begin{itemize}
+    \item \textbf{Usabilidade}: A interface deve ser intuitiva, responsiva e informativa.
+    \item \textbf{Confiabilidade}: A sincronização do estado do jogo deve ser testada quanto à consistência.
+    \item \textbf{Manutenibilidade}: O código seguirá princípios de design modular com comentários e documentação.
+    \item \textbf{Portabilidade}: A aplicação deve funcionar nos principais navegadores e sistemas operacionais.
+\end{itemize}
+
+\section{Regras de Negócio}
+\begin{itemize}
+    \item Apenas usuários registrados podem participar de jogos.
+    \item Um jogador não pode entrar em múltiplas salas de jogo simultaneamente.
+    \item O ranking será atualizado apenas com partidas concluídas.
+\end{itemize}
+
+\chapter{Outros Requisitos}
+Nenhum requisito adicional foi identificado nesta etapa. Melhorias futuras podem incluir modo espectador ou suporte a outras variantes do jogo.
+
+\appendix
+\chapter{Regras do Jogo Love Letter} \label{appendix:rules}
+
+Este apêndice descreve o conjunto completo de regras do jogo de cartas \textit{Love Letter}, conforme implementado pelo sistema.
+
+\section{Visão Geral}
+O jogo é jogado com 2 a 6 jogadores. O objetivo é vencer um certo número de rodadas (tokens de afeição) sendo o último jogador restante ou segurando a carta de maior valor ao final de uma rodada.
+
+\section{Fluxo do Jogo}
+\begin{itemize}
+    \item Cada jogador começa com uma carta.
+    \item Em seu turno, o jogador compra uma carta e escolhe uma das duas cartas para jogar.
+    \item O efeito da carta jogada é aplicado imediatamente.
+    \item Jogadores podem ser eliminados durante a rodada com base nos efeitos das cartas.
+    \item A rodada termina quando resta apenas um jogador ou quando o baralho acaba.
+    \item O jogador com a carta de maior valor vence a rodada.
+\end{itemize}
+
+\section{Lista de Cartas e Efeitos}
+\begin{itemize}
+    \item \textbf{Spy (0)}: Ao final da rodada, se o jogador for o \emph{único} restante que jogou ou descartou um Spy durante aquela rodada, recebe 1 token de afeição, mesmo que não tenha vencido a rodada.
+    \item \textbf{Guard (1)}: Adivinhe a carta na mão de outro jogador (exceto Guard). Se acertar, o jogador é eliminado.
+    \item \textbf{Priest (2)}: Veja a carta na mão de outro jogador.
+    \item \textbf{Baron (3)}: Compare a mão com outro jogador; quem tiver a carta de menor valor é eliminado.
+    \item \textbf{Handmaid (4)}: Proteção contra todos os efeitos até seu próximo turno.
+    \item \textbf{Prince (5)}: Escolha qualquer jogador (inclusive você) para descartar a mão (revelando a carta, mas sem aplicar seus efeitos) e comprar uma nova carta.
+    \item \textbf{Chancellor (6)}: Compre 2 cartas e escolha apenas uma das três cartas na mão para manter. As outras duas cartas retornam ao final do baralho.
+    \item \textbf{King (7)}: Troque de mão com outro jogador.
+    \item \textbf{Countess (8)}: Deve ser jogada se estiver na mão junto com Prince ou King.
+    \item \textbf{Princess (9)}: Se descartada ou jogada, o jogador é eliminado.
+\end{itemize}
+
+\section{Como Vencer o Jogo}
+
+Um jogador ganha um token de afeição a cada rodada vencida. O número de tokens necessários para vencer depende do número de jogadores, conforme a tabela abaixo:
+
+\begin{center}
+\begin{tabular}{|c|c|c|c|c|c|}
+\hline
+\textbf{Jogadores} & 2 & 3 & 4 & 5 & 6 \\
+\hline
+\textbf{Tokens para Vencer} & 6 & 5 & 4 & 3 & 3 \\
+\hline
+\end{tabular}
+\end{center}
+
+Por exemplo, em um jogo para 2 jogadores, o primeiro a conquistar 6 tokens vence a partida. Em jogos com 5 ou 6 jogadores, apenas 3 tokens são necessários.
+
+
+\end{document}
+

@@ -1,0 +1,43 @@
+@startuml architecture
+title Arquitetura - Aplicação Web Love Letter
+
+skinparam packageStyle rectangle
+skinparam shadowing false
+skinparam linetype ortho
+
+' Camada Cliente
+package "Cliente (Navegador)" as Client {
+  [UI do Jogo]
+  [UI de Conta]
+}
+
+' Camada Servidor
+package "Servidor Backend" as Backend {
+  [Motor do Jogo]
+  [Autenticação]
+  [Estatísticas]
+}
+
+' Banco de Dados
+database "Banco de Dados" as DB {
+  [Usuários]
+  [Partidas]
+  [EstatísticasDB]
+}
+
+' Conexões Cliente -> Servidor
+[UI de Conta] -down-> [Autenticação]
+
+' UI do Jogo aciona Motor do Jogo (via backend)
+[UI do Jogo] -right-> [Motor do Jogo]
+
+' Conexões internas do Servidor
+[Autenticação] -right-> [Estatísticas]
+[Autenticação] -down-> [Usuários]
+[Autenticação] -down-> [Partidas]
+
+[Motor do Jogo] -down-> [Partidas]
+
+[Estatísticas] -down-> [EstatísticasDB]
+
+@enduml
