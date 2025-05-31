@@ -1,0 +1,6 @@
+@CartasDeAmor_HostAddress = http://localhost:5027
+
+GET {{CartasDeAmor_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###

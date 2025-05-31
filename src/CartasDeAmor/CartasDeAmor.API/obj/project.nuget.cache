@@ -1,0 +1,11 @@
+{
+  "version": 2,
+  "dgSpecHash": "2f7AM8h0WvA=",
+  "success": true,
+  "projectFilePath": "/home/cardoso42/dev/love-letter/src/CartasDeAmor/CartasDeAmor.API/CartasDeAmor.API.csproj",
+  "expectedPackageFiles": [
+    "/home/cardoso42/.nuget/packages/microsoft.aspnetcore.openapi/9.0.2/microsoft.aspnetcore.openapi.9.0.2.nupkg.sha512",
+    "/home/cardoso42/.nuget/packages/microsoft.openapi/1.6.17/microsoft.openapi.1.6.17.nupkg.sha512"
+  ],
+  "logs": []
+}

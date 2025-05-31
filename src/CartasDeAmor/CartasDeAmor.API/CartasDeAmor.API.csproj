@@ -1,0 +1,20 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+    <PropertyGroup>
+        <TargetFramework>net9.0</TargetFramework>
+        <Nullable>enable</Nullable>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <RootNamespace>CartasDeAmor</RootNamespace>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="9.0.2"/>
+    </ItemGroup>
+
+    <ItemGroup>
+      <ProjectReference Include="..\CartasDeAmor.Application\CartasDeAmor.Application.csproj" />
+      <ProjectReference Include="..\CartasDeAmor.Domain\CartasDeAmor.Domain.csproj" />
+      <ProjectReference Include="..\CartasDeAmor.Infrastructure\CartasDeAmor.Infrastructure.csproj" />
+    </ItemGroup>
+
+</Project>
