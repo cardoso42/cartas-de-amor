@@ -7,8 +7,11 @@
     </PropertyGroup>
 
     <ItemGroup>
-      <ProjectReference Include="..\CartasDeAmor.Application\CartasDeAmor.Application.csproj" />
       <ProjectReference Include="..\CartasDeAmor.Domain\CartasDeAmor.Domain.csproj" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <PackageReference Include="Microsoft.EntityFrameworkCore" Version="9.0.5" />
     </ItemGroup>
 
 </Project>

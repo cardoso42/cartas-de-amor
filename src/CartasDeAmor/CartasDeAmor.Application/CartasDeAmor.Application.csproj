@@ -8,6 +8,7 @@
 
     <ItemGroup>
       <ProjectReference Include="..\CartasDeAmor.Domain\CartasDeAmor.Domain.csproj" />
+      <ProjectReference Include="..\CartasDeAmor.Infrastructure\CartasDeAmor.Infrastructure.csproj" />
     </ItemGroup>
 
     <ItemGroup>
