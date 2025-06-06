@@ -8,19 +8,22 @@ obj/
 *.userosscache
 *.sln.docstates
 
-# Visual Studio Code
-.vscode/
+# OS generated files
+.DS_Store
+Thumbs.db
 
 # Rider
 .idea/
 
+# VS Code
+.vscode/
+
 # ASP.NET Scaffolding
 ScaffoldingReadMe.txt
 
-# Dotnet CLI
-project.lock.json
-project.fragment.lock.json
-artifacts/
+# Dotnet tools
+*.dbmdl
+*.pdb
 
 # NuGet
 *.nupkg
@@ -29,43 +32,21 @@ artifacts/
 !**/packages/build/
 !**/packages/repositories.config
 
-# NPM Packages
-node_modules/
+# DotCover
+*.dotCover
 
 # Logs
 *.log
 
-# Others
-*.vspscc
-*.vssscc
-*.dbmdl
-*.pdb
-*.cache
-*.mdb
-*.bak
-*.backup
-*.swp
-*.tmp
-*.tmp.*
-*.sdf
-*.sqlite
-*.sqlite3
-
-# Mac
-.DS_Store
-
-# Windows
-Thumbs.db
-ehthumbs.db
-Desktop.ini
-
 # Test results
 TestResults/
-*.TestResults/
 *.trx
 *.coverage
 *.coveragexml
 
-# Publish
-publish/
-out/
+# Others
+*.vspscc
+*.vssscc
+_ReSharper*/
+*.[Rr]e[Ss]harper
+*.DotSettings.user

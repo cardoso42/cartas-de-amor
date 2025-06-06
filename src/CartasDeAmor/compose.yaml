@@ -1,0 +1,7 @@
+﻿services:
+  cartasdeamor:
+    image: cartasdeamor
+    build:
+      context: .
+      dockerfile: CartasDeAmor/Dockerfile
+
