@@ -1,0 +1,10 @@
+0 => nothing
+1 => select a player, select a card, check if selected players holds selected card
+2 => select a player, shows selected player's holding card
+3 => select a player, compare both player's cards
+4 => protected for one turn
+5 => select a player, selected player discards card, buys new one
+6 => buy two cards, choose a single card, return the other 2 cards
+7 => select a player, switch cards with selected player
+8 => nothing
+9 => loses
