@@ -11,6 +11,8 @@ public class Princess : Card
         Value = 9;
     }
 
+    public override CardType CardType => CardType.Princess;
+
     public override void Play(Player currentPlayer, Game game)
     {
         

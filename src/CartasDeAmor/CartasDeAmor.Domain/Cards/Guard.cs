@@ -11,6 +11,8 @@ public class Guard : Card
         Value = 1;
     }
 
+    public override CardType CardType => CardType.Guard;
+
     public override void Play(Player currentPlayer, Game game)
     {
         

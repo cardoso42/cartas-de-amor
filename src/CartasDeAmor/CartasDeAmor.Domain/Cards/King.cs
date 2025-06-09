@@ -11,6 +11,8 @@ public class King : Card
         Value = 7;
     }
 
+    public override CardType CardType => CardType.King;
+
     public override void Play(Player currentPlayer, Game game)
     {
         

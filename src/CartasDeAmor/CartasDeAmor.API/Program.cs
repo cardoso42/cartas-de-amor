@@ -1,5 +1,6 @@
 using System.Text;
 using CartasDeAmor.Application.Services;
+using CartasDeAmor.Domain.Repositories;
 using CartasDeAmor.Domain.Services;
 using CartasDeAmor.Infrastructure.Persistence;
 using CartasDeAmor.Infrastructure.Repositories;
@@ -19,7 +20,10 @@ builder.Services.AddDbContext<AppDbContext>(options =>
 
 // Register application services
 builder.Services.AddScoped<IUserRepository, UserRepository>();
+builder.Services.AddScoped<IGameRoomRepository, GameRoomRepository>();
+builder.Services.AddScoped<IPlayerRepository, PlayerRepository>();
 builder.Services.AddScoped<IAccountService, AccountService>();
+builder.Services.AddScoped<IGameRoomService, GameRoomService>();
 
 // Add JWT Authentication
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)

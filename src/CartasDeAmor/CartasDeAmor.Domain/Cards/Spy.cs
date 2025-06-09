@@ -11,6 +11,8 @@ public class Spy : Card
         Value = 0;
     }
 
+    public override CardType CardType => CardType.Spy;
+
     public override void Play(Player currentPlayer, Game game)
     {
         

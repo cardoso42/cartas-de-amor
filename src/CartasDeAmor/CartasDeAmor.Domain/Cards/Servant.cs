@@ -11,6 +11,8 @@ public class Servant : Card
         Value = 4;
     }
 
+    public override CardType CardType => CardType.Servant;
+
     public override void Play(Player currentPlayer, Game game)
     {
         

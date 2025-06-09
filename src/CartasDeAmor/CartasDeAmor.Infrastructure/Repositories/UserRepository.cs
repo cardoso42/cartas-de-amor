@@ -1,4 +1,5 @@
 using CartasDeAmor.Domain.Entities;
+using CartasDeAmor.Domain.Repositories;
 using CartasDeAmor.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 

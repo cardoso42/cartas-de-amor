@@ -11,6 +11,8 @@ public class Countess : Card
         Value = 8;
     }
 
+    public override CardType CardType => CardType.Countess;
+
     public override void Play(Player currentPlayer, Game game)
     {
         

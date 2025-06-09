@@ -5,6 +5,8 @@ namespace CartasDeAmor.Domain.Cards;
 
 public class Baron : Card
 {
+    public override CardType CardType => CardType.Baron;
+
     public Baron()
     {
         Name = "Baron";

@@ -11,6 +11,8 @@ public class Chanceller : Card
         Value = 6;
     }
 
+    public override CardType CardType => CardType.Chanceller;
+
     public override void Play(Player currentPlayer, Game game)
     {
 

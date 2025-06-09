@@ -1,9 +1,6 @@
 using CartasDeAmor.Domain.Entities;
-using System;
-using System.Collections.Generic;
-using System.Threading.Tasks;
 
-namespace CartasDeAmor.Infrastructure.Repositories
+namespace CartasDeAmor.Domain.Repositories
 {
     public interface IUserRepository
     {

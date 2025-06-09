@@ -11,6 +11,8 @@ public class Priest : Card
         Value = 2;
     }
 
+    public override CardType CardType => CardType.Priest;
+
     public override void Play(Player currentPlayer, Game game)
     {
         

@@ -1,6 +1,6 @@
 using CartasDeAmor.Domain.Entities;
+using CartasDeAmor.Domain.Repositories;
 using CartasDeAmor.Domain.Services;
-using CartasDeAmor.Infrastructure.Repositories;
 using Microsoft.Extensions.Configuration;
 using Microsoft.IdentityModel.Tokens;
 using System.IdentityModel.Tokens.Jwt;
