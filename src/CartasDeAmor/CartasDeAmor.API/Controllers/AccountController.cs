@@ -40,6 +40,11 @@ public class AccountController : ControllerBase
                 Message = "Account created successfully."
             });
         }
+        catch (InvalidOperationException ex)
+        {
+            _logger.LogWarning("Account creation failed: {Message}", ex.Message);
+            return Conflict(new { Message = ex.Message });
+        }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Failed to create account for user {Username}", createAccountRequest.Username);

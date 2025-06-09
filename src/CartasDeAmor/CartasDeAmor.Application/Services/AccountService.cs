@@ -23,6 +23,13 @@ public class AccountService : IAccountService
 
     public async Task<string> CreateAccountAsync(string username, string email, string password)
     {
+        // Check if email is already registered
+        var existingUser = await _userRepository.GetByEmailAsync(email);
+        if (existingUser != null)
+        {
+            throw new InvalidOperationException("An account with this email already exists");
+        }
+
         var hashedPassword = BCrypt.Net.BCrypt.HashPassword(password);
 
         var newUser = new User
