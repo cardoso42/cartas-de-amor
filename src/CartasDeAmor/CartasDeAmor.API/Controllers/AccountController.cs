@@ -45,4 +45,36 @@ public class AccountController : ControllerBase
             throw;
         }
     }
+
+    [HttpPost("login")]
+    public async Task<IActionResult> Login([FromBody] LoginRequestDto loginRequest)
+    {
+        _logger.LogInformation("Attempting login for user {Username}", loginRequest.Username);
+
+        try
+        {
+            var accessToken = await _accountService.LoginAsync(
+                loginRequest.Username,
+                loginRequest.Password
+            );
+
+            _logger.LogInformation("Successfully authenticated user {Username}", loginRequest.Username);
+
+            return Ok(new
+            {
+                AccessToken = accessToken,
+                Message = "Login successful."
+            });
+        }
+        catch (UnauthorizedAccessException ex)
+        {
+            _logger.LogWarning("Failed login attempt for user {Username}: {Message}", loginRequest.Username, ex.Message);
+            return Unauthorized(new { Message = ex.Message });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Unexpected error during login for user {Username}", loginRequest.Username);
+            throw;
+        }
+    }
 }

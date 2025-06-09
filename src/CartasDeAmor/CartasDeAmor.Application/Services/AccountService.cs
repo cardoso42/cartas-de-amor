@@ -37,6 +37,18 @@ public class AccountService : IAccountService
         return GenerateJwtToken(newUser);
     }
 
+    public async Task<string> LoginAsync(string username, string password)
+    {
+        var user = await _userRepository.GetByUsernameAsync(username);
+        if (user == null)
+            throw new UnauthorizedAccessException("Invalid username or password");
+
+        if (!BCrypt.Net.BCrypt.Verify(password, user.PasswordHash))
+            throw new UnauthorizedAccessException("Invalid username or password");
+
+        return GenerateJwtToken(user);
+    }
+
     private string GenerateJwtToken(User user)
     {
         var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_configuration["Jwt:Key"]!));
