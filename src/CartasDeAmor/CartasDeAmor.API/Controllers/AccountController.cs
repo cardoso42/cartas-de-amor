@@ -1,7 +1,8 @@
 using Microsoft.AspNetCore.Mvc;
 using CartasDeAmor.Application.DTOs;
 using CartasDeAmor.Domain.Services;
-using Microsoft.Extensions.Logging;
+using Microsoft.AspNetCore.Authorization;
+using System.Security.Claims;
 
 namespace CartasDeAmor.API.Controllers;
 
@@ -74,6 +75,46 @@ public class AccountController : ControllerBase
         catch (Exception ex)
         {
             _logger.LogError(ex, "Unexpected error during login for user {Username}", loginRequest.Username);
+            throw;
+        }
+    }
+
+    [Authorize]
+    [HttpDelete("{email}")]
+    public async Task<IActionResult> DeleteAccount(string email)
+    {
+        _logger.LogInformation("Claims present: " + string.Join(", ", User.Claims.Select(c => $"{c.Type}: {c.Value}")));
+        
+        var userEmail = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+
+        if (userEmail == null)
+        {
+            _logger.LogWarning("Delete account attempt without valid authentication");
+            return Unauthorized(new { Message = "User not properly authenticated" });
+        }
+
+        if (!string.Equals(userEmail, email, StringComparison.OrdinalIgnoreCase))
+        {
+            _logger.LogWarning("User {AuthenticatedEmail} attempted to delete account {TargetEmail}", userEmail, email);
+            return Forbid();
+        }
+
+        _logger.LogInformation("Attempting to delete account with email {Email}", email);
+
+        try
+        {
+            await _accountService.DeleteAccountAsync(email);
+            _logger.LogInformation("Successfully deleted account with email {Email}", email);
+            return Ok(new { Message = "Account deleted successfully." });
+        }
+        catch (KeyNotFoundException ex)
+        {
+            _logger.LogWarning("Account deletion failed: {Message}", ex.Message);
+            return NotFound(new { Message = ex.Message });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Unexpected error while deleting account with email {Email}", email);
             throw;
         }
     }

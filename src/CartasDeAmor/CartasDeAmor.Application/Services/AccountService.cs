@@ -49,6 +49,15 @@ public class AccountService : IAccountService
         return GenerateJwtToken(user);
     }
 
+    public async Task DeleteAccountAsync(string email)
+    {
+        var user = await _userRepository.GetByEmailAsync(email);
+        if (user == null)
+            throw new KeyNotFoundException($"User with email {email} not found");
+
+        await _userRepository.DeleteAsync(email);
+    }
+
     private string GenerateJwtToken(User user)
     {
         var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_configuration["Jwt:Key"]!));
@@ -57,9 +66,8 @@ public class AccountService : IAccountService
 
         var claims = new[]
         {
-            new Claim(JwtRegisteredClaimNames.Sub, user.Id.ToString()),
-            new Claim(JwtRegisteredClaimNames.Email, user.Email),
-            new Claim(JwtRegisteredClaimNames.UniqueName, user.Username),
+            new Claim(JwtRegisteredClaimNames.Sub, user.Email),
+            new Claim("username", user.Username),  // Using a custom claim name since username isn't guaranteed unique
             new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString())
         };
 

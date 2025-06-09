@@ -13,11 +13,6 @@ namespace CartasDeAmor.Infrastructure.Repositories
             _context = context;
         }
 
-        public async Task<User?> GetByIdAsync(Guid id)
-        {
-            return await _context.Users.FindAsync(id);
-        }
-
         public async Task<User?> GetByUsernameAsync(string username)
         {
             return await _context.Users.FirstOrDefaultAsync(u => u.Username == username);
@@ -40,9 +35,9 @@ namespace CartasDeAmor.Infrastructure.Repositories
             await _context.SaveChangesAsync();
         }
 
-        public async Task DeleteAsync(Guid id)
+        public async Task DeleteAsync(string email)
         {
-            var user = await _context.Users.FindAsync(id);
+            var user = await _context.Users.FirstOrDefaultAsync(u => u.Email == email);
             if (user != null)
             {
                 _context.Users.Remove(user);
