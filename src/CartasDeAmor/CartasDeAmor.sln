@@ -1,7 +1,6 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CartasDeAmor.API", "CartasDeAmor.API\CartasDeAmor.API.csproj", "{3C6A14C5-E20E-408C-8BEE-03072C689BD1}"
-EndProject
+# 
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{2C9824B2-C756-41D6-8C7F-D087698BEBC4}"
 	ProjectSection(SolutionItems) = preProject
 		compose.yaml = compose.yaml
@@ -13,16 +12,14 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CartasDeAmor.Domain", "Cart
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CartasDeAmor.Infrastructure", "CartasDeAmor.Infrastructure\CartasDeAmor.Infrastructure.csproj", "{8B8290BF-55B7-472F-BC4D-8B62DAC9C7C6}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CartasDeAmor.Presentation", "CartasDeAmor.Presentation\CartasDeAmor.Presentation.csproj", "{8C36C695-5919-4CDA-BD96-98B344C3790F}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
 		Release|Any CPU = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
-		{3C6A14C5-E20E-408C-8BEE-03072C689BD1}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{3C6A14C5-E20E-408C-8BEE-03072C689BD1}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{3C6A14C5-E20E-408C-8BEE-03072C689BD1}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{3C6A14C5-E20E-408C-8BEE-03072C689BD1}.Release|Any CPU.Build.0 = Release|Any CPU
 		{F76F8EE4-504E-4BA8-818E-CA6D37CE6E40}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{F76F8EE4-504E-4BA8-818E-CA6D37CE6E40}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{F76F8EE4-504E-4BA8-818E-CA6D37CE6E40}.Release|Any CPU.ActiveCfg = Release|Any CPU
@@ -35,5 +32,9 @@ Global
 		{8B8290BF-55B7-472F-BC4D-8B62DAC9C7C6}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{8B8290BF-55B7-472F-BC4D-8B62DAC9C7C6}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{8B8290BF-55B7-472F-BC4D-8B62DAC9C7C6}.Release|Any CPU.Build.0 = Release|Any CPU
+		{8C36C695-5919-4CDA-BD96-98B344C3790F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{8C36C695-5919-4CDA-BD96-98B344C3790F}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{8C36C695-5919-4CDA-BD96-98B344C3790F}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{8C36C695-5919-4CDA-BD96-98B344C3790F}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal

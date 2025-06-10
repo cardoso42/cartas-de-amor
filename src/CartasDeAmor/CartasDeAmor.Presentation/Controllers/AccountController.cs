@@ -4,7 +4,7 @@ using CartasDeAmor.Domain.Services;
 using Microsoft.AspNetCore.Authorization;
 using System.Security.Claims;
 
-namespace CartasDeAmor.API.Controllers;
+namespace CartasDeAmor.Presentation.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
