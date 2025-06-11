@@ -7,23 +7,42 @@ public class GameRoomService : IGameRoomService
 {
     private readonly IGameRoomRepository _roomRepository;
     private readonly IPlayerRepository _playerRepository;
+    private readonly IUserRepository _userRepository;
 
-    public GameRoomService(IGameRoomRepository roomRepository, IPlayerRepository playerRepository)
+    public GameRoomService(IGameRoomRepository roomRepository, IPlayerRepository playerRepository, IUserRepository userRepository)
     {
         _roomRepository = roomRepository;
         _playerRepository = playerRepository;
+        _userRepository = userRepository;
+    }
+
+    private async Task<Player> CreatePlayer(Guid gameId, string userEmail)
+    {
+        var user = await _userRepository.GetByEmailAsync(userEmail);
+        if (user == null)
+        {
+            throw new InvalidOperationException("User not found");
+        }
+
+        return new Player
+        {
+            GameId = gameId,
+            Username = user.Username,
+            UserEmail = userEmail
+        };
     }
 
     public async Task<Guid> CreateRoomAsync(string name, string creatorEmail, string? password = null)
     {
-        var host = new Player { UserEmail = creatorEmail };
         var game = new Game
         {
             Name = name,
             Password = password,
-            Players = [host],
             HostEmail = creatorEmail,
         };
+
+        var host = await CreatePlayer(game.Id, creatorEmail);
+        game.Players.Add(host);
 
         await _roomRepository.CreateAsync(game);
         return game.Id;
@@ -63,13 +82,9 @@ public class GameRoomService : IGameRoomService
             throw new InvalidOperationException("Room is full");
         }
 
-        var player = new Player
-        {
-            GameId = roomId,
-            UserEmail = userEmail
-        };
-
+        var player = await CreatePlayer(roomId, userEmail);
         game.Players.Add(player);
+        
         await _roomRepository.UpdateAsync(game);
     }
 

@@ -10,7 +10,7 @@ public class Game
     public string? Password { get; set; } = null;
     public bool PasswordProtected => !string.IsNullOrEmpty(Password);
     public required string HostEmail { get; set; }
-    public ICollection<Player> Players { get; set; } = [];
+    public IList<Player> Players { get; set; } = [];
     public ICollection<CardType> CardsDeck { get; set; } = [];
     public CardType ReservedCard { get; set; }
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;

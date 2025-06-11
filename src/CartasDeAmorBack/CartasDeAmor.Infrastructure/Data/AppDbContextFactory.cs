@@ -10,7 +10,7 @@ namespace CartasDeAmor.Infrastructure.Persistence
     {
         public AppDbContext CreateDbContext(string[] args)
         {
-            var basePath = Path.GetFullPath(Path.Combine(Directory.GetCurrentDirectory(), "../CartasDeAmor.API"));
+            var basePath = Path.GetFullPath(Path.Combine(Directory.GetCurrentDirectory(), "../CartasDeAmor.Presentation"));
 
             IConfiguration configuration = new ConfigurationBuilder()
                 .SetBasePath(basePath)

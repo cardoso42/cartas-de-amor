@@ -1,5 +1,4 @@
 using System.Text;
-using CartasDeAmor.Application.Services;
 using CartasDeAmor.Domain.Repositories;
 using CartasDeAmor.Domain.Services;
 using CartasDeAmor.Infrastructure.Persistence;
@@ -9,11 +8,25 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using CartasDeAmor.Presentation.Hubs;
+using CartasDeAmor.Application.Interfaces;
+using CartasDeAmor.Application.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 builder.Services.AddControllers();
+
+// Add CORS
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowFrontend", policy =>
+    {
+        policy.WithOrigins("http://localhost:3000", "http://127.0.0.1:3000", "http://localhost:8080", "http://127.0.0.1:8080")
+              .AllowAnyMethod()
+              .AllowAnyHeader()
+              .AllowCredentials();
+    });
+});
 
 // Add SignalR
 builder.Services.AddSignalR();
@@ -28,6 +41,8 @@ builder.Services.AddScoped<IGameRoomRepository, GameRoomRepository>();
 builder.Services.AddScoped<IPlayerRepository, PlayerRepository>();
 builder.Services.AddScoped<IAccountService, AccountService>();
 builder.Services.AddScoped<IGameRoomService, GameRoomService>();
+builder.Services.AddScoped<IGameService, GameService>();
+builder.Services.AddSingleton<IConnectionMappingService, ConnectionMappingService>();
 
 // Add JWT Authentication
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
@@ -105,6 +120,9 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
+
+// Use CORS
+app.UseCors("AllowFrontend");
 
 app.UseAuthentication();
 app.UseAuthorization();

@@ -81,6 +81,10 @@ namespace CartasDeAmor.Infrastructure.Migrations
                     b.Property<int>("Score")
                         .HasColumnType("integer");
 
+                    b.Property<string>("Username")
+                        .IsRequired()
+                        .HasColumnType("text");
+
                     b.HasKey("GameId", "UserEmail");
 
                     b.HasIndex("UserEmail");
