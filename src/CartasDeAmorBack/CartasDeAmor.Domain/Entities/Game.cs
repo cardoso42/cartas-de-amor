@@ -13,6 +13,8 @@ public class Game
     public IList<Player> Players { get; set; } = [];
     public ICollection<CardType> CardsDeck { get; set; } = [];
     public CardType ReservedCard { get; set; }
+    public int CurrentPlayerIndex { get; set; } = 0;
+    public bool GameStarted { get; set; } = false;
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
 }

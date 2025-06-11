@@ -372,12 +372,353 @@ async function handlePlayCard(cardType) {
     try {
         if (signalRConnection) {
             await signalRConnection.invoke('PlayCard', currentRoom.id, parseInt(cardType));
-            addGameMessage(`You played: ${CARD_TYPES[cardType]}`, 'info');
+            addGameMessage(`You attempted to play: ${CARD_TYPES[cardType]}`, 'info');
         }
     } catch (error) {
         console.error('Play card error:', error);
         showMessage('Failed to play card', 'error');
     }
+}
+
+function handleCardInputRequest(cardType, requirements) {
+    console.log('Card requires input:', cardType, requirements);
+    
+    const cardName = CARD_TYPES[cardType];
+    const requirementNames = requirements.map(req => {
+        switch(req) {
+            case 1: return 'Select Player';
+            case 2: return 'Select Card Type';
+            case 3: return 'Select Card';
+            case 4: return 'Draw Card';
+            default: return 'Unknown';
+        }
+    });
+    
+    showCardInputModal(cardType, requirements, cardName, requirementNames);
+}
+
+function updateGameStatus(gameStatus) {
+    console.log('Updating game status:', gameStatus);
+    
+    // Handle both camelCase and PascalCase property names
+    const players = gameStatus.Players || gameStatus.players;
+    const yourCard = gameStatus.YourCard !== undefined ? gameStatus.YourCard : gameStatus.yourCard;
+    const firstPlayerIndex = gameStatus.FirstPlayerIndex !== undefined ? gameStatus.FirstPlayerIndex : gameStatus.firstPlayerIndex;
+    
+    // Update player's card if they have one
+    if (yourCard !== undefined) {
+        updatePlayerCard(yourCard);
+    }
+    
+    // Update player list or game state display
+    if (players) {
+        console.log('Current players:', players);
+        currentGamePlayers = players; // Store players for modal use
+        updatePlayersList(players);
+    }
+    
+    // Show whose turn it is
+    if (players && firstPlayerIndex !== undefined) {
+        const currentPlayer = players[firstPlayerIndex];
+        if (currentPlayer) {
+            // Handle both naming conventions for player properties
+            const username = currentPlayer.Username || currentPlayer.username;
+            addGameMessage(`It's ${username}'s turn`, 'info');
+        }
+    }
+}
+
+function updatePlayersList(players) {
+    // For now, just log the players. In a full implementation, you would update the UI
+    console.log('Players in game:', players);
+    
+    let playersInfo = players.map(p => {
+        // Handle both camelCase and PascalCase property names
+        const username = p.Username || p.username;
+        const cardsInHand = p.CardsInHand !== undefined ? p.CardsInHand : p.cardsInHand;
+        const score = p.Score !== undefined ? p.Score : p.score;
+        const isProtected = p.IsProtected !== undefined ? p.IsProtected : p.isProtected;
+        
+        return `${username} (Cards: ${cardsInHand}, Score: ${score}${isProtected ? ', Protected' : ''})`;
+    }).join(', ');
+    
+    addGameMessage(`Players: ${playersInfo}`, 'info');
+}
+
+// Modal functions
+let currentGamePlayers = []; // Store current game players for modal use
+
+function showCardInputModal(cardType, requirements, cardName, requirementNames) {
+    const modal = document.getElementById('card-input-modal');
+    const modalTitle = document.getElementById('modal-title');
+    const modalDescription = document.getElementById('modal-description');
+    const inputContainer = document.getElementById('input-container');
+    const cardForm = document.getElementById('card-input-form');
+    
+    // Set modal title and description
+    modalTitle.textContent = `${cardName} Card Action`;
+    modalDescription.textContent = `${cardName} requires: ${requirementNames.join(', ')}`;
+    
+    // Clear previous inputs
+    inputContainer.innerHTML = '';
+    
+    // Create inputs based on requirements
+    requirements.forEach((requirement, index) => {
+        const inputGroup = document.createElement('div');
+        inputGroup.className = 'input-group';
+        
+        switch(requirement) {
+            case 1: // Select Player
+                createPlayerSelector(inputGroup, index);
+                break;
+            case 2: // Select Card Type
+                createCardTypeSelector(inputGroup, index);
+                break;
+            case 3: // Select Card
+                createCardSelector(inputGroup, index);
+                break;
+            case 4: // Draw Card (no input needed)
+                createInfoDisplay(inputGroup, 'You will draw a card', 'draw-card');
+                break;
+            default:
+                createInfoDisplay(inputGroup, 'Unknown requirement', 'unknown');
+                break;
+        }
+        
+        inputContainer.appendChild(inputGroup);
+    });
+    
+    // Show modal
+    modal.style.display = 'flex';
+    
+    // Handle form submission
+    cardForm.onsubmit = (e) => {
+        e.preventDefault();
+        handleModalSubmit(cardType, requirements);
+    };
+    
+    // Setup modal close handlers
+    setupModalCloseHandlers();
+}
+
+function createPlayerSelector(container, index) {
+    const label = document.createElement('label');
+    label.textContent = 'Select a player:';
+    container.appendChild(label);
+    
+    const playersDiv = document.createElement('div');
+    playersDiv.className = 'players-selection';
+    
+    // Get players from the last game status (excluding yourself)
+    const availablePlayers = currentGamePlayers.filter(p => {
+        const userEmail = p.UserEmail || p.userEmail;
+        return userEmail !== (currentUser?.email || currentUser?.username);
+    });
+    
+    if (availablePlayers.length === 0) {
+        const noPlayersMsg = document.createElement('p');
+        noPlayersMsg.textContent = 'No other players available';
+        noPlayersMsg.style.color = '#999';
+        playersDiv.appendChild(noPlayersMsg);
+    } else {
+        availablePlayers.forEach((player, playerIndex) => {
+            const playerOption = document.createElement('div');
+            playerOption.className = 'player-option';
+            
+            const radio = document.createElement('input');
+            radio.type = 'radio';
+            radio.name = `player-select-${index}`;
+            radio.value = player.UserEmail || player.userEmail;
+            radio.id = `player-${index}-${playerIndex}`;
+            
+            const labelText = document.createElement('label');
+            labelText.htmlFor = `player-${index}-${playerIndex}`;
+            
+            // Handle both camelCase and PascalCase property names
+            const username = player.Username || player.username;
+            const isProtected = player.IsProtected !== undefined ? player.IsProtected : player.isProtected;
+            labelText.textContent = `${username}${isProtected ? ' (Protected)' : ''}`;
+            
+            playerOption.appendChild(radio);
+            playerOption.appendChild(labelText);
+            
+            // Make the whole div clickable
+            playerOption.addEventListener('click', () => {
+                radio.checked = true;
+                // Remove selected class from all options
+                playersDiv.querySelectorAll('.player-option').forEach(opt => 
+                    opt.classList.remove('selected'));
+                // Add selected class to clicked option
+                playerOption.classList.add('selected');
+            });
+            
+            playersDiv.appendChild(playerOption);
+        });
+    }
+    
+    container.appendChild(playersDiv);
+}
+
+function createCardTypeSelector(container, index) {
+    const label = document.createElement('label');
+    label.textContent = 'Select a card type:';
+    container.appendChild(label);
+    
+    const select = document.createElement('select');
+    select.name = `card-type-${index}`;
+    select.required = true;
+    
+    // Add default option
+    const defaultOption = document.createElement('option');
+    defaultOption.value = '';
+    defaultOption.textContent = 'Choose a card type...';
+    select.appendChild(defaultOption);
+    
+    // Add card type options (excluding Spy which is 0)
+    Object.entries(CARD_TYPES).forEach(([value, name]) => {
+        if (parseInt(value) > 0) { // Exclude Spy
+            const option = document.createElement('option');
+            option.value = value;
+            option.textContent = name;
+            select.appendChild(option);
+        }
+    });
+    
+    container.appendChild(select);
+}
+
+function createCardSelector(container, index) {
+    const label = document.createElement('label');
+    label.textContent = 'Select a card:';
+    container.appendChild(label);
+    
+    const select = document.createElement('select');
+    select.name = `card-${index}`;
+    select.required = true;
+    
+    // Add default option
+    const defaultOption = document.createElement('option');
+    defaultOption.value = '';
+    defaultOption.textContent = 'Choose a card...';
+    select.appendChild(defaultOption);
+    
+    // Add all card options
+    Object.entries(CARD_TYPES).forEach(([value, name]) => {
+        const option = document.createElement('option');
+        option.value = value;
+        option.textContent = name;
+        select.appendChild(option);
+    });
+    
+    container.appendChild(select);
+}
+
+function createInfoDisplay(container, message, className) {
+    const infoDiv = document.createElement('div');
+    infoDiv.className = `info-display ${className}`;
+    infoDiv.textContent = message;
+    infoDiv.style.padding = '1rem';
+    infoDiv.style.backgroundColor = '#f8f9ff';
+    infoDiv.style.border = '2px solid #667eea';
+    infoDiv.style.borderRadius = '6px';
+    infoDiv.style.color = '#667eea';
+    infoDiv.style.textAlign = 'center';
+    container.appendChild(infoDiv);
+}
+
+function handleModalSubmit(cardType, requirements) {
+    const inputs = [];
+    const inputContainer = document.getElementById('input-container');
+    let hasError = false;
+    
+    requirements.forEach((requirement, index) => {
+        switch(requirement) {
+            case 1: // Select Player
+                const selectedPlayer = inputContainer.querySelector(`input[name="player-select-${index}"]:checked`);
+                if (selectedPlayer) {
+                    inputs.push(selectedPlayer.value);
+                } else {
+                    showMessage('Please select a player', 'error');
+                    hasError = true;
+                }
+                break;
+            case 2: // Select Card Type
+                const cardTypeSelect = inputContainer.querySelector(`select[name="card-type-${index}"]`);
+                if (cardTypeSelect && cardTypeSelect.value) {
+                    inputs.push(parseInt(cardTypeSelect.value));
+                } else {
+                    showMessage('Please select a card type', 'error');
+                    hasError = true;
+                }
+                break;
+            case 3: // Select Card
+                const cardSelect = inputContainer.querySelector(`select[name="card-${index}"]`);
+                if (cardSelect && cardSelect.value) {
+                    inputs.push(parseInt(cardSelect.value));
+                } else {
+                    showMessage('Please select a card', 'error');
+                    hasError = true;
+                }
+                break;
+            case 4: // Draw Card (no input needed)
+                inputs.push(null); // Placeholder for draw card action
+                break;
+            default:
+                inputs.push(null);
+                break;
+        }
+    });
+    
+    // Return early if there are validation errors
+    if (hasError) {
+        return;
+    }
+    
+    // Close modal
+    hideCardInputModal();
+    
+    // Send the card input to the server
+    if (signalRConnection) {
+        signalRConnection.invoke('InformCardInput', currentRoom.id, cardType, inputs)
+            .then(() => {
+                showMessage(`${CARD_TYPES[cardType]} played with selected inputs`, 'success');
+            })
+            .catch(error => {
+                console.error('Error sending card input:', error);
+                showMessage('Failed to send card input', 'error');
+            });
+    }
+}
+
+function setupModalCloseHandlers() {
+    const modal = document.getElementById('card-input-modal');
+    const closeBtn = document.getElementById('modal-close-btn');
+    const cancelBtn = document.getElementById('modal-cancel-btn');
+    
+    // Close button handler
+    closeBtn.onclick = hideCardInputModal;
+    
+    // Cancel button handler
+    cancelBtn.onclick = hideCardInputModal;
+    
+    // Click outside modal to close
+    modal.onclick = (e) => {
+        if (e.target === modal) {
+            hideCardInputModal();
+        }
+    };
+    
+    // Escape key to close
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape' && modal.style.display === 'flex') {
+            hideCardInputModal();
+        }
+    });
+}
+
+function hideCardInputModal() {
+    const modal = document.getElementById('card-input-modal');
+    modal.style.display = 'none';
 }
 
 // SignalR functions
@@ -430,6 +771,26 @@ function setupSignalRHandlers() {
     signalRConnection.on('GameStartError', (error) => {
         console.error('Game start error from server:', error);
         showMessage(`Failed to start game: ${error}`, 'error');
+    });
+    
+    signalRConnection.on('RequestCardInput', (cardType, requirements) => {
+        console.log('Card requires additional input:', cardType, requirements);
+        handleCardInputRequest(cardType, requirements);
+    });
+    
+    signalRConnection.on('CardPlayed', (userEmail, cardType) => {
+        console.log('Card played by:', userEmail, 'Card:', cardType);
+        addGameMessage(`${userEmail} played: ${CARD_TYPES[cardType]}`, 'info');
+    });
+    
+    signalRConnection.on('GameStatusUpdated', (gameStatus) => {
+        console.log('Game status updated:', gameStatus);
+        updateGameStatus(gameStatus);
+    });
+    
+    signalRConnection.on('PlayCardError', (error) => {
+        console.error('Play card error from server:', error);
+        showMessage(`Card play failed: ${error}`, 'error');
     });
     
     signalRConnection.on('UserNotAuthenticated', () => {

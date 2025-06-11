@@ -149,6 +149,28 @@
             <!-- Messages/Status -->
             <div id="status-messages" class="status-messages"></div>
         </main>
+
+        <!-- Card Input Modal -->
+        <div id="card-input-modal" class="modal" style="display: none;">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3 id="modal-title">Card Action Required</h3>
+                    <button class="modal-close" id="modal-close-btn">&times;</button>
+                </div>
+                <div class="modal-body">
+                    <p id="modal-description">Please provide the required input for this card:</p>
+                    <form id="card-input-form">
+                        <div id="input-container">
+                            <!-- Dynamic inputs will be added here -->
+                        </div>
+                        <div class="modal-actions">
+                            <button type="button" class="btn btn-secondary" id="modal-cancel-btn">Cancel</button>
+                            <button type="submit" class="btn btn-primary">Confirm</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
     </div>
 
     <script src="script.js"></script>
