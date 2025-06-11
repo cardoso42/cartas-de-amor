@@ -65,6 +65,20 @@ public class AccountService : IAccountService
         await _userRepository.DeleteAsync(email);
     }
 
+    public string GetEmailFromTokenAsync(ClaimsPrincipal? user)
+    {
+        if (user == null || (!user.Identity?.IsAuthenticated ?? true))
+            throw new InvalidOperationException("User is not authenticated");
+
+        var userEmail = user.FindFirst(ClaimTypes.NameIdentifier)?.Value 
+            ?? throw new InvalidOperationException("User email not found in claims");
+
+        if (string.IsNullOrEmpty(userEmail))
+            throw new InvalidOperationException("User email is empty");
+        
+        return userEmail;
+    }
+
     private string GenerateJwtToken(User user)
     {
         var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_configuration["Jwt:Key"]!));

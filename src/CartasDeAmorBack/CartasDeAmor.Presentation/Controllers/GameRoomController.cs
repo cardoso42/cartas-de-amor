@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Authorization;
 using CartasDeAmor.Domain.Services;
 using CartasDeAmor.Application.DTOs;
 using System.Security.Claims;
+using CartasDeAmor.Application.Services;
 
 namespace CartasDeAmor.Presentation.Controllers;
 
@@ -12,21 +13,17 @@ namespace CartasDeAmor.Presentation.Controllers;
 public class GameRoomController : ControllerBase
 {
     private readonly IGameRoomService _roomService;
+    private readonly IAccountService _accountService;
     private readonly ILogger<GameRoomController> _logger;
 
     public GameRoomController(
         IGameRoomService roomService,
+        IAccountService accountService,
         ILogger<GameRoomController> logger)
     {
         _roomService = roomService ?? throw new ArgumentNullException(nameof(roomService));
+        _accountService = accountService ?? throw new ArgumentNullException(nameof(accountService));
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
-    }
-
-    private string GetUserEmail()
-    {
-        var userEmail = User.FindFirst(ClaimTypes.NameIdentifier)?.Value 
-            ?? throw new InvalidOperationException("User email not found in claims");
-        return userEmail;
     }
 
     [HttpPost]
@@ -34,7 +31,7 @@ public class GameRoomController : ControllerBase
     {
         try
         {
-            var userEmail = GetUserEmail();
+            var userEmail = _accountService.GetEmailFromTokenAsync(User);
             var roomId = await _roomService.CreateRoomAsync(request.RoomName, userEmail, request.Password);
             return Ok(roomId);
         }
@@ -53,7 +50,7 @@ public class GameRoomController : ControllerBase
     [HttpDelete("{roomId}")]
     public async Task<IActionResult> DeleteRoom(Guid roomId)
     {
-        var userEmail = GetUserEmail();
+        var userEmail = _accountService.GetEmailFromTokenAsync(User);
 
         try
         {

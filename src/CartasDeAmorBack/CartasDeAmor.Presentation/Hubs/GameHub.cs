@@ -14,30 +14,22 @@ public class GameHub : Hub
     private readonly ILogger<GameHub> _logger;
     private readonly IGameRoomService _gameRoomService;
     private readonly IGameService _gameService;
+    private readonly IAccountService _accountService;
     private readonly IConnectionMappingService _connectionMapping;
 
-    public GameHub(ILogger<GameHub> logger, IGameRoomService gameRoomService, IGameService gameService, IConnectionMappingService connectionMapping)
+    public GameHub(ILogger<GameHub> logger, IGameRoomService gameRoomService, IGameService gameService, IAccountService accountService, IConnectionMappingService connectionMapping)
     {
         _logger = logger;
         _gameRoomService = gameRoomService;
         _gameService = gameService;
+        _accountService = accountService;
         _connectionMapping = connectionMapping;
     }
 
     public async Task JoinRoom(Guid roomId)
     {
-        var userEmail = GetUserEmail();
-
-        if (userEmail == null)
-        {
-            _logger.LogWarning("User email not found in claims when trying to join room {RoomId}", roomId);
-            throw new HubException("User not authenticated");
-        }
-
-        if (!string.IsNullOrEmpty(userEmail))
-        {
-            _connectionMapping.AddConnection(userEmail, Context.ConnectionId);
-        }
+        var userEmail = _accountService.GetEmailFromTokenAsync(Context.User);
+        _connectionMapping.AddConnection(userEmail, Context.ConnectionId);
 
         await Groups.AddToGroupAsync(Context.ConnectionId, roomId.ToString());
         await _gameRoomService.AddUserToRoomAsync(roomId, userEmail);
@@ -47,40 +39,13 @@ public class GameHub : Hub
 
     public async Task LeaveRoom(Guid roomId)
     {
-        var userEmail = GetUserEmail();
-
-        if (userEmail == null)
-        {
-            _logger.LogWarning("User email not found in claims when trying to leave room {RoomId}", roomId);
-            throw new HubException("User not authenticated");
-        }
-
-        if (!string.IsNullOrEmpty(userEmail))
-        {
-            _connectionMapping.RemoveConnection(userEmail, Context.ConnectionId);
-        }
+        var userEmail = _accountService.GetEmailFromTokenAsync(Context.User);
+        _connectionMapping.RemoveConnection(userEmail, Context.ConnectionId);
         
         await Groups.RemoveFromGroupAsync(Context.ConnectionId, roomId.ToString());
         await _gameRoomService.RemoveUserFromRoomAsync(roomId, userEmail);
 
         _logger.LogInformation("User {User} left room {RoomId}", userEmail, roomId);
-    }
-
-    private string? GetUserEmail()
-    {
-        // Try ClaimTypes.NameIdentifier first (this is what the REST API controllers use)
-        var userEmail = Context.User?.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-        if (string.IsNullOrEmpty(userEmail))
-        {
-            // Fallback to 'sub' claim
-            userEmail = Context.User?.FindFirst("sub")?.Value;
-        }
-        if (string.IsNullOrEmpty(userEmail))
-        {
-            // Last resort - try email claim
-            userEmail = Context.User?.FindFirst(ClaimTypes.Email)?.Value;
-        }
-        return userEmail;
     }
 
     public async Task StartGame(Guid roomId)
@@ -90,22 +55,7 @@ public class GameHub : Hub
         _logger.LogInformation("User Identity: {Identity}", Context.User?.Identity?.Name);
         _logger.LogInformation("User IsAuthenticated: {IsAuthenticated}", Context.User?.Identity?.IsAuthenticated);
         
-        // Log all claims for debugging
-        if (Context.User?.Claims != null)
-        {
-            foreach (var claim in Context.User.Claims)
-            {
-                _logger.LogInformation("Claim: {Type} = {Value}", claim.Type, claim.Value);
-            }
-        }
-        
-        var userEmail = GetUserEmail();
-        if (string.IsNullOrEmpty(userEmail))
-        {
-            _logger.LogWarning("User not authenticated - no valid email claim found");
-            throw new HubException("User not authenticated");
-        }
-
+        var userEmail = _accountService.GetEmailFromTokenAsync(Context.User);
         _logger.LogInformation("User email found: {UserEmail}", userEmail);
 
         try

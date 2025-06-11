@@ -1,3 +1,5 @@
+using System.Security.Claims;
+
 namespace CartasDeAmor.Domain.Services;
 
 public interface IAccountService
@@ -25,4 +27,16 @@ public interface IAccountService
     /// <param name="email">The email of the user to delete.</param>
     /// <returns>A task representing the asynchronous operation.</returns>
     Task DeleteAccountAsync(string email);
+
+    /// <summary>
+    /// Retrieves the email address from the user's claims.
+    /// </summary>
+    /// <param name="user">The ClaimsPrincipal representing the user.</param>
+    /// <returns>The email address.</returns>
+    /// <remarks>
+    /// This method extracts the email from the user's claims, which is typically set during authentication.
+    /// If the user is not authenticated or the email claim is not present, it throws an exception.
+    /// </remarks>
+    /// <exception cref="InvalidOperationException">Thrown if the email claim is not found in the user's claims.</exception>
+    public string GetEmailFromTokenAsync(ClaimsPrincipal? user);
 }
