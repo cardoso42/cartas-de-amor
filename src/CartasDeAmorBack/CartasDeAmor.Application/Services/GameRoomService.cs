@@ -28,7 +28,8 @@ public class GameRoomService : IGameRoomService
         {
             GameId = gameId,
             Username = user.Username,
-            UserEmail = userEmail
+            UserEmail = userEmail,
+            HoldingCards = []
         };
     }
 

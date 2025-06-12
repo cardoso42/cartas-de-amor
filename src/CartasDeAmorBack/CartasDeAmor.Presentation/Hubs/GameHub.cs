@@ -65,7 +65,6 @@ public class GameHub : Hub
             var players = await _gameService.GetPlayersAsync(roomId);
 
             // Notify all players that the game is starting
-            await Clients.Group(roomId.ToString()).SendAsync("GameStarted");
 
             // Send each player their individual card privately
             for (int i = 0; i < players.Count; i++)
@@ -73,7 +72,7 @@ public class GameHub : Hub
                 var connectionIds = await GetUserConnectionIds(players[i].UserEmail, roomId);
                 foreach (var connectionId in connectionIds)
                 {
-                    await Clients.Client(connectionId).SendAsync("GameStatusUpdated", gameStatus[i]);
+                    await Clients.Client(connectionId).SendAsync("GameStarted", gameStatus[i]);
                 }
             }
 

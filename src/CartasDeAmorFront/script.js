@@ -7,6 +7,7 @@ let accessToken = null;
 let currentUser = null;
 let currentRoom = null;
 let signalRConnection = null;
+let playerCards = []; // Store current player's cards
 
 // Card types mapping
 const CARD_TYPES = {
@@ -196,6 +197,7 @@ function handleLogout() {
     accessToken = null;
     currentUser = null;
     currentRoom = null;
+    playerCards = []; // Clear player's cards
     
     // Clear localStorage
     localStorage.removeItem('accessToken');
@@ -362,6 +364,7 @@ async function handleStartGame() {
 }
 
 function handleBackToLobby() {
+    playerCards = []; // Clear player's cards when leaving game
     showLobby();
     clearGameLog();
 }
@@ -369,10 +372,24 @@ function handleBackToLobby() {
 async function handlePlayCard(cardType) {
     if (!currentRoom) return;
     
+    // Check if player has this card
+    const cardTypeInt = parseInt(cardType);
+    if (!playerCards.includes(cardTypeInt)) {
+        showMessage("You don't have that card", 'error');
+        return;
+    }
+    
     try {
         if (signalRConnection) {
-            await signalRConnection.invoke('PlayCard', currentRoom.id, parseInt(cardType));
-            addGameMessage(`You attempted to play: ${CARD_TYPES[cardType]}`, 'info');
+            await signalRConnection.invoke('PlayCard', currentRoom.id, cardTypeInt);
+            addGameMessage(`You attempted to play: ${CARD_TYPES[cardTypeInt]}`, 'info');
+            
+            // Optimistically remove the card from hand (will be corrected by server response if needed)
+            const cardIndex = playerCards.indexOf(cardTypeInt);
+            if (cardIndex > -1) {
+                playerCards.splice(cardIndex, 1);
+                generateCardButtons(); // Update the UI
+            }
         }
     } catch (error) {
         console.error('Play card error:', error);
@@ -400,30 +417,72 @@ function handleCardInputRequest(cardType, requirements) {
 function updateGameStatus(gameStatus) {
     console.log('Updating game status:', gameStatus);
     
-    // Handle both camelCase and PascalCase property names
-    const players = gameStatus.Players || gameStatus.players;
-    const yourCard = gameStatus.YourCard !== undefined ? gameStatus.YourCard : gameStatus.yourCard;
+    // Extract properties from InitialGameStatusDto
+    const playersStatus = gameStatus.OtherPlayersPublicData || gameStatus.otherPlayersPublicData || [];
+    const yourCards = gameStatus.YourCards || gameStatus.yourCards || [];
+    const isProtected = gameStatus.IsProtected !== undefined ? gameStatus.IsProtected : gameStatus.isProtected;
     const firstPlayerIndex = gameStatus.FirstPlayerIndex !== undefined ? gameStatus.FirstPlayerIndex : gameStatus.firstPlayerIndex;
+    const currentPlayerScore = gameStatus.Score !== undefined ? gameStatus.Score : gameStatus.score;
+    const players = gameStatus.AllPlayersInOrder || gameStatus.allPlayersInOrder || [];
     
-    // Update player's card if they have one
-    if (yourCard !== undefined) {
-        updatePlayerCard(yourCard);
+    // Update player's cards (now it's an array of cards)
+    if (yourCards && yourCards.length > 0) {
+        console.log('Your cards:', yourCards);
+        playerCards = yourCards; // Store cards globally
+        
+        // If player has multiple cards, show the first one in the UI
+        // In a complete implementation, you'd display all cards
+        updatePlayerCard(yourCards[0]);
+        
+        // Display all cards in hand
+        const cardNames = yourCards.map(cardType => CARD_TYPES[cardType] || 'Unknown');
+        addGameMessage(`Your cards: ${cardNames.join(', ')}`, 'info');
+        
+        // Update card buttons to show only playable cards
+        generateCardButtons();
+    } else if (gameStatus.YourCards !== undefined || gameStatus.yourCards !== undefined) {
+        // Cards array was provided but empty - player has no cards
+        playerCards = [];
+        addGameMessage('No cards in hand', 'info');
+        generateCardButtons();
     }
     
-    // Update player list or game state display
-    if (players) {
-        console.log('Current players:', players);
-        currentGamePlayers = players; // Store players for modal use
-        updatePlayersList(players);
+    // Update protection status
+    if (isProtected !== undefined) {
+        const protectionMsg = isProtected ? 'You are protected this turn' : 'Your protection has ended';
+        if (isProtected) {
+            addGameMessage(protectionMsg, 'success');
+        }
     }
+    
+    // Update current player's score
+    if (currentPlayerScore !== undefined) {
+        addGameMessage(`Your score: ${currentPlayerScore}`, 'info');
+    }
+    
+    // Update player list display
+    if (playersStatus && playersStatus.length > 0) {
+        console.log('Other players:', playersStatus);
+        currentGamePlayers = playersStatus; // Store players for modal use
+        updatePlayersList(playersStatus);
+    }
+
+    console.log('First player index:', firstPlayerIndex);
+    console.log('All players:', players);
     
     // Show whose turn it is
-    if (players && firstPlayerIndex !== undefined) {
-        const currentPlayer = players[firstPlayerIndex];
-        if (currentPlayer) {
-            // Handle both naming conventions for player properties
-            const username = currentPlayer.Username || currentPlayer.username;
-            addGameMessage(`It's ${username}'s turn`, 'info');
+    if (players && players.length > 0 && firstPlayerIndex !== undefined) {
+        if (firstPlayerIndex >= 0 && firstPlayerIndex < players.length) {
+            const currentPlayer = players[firstPlayerIndex];
+            // Find the username of the current player using playersStatus
+            let username = '';
+            const playerObj = playersStatus.find(p => (p.UserEmail || p.userEmail) === currentPlayer);
+            if (playerObj) {
+                username = playerObj.Username || playerObj.username || '';
+                addGameMessage(`It's ${username}'s turn`, 'info');
+            } else {
+                addGameMessage("It's your turn!", 'success');
+            }
         }
     }
 }
@@ -756,16 +815,29 @@ async function connectToSignalR() {
 function setupSignalRHandlers() {
     if (!signalRConnection) return;
     
-    signalRConnection.on('GameStarted', () => {
+    signalRConnection.on('GameStarted', (gameStatus) => {
+        playerCards = []; // Clear old cards when a new game starts
         showMessage('Game started!', 'success');
         showGame();
         addGameMessage('Game has started!', 'success');
+        
+        // Process the initial game status data received from server
+        if (gameStatus) {
+            console.log('Received initial game status:', gameStatus);
+            updateGameStatus(gameStatus);
+        }
     });
     
     signalRConnection.on('PlayerCard', (card) => {
         console.log('Received player card:', card);
+        // Add the card to player's hand if not already present
+        if (!playerCards.includes(card)) {
+            playerCards.push(card);
+        }
         updatePlayerCard(card);
         addGameMessage(`Your card: ${CARD_TYPES[card]}`, 'info');
+        // Update the card buttons to reflect the new hand
+        generateCardButtons();
     });
     
     signalRConnection.on('GameStartError', (error) => {
@@ -887,14 +959,25 @@ function generateCardButtons() {
     const cardButtonsContainer = document.getElementById('card-buttons');
     cardButtonsContainer.innerHTML = '';
     
-    // Generate buttons for all card types (in a real game, this would be based on the player's hand)
-    Object.entries(CARD_TYPES).forEach(([value, name]) => {
-        const button = document.createElement('button');
-        button.className = 'card-btn';
-        button.textContent = name;
-        button.onclick = () => handlePlayCard(value);
-        cardButtonsContainer.appendChild(button);
-    });
+    // Generate buttons based on the player's actual cards
+    if (playerCards && playerCards.length > 0) {
+        playerCards.forEach((cardType, index) => {
+            const button = document.createElement('button');
+            button.className = 'card-btn';
+            button.textContent = CARD_TYPES[cardType] || 'Unknown';
+            button.onclick = () => handlePlayCard(cardType);
+            cardButtonsContainer.appendChild(button);
+        });
+    } else {
+        // Show message if no cards available
+        const messageDiv = document.createElement('div');
+        messageDiv.className = 'no-cards-message';
+        messageDiv.textContent = 'No cards in hand';
+        messageDiv.style.padding = '1rem';
+        messageDiv.style.color = '#666';
+        messageDiv.style.textAlign = 'center';
+        cardButtonsContainer.appendChild(messageDiv);
+    }
 }
 
 function addGameMessage(message, type = 'info') {

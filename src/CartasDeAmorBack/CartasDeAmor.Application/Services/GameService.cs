@@ -4,6 +4,8 @@ using CartasDeAmor.Domain.Factories;
 using CartasDeAmor.Application.DTOs;
 using CartasDeAmor.Application.Interfaces;
 using CartasDeAmor.Domain.Entities;
+using CartasDeAmor.Application.Extensions;
+using Microsoft.Extensions.Logging;
 
 namespace CartasDeAmor.Application.Services;
 
@@ -11,17 +13,54 @@ public class GameService : IGameService
 {
     private readonly IGameRoomRepository _roomRepository;
     private readonly IPlayerRepository _playerRepository;
+    private readonly ILogger<GameService> _logger;
 
-    public GameService(IGameRoomRepository roomRepository, IPlayerRepository playerRepository)
+    public GameService(IGameRoomRepository roomRepository, IPlayerRepository playerRepository, ILogger<GameService> logger)
     {
         _roomRepository = roomRepository;
         _playerRepository = playerRepository;
+        _logger = logger;
+        _logger.LogInformation("GameService initialized");
     }
 
-    public async Task<IList<GameStatusDto>> StartGameAsync(Guid roomId, string hostEmail)
+    private List<InitialGameStatusDto> GetGameStatusDtos(Game game)
     {
-        List<GameStatusDto> startGameDtos = [];
+        List<InitialGameStatusDto> startGameDtos = [];
 
+        // Create a personalized GameStatusDto for each player
+        foreach (var player in game.Players)
+        {
+            var playersStatuses = new List<PlayerStatusDto>();
+            var players = game.Players.ToList();
+            players.RemoveAll(p => p.UserEmail == player.UserEmail); // Exclude the current player
+
+            playersStatuses.AddRange(
+                players.Select(p => new PlayerStatusDto
+                {
+                    UserEmail = p.UserEmail,
+                    Username = p.Username,
+                    IsProtected = p.Protected,
+                    Score = p.Score,
+                    CardsInHand = p.HoldingCards.Count
+                })
+            );
+
+            // Add the current player's private information
+            startGameDtos.Add(new InitialGameStatusDto
+            {
+                OtherPlayersPublicData = playersStatuses,
+                YourCards = player.HoldingCards,
+                AllPlayersInOrder = game.Players.Select(p => p.UserEmail).ToList(),
+                FirstPlayerIndex = game.CurrentPlayerIndex,
+                IsProtected = player.Protected
+            });
+        }
+
+        return startGameDtos;
+    }
+
+    public async Task<IList<InitialGameStatusDto>> StartGameAsync(Guid roomId, string hostEmail)
+    {
         // Get the game room
         var game = await _roomRepository.GetByIdAsync(roomId) ?? throw new InvalidOperationException("Room not found");
 
@@ -37,63 +76,12 @@ public class GameService : IGameService
             throw new InvalidOperationException("At least 2 players are required to start the game");
         }
 
-        var playersNames = game.Players.Select(p => p.UserEmail).ToList();
-
-        // Create and shuffle the deck
-        var deck = CardFactory.CreateShuffledDeck().Select(c => c.CardType).ToList();
-
-        // Reserve one card for the end of the round
-        game.ReservedCard = deck[0];
-        deck.RemoveAt(0);
-
-        // Deal one card to each player
-        var players = game.Players.ToList();
-
-        var playerStatuses = new List<PlayerStatus>();
-        for (int i = 0; i < players.Count; i++)
-        {
-            players[i].HoldingCard = deck[i];
-            players[i].PlayedCards = [];
-            players[i].Protected = false;
-            await _playerRepository.UpdateAsync(players[i]);
-
-            playerStatuses.Add(new PlayerStatus
-            {
-                UserEmail = players[i].UserEmail,
-                Username = players[i].Username,
-                IsProtected = players[i].Protected,
-                Score = players[i].Score,
-                CardsInHand = 1 // Each player starts with one card
-            });
-        }
-
-        for (int i = 0; i < players.Count; i++)
-        {
-            startGameDtos.Add(new GameStatusDto
-            {
-                Players = playerStatuses,
-                YourCard = players[i].HoldingCard ?? default,
-                FirstPlayerIndex = 0,
-            });
-        }
-
-        // Remove dealt cards from deck
-        for (int i = 0; i < players.Count; i++)
-        {
-            deck.RemoveAt(0);
-        }
-
-        // Store remaining deck in the game
-        game.CardsDeck = deck;
-
-        // Set game as started and set current player index
+        game.StartNewRound();
         game.GameStarted = true;
-        game.CurrentPlayerIndex = 0;
 
-        // Update the game
         await _roomRepository.UpdateAsync(game);
 
-        return startGameDtos;
+        return GetGameStatusDtos(game);
     }
 
     public async Task<IList<Player>> GetPlayersAsync(Guid roomId)
@@ -135,7 +123,7 @@ public class GameService : IGameService
         return Task.FromResult(card.GetCardActionRequirements().ToArray());
     }
 
-    public async Task<GameStatusDto> PlayCardAsync(Guid roomId, string userEmail, CardType cardType)
+    public async Task<InitialGameStatusDto> PlayCardAsync(Guid roomId, string userEmail, CardType cardType)
     {
         var game = await _roomRepository.GetByIdAsync(roomId);
         if (game == null)
@@ -158,7 +146,7 @@ public class GameService : IGameService
         var currentPlayer = players[game.CurrentPlayerIndex];
 
         // Verify the player has the card they're trying to play
-        if (currentPlayer.HoldingCard != cardType)
+        if (currentPlayer.HoldingCards.Contains(cardType))
         {
             throw new InvalidOperationException("You don't have that card");
         }
@@ -177,14 +165,14 @@ public class GameService : IGameService
         // Play the card (apply its effects)
         // For now, we'll just move the card to played cards and draw a new one
         currentPlayer.PlayedCards.Add(cardType);
-        currentPlayer.HoldingCard = null;
+        currentPlayer.HoldingCards.Remove(cardType);
 
         // Draw a new card if there are cards left in the deck
         if (game.CardsDeck.Any())
         {
             var newCard = game.CardsDeck.First();
             game.CardsDeck.Remove(newCard);
-            currentPlayer.HoldingCard = newCard;
+            currentPlayer.HoldingCards.Add(newCard);
         }
 
         // Move to next player
@@ -195,24 +183,24 @@ public class GameService : IGameService
         await _roomRepository.UpdateAsync(game);
 
         // Return the new game status
-        var playerStatuses = players.Select(p => new PlayerStatus
+        var playerStatuses = players.Select(p => new PlayerStatusDto
         {
             UserEmail = p.UserEmail,
             Username = p.Username,
             IsProtected = p.Protected,
             Score = p.Score,
-            CardsInHand = p.HoldingCard.HasValue ? 1 : 0
+            CardsInHand = p.HoldingCards.Count
         }).ToList();
 
-        return new GameStatusDto
+        return new InitialGameStatusDto
         {
-            Players = playerStatuses,
-            YourCard = currentPlayer.HoldingCard ?? default,
+            OtherPlayersPublicData = playerStatuses,
+            YourCards = currentPlayer.HoldingCards,
             FirstPlayerIndex = game.CurrentPlayerIndex,
         };
     }
 
-    public async Task<GameStatusDto> PlayCardWithInputAsync(Guid roomId, string userEmail, CardType cardType, object[] additionalInputs)
+    public async Task<InitialGameStatusDto> PlayCardWithInputAsync(Guid roomId, string userEmail, CardType cardType, object[] additionalInputs)
     {
         var game = await _roomRepository.GetByIdAsync(roomId);
         if (game == null)
@@ -235,7 +223,7 @@ public class GameService : IGameService
         var currentPlayer = players[game.CurrentPlayerIndex];
 
         // Verify the player has the card they're trying to play
-        if (currentPlayer.HoldingCard != cardType)
+        if (currentPlayer.HoldingCards.Contains(cardType))
         {
             throw new InvalidOperationException("You don't have that card");
         }
@@ -246,14 +234,14 @@ public class GameService : IGameService
         // For now, we'll implement a basic version that just plays the card
         // In a full implementation, we would handle the specific card logic with the additional inputs
         currentPlayer.PlayedCards.Add(cardType);
-        currentPlayer.HoldingCard = null;
+        currentPlayer.HoldingCards = [];
 
         // Draw a new card if there are cards left in the deck
         if (game.CardsDeck.Any())
         {
             var newCard = game.CardsDeck.First();
             game.CardsDeck.Remove(newCard);
-            currentPlayer.HoldingCard = newCard;
+            currentPlayer.HoldingCards.Add(newCard);
         }
 
         // Move to next player
@@ -264,19 +252,19 @@ public class GameService : IGameService
         await _roomRepository.UpdateAsync(game);
 
         // Return the new game status
-        var playerStatuses = players.Select(p => new PlayerStatus
+        var playerStatuses = players.Select(p => new PlayerStatusDto
         {
             UserEmail = p.UserEmail,
             Username = p.Username,
             IsProtected = p.Protected,
             Score = p.Score,
-            CardsInHand = p.HoldingCard.HasValue ? 1 : 0
+            CardsInHand = p.HoldingCards.Count
         }).ToList();
 
-        return new GameStatusDto
+        return new InitialGameStatusDto
         {
-            Players = playerStatuses,
-            YourCard = currentPlayer.HoldingCard ?? default,
+            OtherPlayersPublicData = playerStatuses,
+            YourCards = currentPlayer.HoldingCards,
             FirstPlayerIndex = game.CurrentPlayerIndex,
         };
     }

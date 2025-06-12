@@ -6,7 +6,7 @@ namespace CartasDeAmor.Application.Interfaces;
 
 public interface IGameService
 {
-    Task<IList<GameStatusDto>> StartGameAsync(Guid roomId, string hostEmail);
+    Task<IList<InitialGameStatusDto>> StartGameAsync(Guid roomId, string hostEmail);
 
     Task<IList<Player>> GetPlayersAsync(Guid roomId);
 
@@ -14,7 +14,7 @@ public interface IGameService
 
     Task<CardActionRequirements[]> GetCardRequirementsAsync(CardType cardType);
 
-    Task<GameStatusDto> PlayCardAsync(Guid roomId, string userEmail, CardType cardType);
+    Task<InitialGameStatusDto> PlayCardAsync(Guid roomId, string userEmail, CardType cardType);
 
-    Task<GameStatusDto> PlayCardWithInputAsync(Guid roomId, string userEmail, CardType cardType, object[] additionalInputs);
+    Task<InitialGameStatusDto> PlayCardWithInputAsync(Guid roomId, string userEmail, CardType cardType, object[] additionalInputs);
 }
