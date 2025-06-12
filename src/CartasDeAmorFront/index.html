@@ -90,7 +90,10 @@
                     <!-- Current Room Info -->
                     <div id="current-room" class="current-room" style="display: none;">
                         <h3>Current Room: <span id="current-room-name"></span></h3>
-                        <p>Room ID: <span id="current-room-id"></span></p>
+                        <div class="room-id-container">
+                            <p>Room ID: <span id="current-room-id"></span></p>
+                            <button id="copy-room-id-btn" class="btn btn-copy" title="Copy Room ID">📋</button>
+                        </div>
                         <div class="room-actions">
                             <button id="start-game-btn" class="btn btn-primary">Start Game</button>
                             <button id="leave-room-btn" class="btn btn-secondary">Leave Room</button>

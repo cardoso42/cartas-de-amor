@@ -68,6 +68,7 @@ function setupEventListeners() {
     document.getElementById('join-room-form').addEventListener('submit', handleJoinRoom);
     document.getElementById('leave-room-btn').addEventListener('click', handleLeaveRoom);
     document.getElementById('delete-room-btn').addEventListener('click', handleDeleteRoom);
+    document.getElementById('copy-room-id-btn').addEventListener('click', handleCopyRoomId);
     
     // Game controls
     document.getElementById('start-game-btn').addEventListener('click', handleStartGame);
@@ -336,6 +337,39 @@ async function handleDeleteRoom() {
     } catch (error) {
         console.error('Delete room error:', error);
         showMessage('Network error while deleting room', 'error');
+    }
+}
+
+async function handleCopyRoomId() {
+    if (!currentRoom) return;
+    
+    try {
+        await navigator.clipboard.writeText(currentRoom.id);
+        showMessage('Room ID copied to clipboard!', 'success');
+        
+        // Visual feedback: briefly change button text
+        const button = document.getElementById('copy-room-id-btn');
+        const originalText = button.textContent;
+        button.textContent = '✓';
+        setTimeout(() => {
+            button.textContent = originalText;
+        }, 1500);
+    } catch (error) {
+        console.error('Failed to copy room ID:', error);
+        
+        // Fallback for browsers that don't support clipboard API
+        const textArea = document.createElement('textarea');
+        textArea.value = currentRoom.id;
+        document.body.appendChild(textArea);
+        textArea.select();
+        try {
+            document.execCommand('copy');
+            showMessage('Room ID copied to clipboard!', 'success');
+        } catch (fallbackError) {
+            console.error('Fallback copy failed:', fallbackError);
+            showMessage('Failed to copy room ID. Please copy manually: ' + currentRoom.id, 'error');
+        }
+        document.body.removeChild(textArea);
     }
 }
 

@@ -109,6 +109,30 @@ body {
     opacity: 0.6;
 }
 
+.btn-copy {
+    background: #17a2b8;
+    color: white;
+    padding: 0.5rem 0.75rem;
+    font-size: 0.9rem;
+    border-radius: 6px;
+    margin-left: 0.5rem;
+}
+
+.btn-copy:hover {
+    background: #138496;
+    transform: translateY(-2px);
+}
+
+.room-id-container {
+    display: flex;
+    align-items: center;
+    margin-bottom: 1rem;
+}
+
+.room-id-container p {
+    margin: 0;
+}
+
 /* Auth Section */
 .auth-section {
     display: flex;
