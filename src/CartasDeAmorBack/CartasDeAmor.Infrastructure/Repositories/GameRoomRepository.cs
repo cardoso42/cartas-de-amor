@@ -23,14 +23,14 @@ public class GameRoomRepository : IGameRoomRepository
     public async Task<Game?> GetByIdAsync(Guid id)
     {
         return await _context.Games
-            .Include(g => g.Players)
+            .Include(g => g.Players.OrderBy(p => p.Id))
             .FirstOrDefaultAsync(g => g.Id == id);
     }
 
     public async Task<IEnumerable<Game>> GetAllAsync()
     {
         return await _context.Games
-            .Include(g => g.Players)
+            .Include(g => g.Players.OrderBy(p => p.Id))
             .ToListAsync();
     }
 

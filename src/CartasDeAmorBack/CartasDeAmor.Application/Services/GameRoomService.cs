@@ -16,19 +16,18 @@ public class GameRoomService : IGameRoomService
         _userRepository = userRepository;
     }
 
-    private async Task<Player> CreatePlayer(Guid gameId, string userEmail)
+    private async Task<Player> CreatePlayer(Game game, string userEmail)
     {
-        var user = await _userRepository.GetByEmailAsync(userEmail);
-        if (user == null)
-        {
-            throw new InvalidOperationException("User not found");
-        }
+        var user = await _userRepository.GetByEmailAsync(userEmail) ?? throw new InvalidOperationException("User not found");
+
+        var currentId = game.Players.LastOrDefault()?.Id ?? 0;
 
         return new Player
         {
-            GameId = gameId,
+            GameId = game.Id,
             Username = user.Username,
             UserEmail = userEmail,
+            Id = currentId + 1,
             HoldingCards = []
         };
     }
@@ -42,7 +41,7 @@ public class GameRoomService : IGameRoomService
             HostEmail = creatorEmail,
         };
 
-        var host = await CreatePlayer(game.Id, creatorEmail);
+        var host = await CreatePlayer(game, creatorEmail);
         game.Players.Add(host);
 
         await _roomRepository.CreateAsync(game);
@@ -67,12 +66,7 @@ public class GameRoomService : IGameRoomService
 
     public async Task AddUserToRoomAsync(Guid roomId, string userEmail)
     {
-        var game = await _roomRepository.GetByIdAsync(roomId);
-        if (game == null)
-        {
-            throw new InvalidOperationException("Room not found");
-        }
-
+        var game = await _roomRepository.GetByIdAsync(roomId) ?? throw new InvalidOperationException("Room not found");
         if (game.Players.Any(p => p.UserEmail == userEmail))
         {
             throw new InvalidOperationException("User is already in the room");
@@ -83,7 +77,7 @@ public class GameRoomService : IGameRoomService
             throw new InvalidOperationException("Room is full");
         }
 
-        var player = await CreatePlayer(roomId, userEmail);
+        var player = await CreatePlayer(game, userEmail);
         game.Players.Add(player);
         
         await _roomRepository.UpdateAsync(game);

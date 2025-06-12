@@ -97,12 +97,7 @@ public class GameService : IGameService
 
     public async Task<bool> IsPlayerTurnAsync(Guid roomId, string userEmail)
     {
-        var game = await _roomRepository.GetByIdAsync(roomId);
-        if (game == null)
-        {
-            throw new InvalidOperationException("Room not found");
-        }
-
+        var game = await _roomRepository.GetByIdAsync(roomId) ?? throw new InvalidOperationException("Room not found");
         if (!game.GameStarted)
         {
             return false;
@@ -230,7 +225,7 @@ public class GameService : IGameService
 
         // Create the card instance and apply its effects with additional inputs
         var card = CardFactory.Create(cardType);
-        
+
         // For now, we'll implement a basic version that just plays the card
         // In a full implementation, we would handle the specific card logic with the additional inputs
         currentPlayer.PlayedCards.Add(cardType);
@@ -267,5 +262,30 @@ public class GameService : IGameService
             YourCards = currentPlayer.HoldingCards,
             FirstPlayerIndex = game.CurrentPlayerIndex,
         };
+    }
+    
+    public async Task<CardType> DrawCardAsync(Guid roomId, string userEmail)
+    {
+        var game = await _roomRepository.GetByIdAsync(roomId) ?? throw new InvalidOperationException("Room not found");
+
+        if (!game.GameStarted)
+        {
+            throw new InvalidOperationException("Game has not started yet");
+        }
+
+        // Verify it's the player's turn
+        if (!await IsPlayerTurnAsync(roomId, userEmail))
+        {
+            throw new InvalidOperationException("It's not your turn");
+        }
+
+        var players = game.Players.ToList();
+        var currentPlayer = players[game.CurrentPlayerIndex];
+
+        var drawnCard = game.HandCardToPlayer(currentPlayer.UserEmail);
+
+        await _roomRepository.UpdateAsync(game);
+
+        return drawnCard; 
     }
 }

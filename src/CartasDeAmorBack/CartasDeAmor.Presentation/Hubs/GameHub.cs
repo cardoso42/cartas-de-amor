@@ -48,13 +48,41 @@ public class GameHub : Hub
         _logger.LogInformation("User {User} left room {RoomId}", userEmail, roomId);
     }
 
+    public async Task DrawCard(Guid roomId)
+    {
+        var userEmail = _accountService.GetEmailFromTokenAsync(Context.User);
+        _logger.LogInformation("User {User} is drawing a card in room {RoomId}", userEmail, roomId);
+
+        try
+        {
+            // Draw a card from the game service
+            var drawnCard = await _gameService.DrawCardAsync(roomId, userEmail);
+
+            // Notify all players about the drawn card
+            await Clients.Client(Context.ConnectionId).SendAsync("CardDrawn", drawnCard);
+            await Clients.Group(roomId.ToString()).SendAsync("PlayerDrewCard", userEmail);
+
+            _logger.LogInformation("User {User} drew card {CardType} in room {RoomId}", userEmail, drawnCard, roomId);
+        }
+        catch (InvalidOperationException ex)
+        {
+            _logger.LogWarning(ex, "Failed to draw card for user {User} in room {RoomId}", userEmail, roomId);
+            await Clients.Caller.SendAsync("DrawCardError", ex.Message);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error drawing card for user {User} in room {RoomId}", userEmail, roomId);
+            throw new HubException("Failed to draw card");
+        }
+    }
+
     public async Task StartGame(Guid roomId)
     {
         // Verify if the user is authenticated
         _logger.LogInformation("StartGame called for room {RoomId}", roomId);
         _logger.LogInformation("User Identity: {Identity}", Context.User?.Identity?.Name);
         _logger.LogInformation("User IsAuthenticated: {IsAuthenticated}", Context.User?.Identity?.IsAuthenticated);
-        
+
         var userEmail = _accountService.GetEmailFromTokenAsync(Context.User);
         _logger.LogInformation("User email found: {UserEmail}", userEmail);
 

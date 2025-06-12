@@ -217,6 +217,18 @@ public static class GameExtension
         return game.Players.FirstOrDefault(p => p.Score >= targetScore);
     }
 
+    public static CardType HandCardToPlayer(this Game game, string playerEmail)
+    {
+        var player = game.GetPlayerByEmail(playerEmail);
+        if (player == null)
+            throw new InvalidOperationException($"Player with email {playerEmail} not found in the game.");
+
+        var card = game.DrawCard() ?? throw new InvalidOperationException("No cards left in the deck to draw.");
+        player.HandCard(card);
+
+        return card;
+    }
+
     /// <summary>
     /// Resets the game for a new round
     /// </summary>

@@ -72,6 +72,7 @@ function setupEventListeners() {
     // Game controls
     document.getElementById('start-game-btn').addEventListener('click', handleStartGame);
     document.getElementById('back-to-lobby-btn').addEventListener('click', handleBackToLobby);
+    document.getElementById('draw-card-btn').addEventListener('click', handleDrawCard);
 }
 
 // Auth functions
@@ -369,6 +370,25 @@ function handleBackToLobby() {
     clearGameLog();
 }
 
+async function handleDrawCard() {
+    if (!currentRoom) {
+        showMessage('No active room', 'error');
+        return;
+    }
+    
+    try {
+        if (signalRConnection && signalRConnection.state === signalR.HubConnectionState.Connected) {
+            await signalRConnection.invoke('DrawCard', currentRoom.id);
+            addGameMessage('Attempting to draw a card...', 'info');
+        } else {
+            showMessage('Not connected to game server', 'error');
+        }
+    } catch (error) {
+        console.error('Draw card error:', error);
+        showMessage('Failed to draw card', 'error');
+    }
+}
+
 async function handlePlayCard(cardType) {
     if (!currentRoom) return;
     
@@ -471,6 +491,7 @@ function updateGameStatus(gameStatus) {
     console.log('All players:', players);
     
     // Show whose turn it is
+    let isMyTurn = false;
     if (players && players.length > 0 && firstPlayerIndex !== undefined) {
         if (firstPlayerIndex >= 0 && firstPlayerIndex < players.length) {
             const currentPlayer = players[firstPlayerIndex];
@@ -481,10 +502,13 @@ function updateGameStatus(gameStatus) {
                 username = playerObj.Username || playerObj.username || '';
                 addGameMessage(`It's ${username}'s turn`, 'info');
             } else {
+                isMyTurn = true;
                 addGameMessage("It's your turn!", 'success');
             }
         }
     }
+
+    updateDrawCardButton(isMyTurn);
 }
 
 function updatePlayersList(players) {
@@ -865,6 +889,27 @@ function setupSignalRHandlers() {
         showMessage(`Card play failed: ${error}`, 'error');
     });
     
+    signalRConnection.on('CardDrawn', (drawnCard) => {
+        console.log('Card drawn:', drawnCard);
+        // Add the drawn card to player's hand
+        if (!playerCards.includes(drawnCard)) {
+            playerCards.push(drawnCard);
+        }
+        updatePlayerCard(drawnCard);
+        addGameMessage(`You drew: ${CARD_TYPES[drawnCard]}`, 'success');
+        generateCardButtons(); // Update the UI
+    });
+    
+    signalRConnection.on('PlayerDrewCard', (userEmail) => {
+        console.log('Player drew card:', userEmail);
+        addGameMessage(`${userEmail} drew a card`, 'info');
+    });
+    
+    signalRConnection.on('DrawCardError', (error) => {
+        console.error('Draw card error from server:', error);
+        showMessage(`Draw card failed: ${error}`, 'error');
+    });
+    
     signalRConnection.on('UserNotAuthenticated', () => {
         console.error('User not authenticated on SignalR');
         showMessage('Authentication failed. Please login again.', 'error');
@@ -930,6 +975,8 @@ function showGame() {
     }
     
     generateCardButtons();
+    // Initialize draw card button as disabled until we know whose turn it is
+    updateDrawCardButton(false);
 }
 
 function updateRoomDisplay() {
@@ -945,6 +992,20 @@ function updateRoomDisplay() {
         document.getElementById('delete-room-btn').style.display = currentRoom.isHost ? 'inline-block' : 'none';
     } else {
         currentRoomDiv.style.display = 'none';
+    }
+}
+
+function updateDrawCardButton(isMyTurn) {
+    const drawCardBtn = document.getElementById('draw-card-btn');
+    if (drawCardBtn) {
+        drawCardBtn.disabled = !isMyTurn;
+        if (isMyTurn) {
+            drawCardBtn.textContent = 'Draw Card';
+            drawCardBtn.title = 'Click to draw a new card';
+        } else {
+            drawCardBtn.textContent = 'Draw Card (Not Your Turn)';
+            drawCardBtn.title = 'Wait for your turn to draw a card';
+        }
     }
 }
 

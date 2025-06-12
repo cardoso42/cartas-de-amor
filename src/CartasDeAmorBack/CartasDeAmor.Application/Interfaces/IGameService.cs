@@ -17,4 +17,6 @@ public interface IGameService
     Task<InitialGameStatusDto> PlayCardAsync(Guid roomId, string userEmail, CardType cardType);
 
     Task<InitialGameStatusDto> PlayCardWithInputAsync(Guid roomId, string userEmail, CardType cardType, object[] additionalInputs);
+
+    Task<CardType> DrawCardAsync(Guid roomId, string userEmail);
 }

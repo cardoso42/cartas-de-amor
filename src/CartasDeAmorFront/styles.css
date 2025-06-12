@@ -90,6 +90,25 @@ body {
     transform: translateY(-2px);
 }
 
+.btn-success {
+    background: #28a745;
+    color: white;
+}
+
+.btn-success:hover {
+    background: #218838;
+    transform: translateY(-2px);
+}
+
+.btn:disabled {
+    background: #6c757d !important;
+    color: #fff !important;
+    cursor: not-allowed !important;
+    transform: none !important;
+    box-shadow: none !important;
+    opacity: 0.6;
+}
+
 /* Auth Section */
 .auth-section {
     display: flex;
@@ -237,6 +256,20 @@ body {
 .game-actions h3 {
     color: #667eea;
     margin-bottom: 1rem;
+}
+
+.game-actions h4 {
+    color: #667eea;
+    margin-bottom: 1rem;
+    margin-top: 1.5rem;
+    font-size: 1.1rem;
+}
+
+.action-buttons {
+    display: flex;
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+    flex-wrap: wrap;
 }
 
 .card-buttons {

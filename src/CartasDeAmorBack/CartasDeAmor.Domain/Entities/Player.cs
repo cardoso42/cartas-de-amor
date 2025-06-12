@@ -4,7 +4,7 @@ namespace CartasDeAmor.Domain.Entities;
 
 public class Player
 {
-    // TODO: Add an in game id to save sending email each time
+    public int Id { get; set; }
     public Guid GameId { get; set; }
     public required string Username { get; set; }
     public required string UserEmail { get; set; }
