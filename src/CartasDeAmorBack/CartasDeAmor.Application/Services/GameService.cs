@@ -51,7 +51,7 @@ public class GameService : IGameService
                 OtherPlayersPublicData = playersStatuses,
                 YourCards = player.HoldingCards,
                 AllPlayersInOrder = game.Players.Select(p => p.UserEmail).ToList(),
-                FirstPlayerIndex = game.CurrentPlayerIndex,
+                FirstPlayerIndex = game.CurrentPlayerIndex + 1,
                 IsProtected = player.Protected
             });
         }
@@ -76,8 +76,8 @@ public class GameService : IGameService
             throw new InvalidOperationException("At least 2 players are required to start the game");
         }
 
-        game.StartNewRound();
         game.GameStarted = true;
+        game.StartNewRound();
 
         await _roomRepository.UpdateAsync(game);
 
@@ -93,6 +93,15 @@ public class GameService : IGameService
         }
 
         return [.. game.Players];
+    }
+
+    public async Task<PlayerUpdateDto> GetPlayerStatusAsync(Guid roomId, string userEmail)
+    {
+        var game = await _roomRepository.GetByIdAsync(roomId) ?? throw new InvalidOperationException("Room not found");
+
+        var player = game.Players.FirstOrDefault(p => p.UserEmail == userEmail) ?? throw new InvalidOperationException("Player not found in the game");
+
+        return player.ToPlayerUpdateDto();
     }
 
     public async Task<bool> IsPlayerTurnAsync(Guid roomId, string userEmail)
@@ -112,6 +121,27 @@ public class GameService : IGameService
         return players[game.CurrentPlayerIndex].UserEmail == userEmail;
     }
 
+    public async Task<PlayerUpdateDto> DrawCardAsync(Guid roomId, string userEmail)
+    {
+        var game = await _roomRepository.GetByIdAsync(roomId) ?? throw new InvalidOperationException("Room not found");
+
+        if (!game.GameStarted)
+        {
+            throw new InvalidOperationException("Game has not started yet");
+        }
+
+        // Verify it's the player's turn
+        if (!await IsPlayerTurnAsync(roomId, userEmail))
+        {
+            throw new InvalidOperationException("It's not your turn");
+        }
+
+        var players = game.Players.ToList();
+        var currentPlayer = players[game.CurrentPlayerIndex];
+
+        return currentPlayer.ToPlayerUpdateDto();
+    }
+
     public Task<CardActionRequirements[]> GetCardRequirementsAsync(CardType cardType)
     {
         var card = CardFactory.Create(cardType);
@@ -120,12 +150,7 @@ public class GameService : IGameService
 
     public async Task<InitialGameStatusDto> PlayCardAsync(Guid roomId, string userEmail, CardType cardType)
     {
-        var game = await _roomRepository.GetByIdAsync(roomId);
-        if (game == null)
-        {
-            throw new InvalidOperationException("Room not found");
-        }
-
+        var game = await _roomRepository.GetByIdAsync(roomId) ?? throw new InvalidOperationException("Room not found");
         if (!game.GameStarted)
         {
             throw new InvalidOperationException("Game has not started yet");
@@ -263,8 +288,8 @@ public class GameService : IGameService
             FirstPlayerIndex = game.CurrentPlayerIndex,
         };
     }
-    
-    public async Task<CardType> DrawCardAsync(Guid roomId, string userEmail)
+
+    public async Task NextPlayerAsync(Guid roomId)
     {
         var game = await _roomRepository.GetByIdAsync(roomId) ?? throw new InvalidOperationException("Room not found");
 
@@ -273,19 +298,8 @@ public class GameService : IGameService
             throw new InvalidOperationException("Game has not started yet");
         }
 
-        // Verify it's the player's turn
-        if (!await IsPlayerTurnAsync(roomId, userEmail))
-        {
-            throw new InvalidOperationException("It's not your turn");
-        }
-
-        var players = game.Players.ToList();
-        var currentPlayer = players[game.CurrentPlayerIndex];
-
-        var drawnCard = game.HandCardToPlayer(currentPlayer.UserEmail);
+        game.AdvanceToNextPlayer();
 
         await _roomRepository.UpdateAsync(game);
-
-        return drawnCard; 
     }
 }

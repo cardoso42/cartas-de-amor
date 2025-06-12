@@ -23,6 +23,21 @@ public static class PlayerExtension
     }
 
     /// <summary>
+    /// Converts a Player entity to a PlayerUpdateDto
+    /// </summary>
+    public static PlayerUpdateDto ToPlayerUpdateDto(this Player player)
+    {
+        return new PlayerUpdateDto
+        {
+            UserEmail = player.UserEmail,
+            IsProtected = player.Protected,
+            HoldingCards = player.HoldingCards.ToList(),
+            PlayedCards = player.PlayedCards.ToList(),
+            Score = player.Score
+        };
+    }
+
+    /// <summary>
     /// Checks if the player has a specific card type in their hand
     /// </summary>
     public static bool HasCard(this Player player, CardType cardType)

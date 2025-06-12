@@ -32,10 +32,14 @@ public static class GameExtension
     /// Advances to the next player's turn
     /// </summary>
     public static void AdvanceToNextPlayer(this Game game)
-    {
+    {       
         if (game.Players.Count > 0)
         {
             game.CurrentPlayerIndex = (game.CurrentPlayerIndex + 1) % game.Players.Count;
+            var nextPlayer = game.Players.ElementAt(game.CurrentPlayerIndex);
+
+            game.HandCardToPlayer(nextPlayer.UserEmail);
+
             game.UpdatedAt = DateTime.UtcNow;
         }
     }
@@ -217,7 +221,7 @@ public static class GameExtension
         return game.Players.FirstOrDefault(p => p.Score >= targetScore);
     }
 
-    public static CardType HandCardToPlayer(this Game game, string playerEmail)
+    public static Player HandCardToPlayer(this Game game, string playerEmail)
     {
         var player = game.GetPlayerByEmail(playerEmail);
         if (player == null)
@@ -226,7 +230,7 @@ public static class GameExtension
         var card = game.DrawCard() ?? throw new InvalidOperationException("No cards left in the deck to draw.");
         player.HandCard(card);
 
-        return card;
+        return player;
     }
 
     /// <summary>
@@ -252,7 +256,7 @@ public static class GameExtension
         // Deal initial cards to players
         foreach (var player in game.Players)
         {
-            player.HoldingCards.Add(game.DrawCard() ?? throw new InvalidOperationException("Failed to draw initial card for player"));
+            player.HandCard(game.DrawCard() ?? throw new InvalidOperationException("Failed to draw initial card for player"));
         }
 
         // Reset current player index

@@ -55,14 +55,13 @@ public class GameHub : Hub
 
         try
         {
-            // Draw a card from the game service
-            var drawnCard = await _gameService.DrawCardAsync(roomId, userEmail);
+            var playerStatus = await _gameService.DrawCardAsync(roomId, userEmail);
 
             // Notify all players about the drawn card
-            await Clients.Client(Context.ConnectionId).SendAsync("CardDrawn", drawnCard);
+            await Clients.Client(Context.ConnectionId).SendAsync("CardDrawn", playerStatus);
             await Clients.Group(roomId.ToString()).SendAsync("PlayerDrewCard", userEmail);
 
-            _logger.LogInformation("User {User} drew card {CardType} in room {RoomId}", userEmail, drawnCard, roomId);
+            _logger.LogInformation("User {User} drew a card in room {RoomId}", userEmail, roomId);
         }
         catch (InvalidOperationException ex)
         {
@@ -92,9 +91,7 @@ public class GameHub : Hub
             var gameStatus = await _gameService.StartGameAsync(roomId, userEmail);
             var players = await _gameService.GetPlayersAsync(roomId);
 
-            // Notify all players that the game is starting
-
-            // Send each player their individual card privately
+            // Send each player the initial game status
             for (int i = 0; i < players.Count; i++)
             {
                 var connectionIds = await GetUserConnectionIds(players[i].UserEmail, roomId);
@@ -103,6 +100,9 @@ public class GameHub : Hub
                     await Clients.Client(connectionId).SendAsync("GameStarted", gameStatus[i]);
                 }
             }
+
+            // Prepare the game for the first player
+            await _gameService.NextPlayerAsync(roomId);
 
             _logger.LogInformation("Game started in room {RoomId} by host {HostEmail}", roomId, userEmail);
         }

@@ -923,14 +923,37 @@ function setupSignalRHandlers() {
         showMessage(`Card play failed: ${error}`, 'error');
     });
     
-    signalRConnection.on('CardDrawn', (drawnCard) => {
-        console.log('Card drawn:', drawnCard);
-        // Add the drawn card to player's hand
-        if (!playerCards.includes(drawnCard)) {
-            playerCards.push(drawnCard);
+    signalRConnection.on('CardDrawn', (playerUpdate) => {        
+        // Update player's full status from the PlayerUpdateDto
+        if (playerUpdate.HoldingCards || playerUpdate.holdingCards) {
+            const holdingCards = playerUpdate.HoldingCards || playerUpdate.holdingCards;
+            playerCards = holdingCards; // Update the full hand
+            
+            // Show which cards the player now has
+            const cardNames = holdingCards.map(cardType => CARD_TYPES[cardType] || 'Unknown');
+            addGameMessage(`Your cards: ${cardNames.join(', ')}`, 'success');
+            
+            // Update the UI to show the first card (or latest card drawn)
+            if (holdingCards.length > 0) {
+                updatePlayerCard(holdingCards[holdingCards.length - 1]); // Show the last card (newly drawn)
+            }
         }
-        updatePlayerCard(drawnCard);
-        addGameMessage(`You drew: ${CARD_TYPES[drawnCard]}`, 'success');
+
+        // Update protection status if provided
+        const isProtected = playerUpdate.IsProtected !== undefined ? playerUpdate.IsProtected : playerUpdate.isProtected;
+        if (isProtected !== undefined) {
+            const protectionMsg = isProtected ? 'You are protected this turn' : '';
+            if (isProtected) {
+                addGameMessage(protectionMsg, 'info');
+            }
+        }
+
+        // Update score if provided
+        const score = playerUpdate.Score !== undefined ? playerUpdate.Score : playerUpdate.score;
+        if (score !== undefined) {
+            addGameMessage(`Your score: ${score}`, 'info');
+        }
+
         generateCardButtons(); // Update the UI
     });
     
