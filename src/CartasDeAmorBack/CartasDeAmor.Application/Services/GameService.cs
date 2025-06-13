@@ -4,7 +4,6 @@ using CartasDeAmor.Domain.Factories;
 using CartasDeAmor.Application.DTOs;
 using CartasDeAmor.Application.Interfaces;
 using CartasDeAmor.Domain.Entities;
-using CartasDeAmor.Application.Extensions;
 using Microsoft.Extensions.Logging;
 
 namespace CartasDeAmor.Application.Services;
@@ -98,7 +97,7 @@ public class GameService : IGameService
 
         var player = game.Players.FirstOrDefault(p => p.UserEmail == userEmail) ?? throw new InvalidOperationException("Player not found in the game");
 
-        return player.ToPlayerUpdateDto();
+        return new PlayerUpdateDto(player);
     }
 
     public async Task<bool> IsPlayerTurnAsync(Guid roomId, string userEmail)
@@ -150,7 +149,7 @@ public class GameService : IGameService
         
         await _roomRepository.UpdateAsync(game);
 
-        return currentPlayer.ToPlayerUpdateDto();
+        return new PlayerUpdateDto(currentPlayer);
     }
 
     public Task<CardActionRequirements[]> GetCardRequirementsAsync(CardType cardType)

@@ -1,3 +1,4 @@
+using CartasDeAmor.Domain.Entities;
 using CartasDeAmor.Domain.Enums;
 
 namespace CartasDeAmor.Application.DTOs;
@@ -10,4 +11,16 @@ public class PlayerStatusDto
     public bool IsProtected { get; set; } = false;
     public int Score { get; set; } = 0;
     public int CardsInHand { get; set; } = 1;
+
+    public PlayerStatusDto() { }
+
+    public PlayerStatusDto(Player player)
+    {
+        UserEmail = player.UserEmail;
+        Username = player.Username;
+        IsProtected = player.Protected;
+        Score = player.Score;
+        CardsInHand = player.HoldingCards.Count;
+        Status = PlayerStatus.Waiting;
+    }
 }
