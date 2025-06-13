@@ -36,10 +36,6 @@ public static class GameExtension
         if (game.Players.Count > 0)
         {
             game.CurrentPlayerIndex = (game.CurrentPlayerIndex + 1) % game.Players.Count;
-            var nextPlayer = game.Players.ElementAt(game.CurrentPlayerIndex);
-
-            game.HandCardToPlayer(nextPlayer.UserEmail);
-
             game.UpdatedAt = DateTime.UtcNow;
         }
     }
@@ -261,6 +257,42 @@ public static class GameExtension
 
         // Reset current player index
         game.CurrentPlayerIndex = 0;
+        // Set game state to WaitingForDraw at the beginning of a round
+        game.TransitionToState(GameStateEnum.WaitingForDraw);
         game.UpdatedAt = DateTime.UtcNow;
     }
+
+    /// <summary>
+    /// Validates if a state transition is allowed and performs the transition
+    /// </summary>
+    public static void TransitionToState(this Game game, GameStateEnum newState)
+    {
+        bool isValid = CanTransitionToState(game, newState);
+        
+        if (!isValid)
+        {
+            throw new InvalidOperationException($"Invalid state transition from {game.GameState} to {newState}");
+        }
+        
+        game.GameState = newState;
+    }
+    
+    /// <summary>
+    /// Checks if a state transition is valid according to the game rules
+    /// </summary>
+    public static bool CanTransitionToState(this Game game, GameStateEnum newState)
+    {
+        if (game.GameState == newState)
+            return true;
+
+        return game.GameState switch
+        {
+            GameStateEnum.WaitingForPlayers => newState == GameStateEnum.WaitingForDraw,
+            GameStateEnum.WaitingForDraw => newState == GameStateEnum.WaitingForPlay,
+            GameStateEnum.WaitingForPlay => newState == GameStateEnum.WaitingForDraw || newState == GameStateEnum.Finished,
+            GameStateEnum.Finished => false,
+            _ => false,
+        };
+    }
+
 }

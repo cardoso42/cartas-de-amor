@@ -79,11 +79,7 @@ public class GameHub : Hub
     {
         // Verify if the user is authenticated
         _logger.LogInformation("StartGame called for room {RoomId}", roomId);
-        _logger.LogInformation("User Identity: {Identity}", Context.User?.Identity?.Name);
-        _logger.LogInformation("User IsAuthenticated: {IsAuthenticated}", Context.User?.Identity?.IsAuthenticated);
-
         var userEmail = _accountService.GetEmailFromTokenAsync(Context.User);
-        _logger.LogInformation("User email found: {UserEmail}", userEmail);
 
         try
         {
@@ -122,85 +118,6 @@ public class GameHub : Hub
     {
         var connections = _connectionMapping.GetConnections(userEmail).ToList();
         return Task.FromResult(connections);
-    }
-
-    public async Task PlayCard(Guid roomId, CardType cardType)
-    {
-        try
-        {
-            var userEmail = _accountService.GetEmailFromTokenAsync(Context.User);
-
-            // Verify if it's the user's turn
-            var isPlayerTurn = await _gameService.IsPlayerTurnAsync(roomId, userEmail);
-            if (!isPlayerTurn)
-            {
-                await Clients.Caller.SendAsync("PlayCardError", "It's not your turn");
-                return;
-            }
-
-            // Verify if the card requires more information
-            var cardRequirements = await _gameService.GetCardRequirementsAsync(cardType);
-            if (cardRequirements.Any(r => r != CardActionRequirements.None))
-            {
-                // If the card requires more information, request it from the client
-                await Clients.Caller.SendAsync("RequestCardInput", cardType, cardRequirements);
-                return;
-            }
-
-            // If the card does not require more information, apply its effect directly
-            var gameStatus = await _gameService.PlayCardAsync(roomId, userEmail, cardType);
-
-            // Send the new status to all the players in the room
-            await Clients.Group(roomId.ToString()).SendAsync("CardPlayed", userEmail, cardType);
-            await Clients.Group(roomId.ToString()).SendAsync("GameStatusUpdated", gameStatus);
-
-            _logger.LogInformation("Player {UserEmail} played card {CardType} in room {RoomId}", userEmail, cardType, roomId);
-        }
-        catch (InvalidOperationException ex)
-        {
-            _logger.LogWarning(ex, "Failed to play card {CardType} for user {UserEmail} in room {RoomId}", cardType, Context.User?.Identity?.Name, roomId);
-            await Clients.Caller.SendAsync("PlayCardError", ex.Message);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error playing card");
-            throw new HubException("Failed to play card");
-        }
-    }
-
-    public async Task InformCardInput(Guid roomId, CardType cardType, object[] additionalInputs)
-    {
-        try
-        {
-            var userEmail = _accountService.GetEmailFromTokenAsync(Context.User);
-
-            // Verify if it's the user's turn
-            var isPlayerTurn = await _gameService.IsPlayerTurnAsync(roomId, userEmail);
-            if (!isPlayerTurn)
-            {
-                await Clients.Caller.SendAsync("PlayCardError", "It's not your turn");
-                return;
-            }
-
-            // Play the card with additional inputs
-            var gameStatus = await _gameService.PlayCardWithInputAsync(roomId, userEmail, cardType, additionalInputs);
-
-            // Send the new status to all the players in the room
-            await Clients.Group(roomId.ToString()).SendAsync("CardPlayed", userEmail, cardType);
-            await Clients.Group(roomId.ToString()).SendAsync("GameStatusUpdated", gameStatus);
-
-            _logger.LogInformation("Player {UserEmail} played card {CardType} with additional inputs in room {RoomId}", userEmail, cardType, roomId);
-        }
-        catch (InvalidOperationException ex)
-        {
-            _logger.LogWarning(ex, "Failed to play card {CardType} with inputs for user {UserEmail} in room {RoomId}", cardType, Context.User?.Identity?.Name, roomId);
-            await Clients.Caller.SendAsync("PlayCardError", ex.Message);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error playing card with additional inputs");
-            throw new HubException("Failed to play card with additional inputs");
-        }
     }
 
     public async Task ReconnectToRoom(Guid roomId)

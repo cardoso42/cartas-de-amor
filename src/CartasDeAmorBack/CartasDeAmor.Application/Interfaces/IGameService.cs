@@ -14,10 +14,6 @@ public interface IGameService
 
     Task<CardActionRequirements[]> GetCardRequirementsAsync(CardType cardType);
 
-    Task<InitialGameStatusDto> PlayCardAsync(Guid roomId, string userEmail, CardType cardType);
-
-    Task<InitialGameStatusDto> PlayCardWithInputAsync(Guid roomId, string userEmail, CardType cardType, object[] additionalInputs);
-
     Task<PlayerUpdateDto> DrawCardAsync(Guid roomId, string userEmail);
 
     Task NextPlayerAsync(Guid roomId);

@@ -15,6 +15,7 @@ public class Game
     public CardType ReservedCard { get; set; }
     public int CurrentPlayerIndex { get; set; } = 0;
     public bool GameStarted { get; set; } = false;
+    public GameStateEnum GameState { get; set; } = GameStateEnum.WaitingForPlayers;
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
 }
