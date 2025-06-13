@@ -10,8 +10,16 @@ using Microsoft.OpenApi.Models;
 using CartasDeAmor.Presentation.Hubs;
 using CartasDeAmor.Application.Interfaces;
 using CartasDeAmor.Application.Services;
+using Serilog;
 
 var builder = WebApplication.CreateBuilder(args);
+
+// Configure Serilog
+Log.Logger = new LoggerConfiguration()
+    .ReadFrom.Configuration(builder.Configuration)
+    .CreateLogger();
+
+builder.Host.UseSerilog();
 
 // Add services to the container.
 builder.Services.AddControllers();
@@ -132,4 +140,18 @@ app.MapHub<GameHub>("/gameHub");
 
 app.MapControllers();
 
-app.Run();
+try
+{
+    Log.Information("Starting Cartas de Amor application");
+    app.Run();
+    return 0;
+}
+catch (Exception ex)
+{
+    Log.Fatal(ex, "Host terminated unexpectedly");
+    return 1;
+}
+finally
+{
+    Log.CloseAndFlush();
+}
