@@ -11,11 +11,13 @@ namespace CartasDeAmor.Application.Services;
 public class GameService : IGameService
 {
     private readonly IGameRoomRepository _roomRepository;
+    private readonly ICardService _cardService;
     private readonly ILogger<GameService> _logger;
 
-    public GameService(IGameRoomRepository roomRepository, ILogger<GameService> logger)
+    public GameService(IGameRoomRepository roomRepository, ICardService cardService, ILogger<GameService> logger)
     {
         _roomRepository = roomRepository;
+        _cardService = cardService;
         _logger = logger;
     }
 
@@ -112,7 +114,7 @@ public class GameService : IGameService
         var players = game.Players.ToList();
         if (game.CurrentPlayerIndex >= players.Count)
         {
-            _logger.LogWarning("Current player index {CurrentPlayerIndex} is out of bounds for players count {PlayersCount} in room {RoomId}", 
+            _logger.LogWarning("Current player index {CurrentPlayerIndex} is out of bounds for players count {PlayersCount} in room {RoomId}",
                 game.CurrentPlayerIndex, players.Count, roomId);
             return false;
         }
@@ -146,16 +148,10 @@ public class GameService : IGameService
 
         game.HandCardToPlayer(currentPlayer.UserEmail);
         game.TransitionToState(GameStateEnum.WaitingForPlay);
-        
+
         await _roomRepository.UpdateAsync(game);
 
         return new PlayerUpdateDto(currentPlayer);
-    }
-
-    public Task<CardActionRequirements[]> GetCardRequirementsAsync(CardType cardType)
-    {
-        var card = CardFactory.Create(cardType);
-        return Task.FromResult(card.GetCardActionRequirements().ToArray());
     }
 
     public async Task NextPlayerAsync(Guid roomId)
@@ -171,5 +167,56 @@ public class GameService : IGameService
         game.TransitionToState(GameStateEnum.WaitingForDraw);
 
         await _roomRepository.UpdateAsync(game);
+    }
+
+    public async Task<CardActionResultDto> PlayCardAsync(Guid roomId, string userEmail, CardType cardType)
+    {
+        var game = await _roomRepository.GetByIdAsync(roomId) ?? throw new InvalidOperationException("Room not found");
+        if (!game.GameStarted)
+        {
+            _logger.LogWarning("Game has not started yet for room {RoomId}", roomId);
+            throw new InvalidOperationException("Game has not started yet");
+        }
+
+        // Verify it's the player's turn
+        if (!await IsPlayerTurnAsync(roomId, userEmail))
+        {
+            _logger.LogWarning("It's not the player's turn for user {UserEmail} in room {RoomId}", userEmail, roomId);
+            throw new InvalidOperationException("It's not your turn");
+        }
+
+        // We can only play a card when waiting for play
+        if (game.GameState != GameStateEnum.WaitingForPlay)
+        {
+            _logger.LogWarning("Cannot play a card in current state {GameState} for room {RoomId}", game.GameState, roomId);
+            throw new InvalidOperationException($"Cannot play a card in current state: {game.GameState}");
+        }
+
+        var players = game.Players.ToList();
+        var currentPlayer = players[game.CurrentPlayerIndex];
+        if (!currentPlayer.HoldingCards.Contains(cardType))
+        {
+            _logger.LogWarning("Player {UserEmail} does not have card {CardType} in hand for room {RoomId}", userEmail, cardType, roomId);
+            throw new InvalidOperationException("You do not have this card in your hand");
+        }
+
+        // Play the card
+        _logger.LogInformation("Player {UserEmail} is playing card {CardType} in room {RoomId}", userEmail, cardType, roomId);
+        game.PlayCard(currentPlayer.UserEmail, cardType);
+
+        return new CardActionResultDto
+        {
+            
+            Success = true,
+        };
+    }
+
+    public async Task<CardRequirementsDto> GetCardActionRequirements(Guid roomId, string userEmail, CardType cardType)
+    {
+        var requirements = await _cardService.GetCardActionRequirementsAsync(roomId, userEmail, cardType);
+
+        _logger.LogInformation("Card {CardType} action requirements: {Requirements}", cardType, requirements);
+
+        return requirements;
     }
 }

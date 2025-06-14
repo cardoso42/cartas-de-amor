@@ -8,13 +8,15 @@ public interface IGameService
 {
     Task<IList<InitialGameStatusDto>> StartGameAsync(Guid roomId, string hostEmail);
 
+    Task<PlayerUpdateDto> DrawCardAsync(Guid roomId, string userEmail);
+
+    Task<CardRequirementsDto> GetCardActionRequirements(Guid roomId, string userEmail, CardType cardType);
+
+    Task<CardActionResultDto> PlayCardAsync(Guid roomId, string userEmail, CardType cardType);
+
     Task<IList<Player>> GetPlayersAsync(Guid roomId);
 
     Task<bool> IsPlayerTurnAsync(Guid roomId, string userEmail);
-
-    Task<CardActionRequirements[]> GetCardRequirementsAsync(CardType cardType);
-
-    Task<PlayerUpdateDto> DrawCardAsync(Guid roomId, string userEmail);
 
     Task NextPlayerAsync(Guid roomId);
     

@@ -18,11 +18,15 @@ public class Guard : Card
         
     }
     
-    public override ICollection<CardActionRequirements> GetCardActionRequirements()
+    public override CardRequirements? GetCardActionRequirements()
     {
-        return [
-            CardActionRequirements.SelectPlayer,
-            CardActionRequirements.SelectCardType
-        ];
+        return new CardRequirements
+        {
+            CardType = CardType,
+            IsTargetRequired = true,
+            CanChooseSelf = false,
+            IsCardTypeRequired = true,
+            CanChooseEqualCardType = false,
+        };
     }
 }

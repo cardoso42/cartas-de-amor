@@ -17,9 +17,9 @@ public class Servant : Card
     {
         
     }
-    
-    public override ICollection<CardActionRequirements> GetCardActionRequirements()
+
+    public override CardRequirements? GetCardActionRequirements()
     {
-        return [CardActionRequirements.None];
+        return null;
     }
 }

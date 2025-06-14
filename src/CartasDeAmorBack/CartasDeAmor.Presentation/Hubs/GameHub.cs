@@ -9,22 +9,17 @@ using System.Security.Claims;
 namespace CartasDeAmor.Presentation.Hubs;
 
 [Authorize]
-public class GameHub : Hub
+public class GameHub(
+    ILogger<GameHub> logger, IGameRoomService gameRoomService,
+    IGameService gameService, IAccountService accountService,
+    IConnectionMappingService connectionMapping, ICardService cardService) : Hub
 {
-    private readonly ILogger<GameHub> _logger;
-    private readonly IGameRoomService _gameRoomService;
-    private readonly IGameService _gameService;
-    private readonly IAccountService _accountService;
-    private readonly IConnectionMappingService _connectionMapping;
-
-    public GameHub(ILogger<GameHub> logger, IGameRoomService gameRoomService, IGameService gameService, IAccountService accountService, IConnectionMappingService connectionMapping)
-    {
-        _logger = logger;
-        _gameRoomService = gameRoomService;
-        _gameService = gameService;
-        _accountService = accountService;
-        _connectionMapping = connectionMapping;
-    }
+    private readonly ILogger<GameHub> _logger = logger;
+    private readonly IGameRoomService _gameRoomService = gameRoomService;
+    private readonly ICardService _cardService = cardService;
+    private readonly IGameService _gameService = gameService;
+    private readonly IAccountService _accountService = accountService;
+    private readonly IConnectionMappingService _connectionMapping = connectionMapping;
 
     public async Task JoinRoom(Guid roomId)
     {
@@ -111,6 +106,57 @@ public class GameHub : Hub
         {
             _logger.LogError(ex, "Error starting game in room {RoomId}", roomId);
             throw new HubException("Failed to start game");
+        }
+    }
+
+    public async Task GetCardRequirements(Guid roomId, CardType cardType)
+    {
+        _logger.LogInformation("Card requirements requested for card type {CardType}", cardType);
+
+        var userEmail = _accountService.GetEmailFromTokenAsync(Context.User);
+
+        try
+        {
+            var requirements = await _cardService.GetCardActionRequirementsAsync(roomId, userEmail, cardType);
+            await Clients.Caller.SendAsync("CardRequirements", requirements);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error getting card requirements for card type {CardType}", cardType);
+            throw new HubException("Failed to get card requirements");
+        }
+    }
+
+    public async Task PlayCard(Guid roomId, CardType cardType)
+    {
+        var userEmail = _accountService.GetEmailFromTokenAsync(Context.User);
+        _logger.LogInformation("User {User} is playing card {CardType} in room {RoomId}", userEmail, cardType, roomId);
+
+        try
+        {
+            var result = await _gameService.PlayCardAsync(roomId, userEmail, cardType);
+
+            if (result.Success)
+            {
+                await Clients.Group(roomId.ToString()).SendAsync("CardPlayed", userEmail, cardType);
+                await Clients.Client(Context.ConnectionId).SendAsync("CardPlayedSuccess", result);
+            }
+            else
+            {
+                await Clients.Client(Context.ConnectionId).SendAsync("RequestCardInput", cardType, result);
+            }
+
+            _logger.LogInformation("User {User} played card {CardType} in room {RoomId}", userEmail, cardType, roomId);
+        }
+        catch (InvalidOperationException ex)
+        {
+            _logger.LogWarning(ex, "Failed to play card for user {User} in room {RoomId}", userEmail, roomId);
+            await Clients.Caller.SendAsync("PlayCardError", ex.Message);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error playing card for user {User} in room {RoomId}", userEmail, roomId);
+            throw new HubException("Failed to play card");
         }
     }
 

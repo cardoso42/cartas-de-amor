@@ -18,8 +18,16 @@ public class Baron : Card
 
     }
 
-    public override ICollection<CardActionRequirements> GetCardActionRequirements()
+    // TODO: Move this to database stored data
+
+    public override CardRequirements? GetCardActionRequirements()
     {
-        return [CardActionRequirements.SelectPlayer];
+        return new()
+        {
+            CardType = CardType,
+            IsTargetRequired = true,
+            CanChooseSelf = false,
+            IsCardTypeRequired = false
+        };
     }
 }

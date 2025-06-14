@@ -1,9 +1,11 @@
 using CartasDeAmor.Domain.Entities;
+using CartasDeAmor.Domain.Enums;
 
 namespace CartasDeAmor.Application.DTOs;
 
 public class CardActionResultDto
 {
-    public required PlayerUpdateDto Invoker { get; set; }
-    public required PlayerUpdateDto Target { get; set; }
+    public bool Success { get; set; }
+    public PlayerUpdateDto? Invoker { get; set; }
+    public PlayerUpdateDto? Target { get; set; }
 }

@@ -18,12 +18,8 @@ public class Chanceller : Card
 
     }
     
-    public override ICollection<CardActionRequirements> GetCardActionRequirements()
+    public override CardRequirements? GetCardActionRequirements()
     {
-        return [
-            CardActionRequirements.DrawCard,
-            CardActionRequirements.DrawCard,
-            CardActionRequirements.SelectCard
-        ];
+        return null;
     }
 }

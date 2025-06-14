@@ -17,9 +17,15 @@ public class Prince : Card
     {
         
     }
-    
-    public override ICollection<CardActionRequirements> GetCardActionRequirements()
+
+    public override CardRequirements? GetCardActionRequirements()
     {
-        return [CardActionRequirements.SelectPlayer];
+        return new()
+        {
+            CardType = CardType,
+            IsTargetRequired = true,
+            CanChooseSelf = true,
+            IsCardTypeRequired = false
+        };
     }
 }

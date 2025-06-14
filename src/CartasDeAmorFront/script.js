@@ -424,8 +424,6 @@ async function handleDrawCard() {
 }
 
 async function handlePlayCard(cardType) {
-    if (!currentRoom) return;
-    
     // Check if player has this card
     const cardTypeInt = parseInt(cardType);
     if (!playerCards.includes(cardTypeInt)) {
@@ -435,8 +433,30 @@ async function handlePlayCard(cardType) {
     
     try {
         if (signalRConnection) {
+            // Store the current card type for the handler to access
+            sessionStorage.setItem('currentCardType', cardTypeInt);
+            
+            // First check if this card has any requirements
+            await signalRConnection.invoke('GetCardRequirements', currentRoom.id, cardTypeInt);
+            addGameMessage(`Checking requirements for: ${CARD_TYPES[cardTypeInt]}...`, 'info');
+            // The response will come through the CardRequirements SignalR handler
+            // If there are requirements, it will show a modal
+            // Otherwise, the handler will automatically play the card
+        }
+    } catch (error) {
+        console.error('Check card requirements error:', error);
+        showMessage('Failed to check card requirements', 'error');
+    }
+}
+
+async function playCard(cardType, inputs = []) {
+    if (!currentRoom) return;
+    
+    try {
+        if (signalRConnection) {
+            const cardTypeInt = parseInt(cardType);
             await signalRConnection.invoke('PlayCard', currentRoom.id, cardTypeInt);
-            addGameMessage(`You attempted to play: ${CARD_TYPES[cardTypeInt]}`, 'info');
+            addGameMessage(`You played: ${CARD_TYPES[cardTypeInt]}`, 'info');
             
             // Optimistically remove the card from hand (will be corrected by server response if needed)
             const cardIndex = playerCards.indexOf(cardTypeInt);
@@ -451,12 +471,29 @@ async function handlePlayCard(cardType) {
     }
 }
 
-function handleCardInputRequest(cardType, requirements) {
-    console.log('Card requires input:', cardType, requirements);
+function handleCardInputRequest(requirements) {
+    console.log('Card requires input:', requirements);
+    
+    // Get the card type and requirements array from the requirements object
+    const cardType = requirements.CardType !== undefined ? requirements.CardType : requirements.cardType;
+    const requirementsArray = requirements.Requirements !== undefined ? requirements.Requirements : requirements.requirements;
+    
+    if (!cardType) {
+        console.error('No card type provided in requirements:', requirements);
+        showMessage('Error processing card requirements', 'error');
+        return;
+    }
+    
+    if (!requirementsArray || !Array.isArray(requirementsArray)) {
+        console.error('Invalid requirements array format:', requirementsArray);
+        showMessage('Error processing card requirements', 'error');
+        return;
+    }
     
     const cardName = CARD_TYPES[cardType];
-    const requirementNames = requirements.map(req => {
+    const requirementNames = requirementsArray.map(req => {
         switch(req) {
+            case 0: return 'None';
             case 1: return 'Select Player';
             case 2: return 'Select Card Type';
             case 3: return 'Select Card';
@@ -465,7 +502,8 @@ function handleCardInputRequest(cardType, requirements) {
         }
     });
     
-    showCardInputModal(cardType, requirements, cardName, requirementNames);
+    // Pass the entire requirements object to have access to PossibleTargets and PossibleCardTypes
+    showCardInputModal(cardType, requirementsArray, cardName, requirementNames, requirements);
 }
 
 function updateGameStatus(gameStatus) {
@@ -565,7 +603,7 @@ function updatePlayersList(players) {
 // Modal functions
 let currentGamePlayers = []; // Store current game players for modal use
 
-function showCardInputModal(cardType, requirements, cardName, requirementNames) {
+function showCardInputModal(cardType, requirementsArray, cardName, requirementNames, requirementsObj) {
     const modal = document.getElementById('card-input-modal');
     const modalTitle = document.getElementById('modal-title');
     const modalDescription = document.getElementById('modal-description');
@@ -579,30 +617,50 @@ function showCardInputModal(cardType, requirements, cardName, requirementNames) 
     // Clear previous inputs
     inputContainer.innerHTML = '';
     
-    // Create inputs based on requirements
-    requirements.forEach((requirement, index) => {
-        const inputGroup = document.createElement('div');
-        inputGroup.className = 'input-group';
-        
-        switch(requirement) {
-            case 1: // Select Player
-                createPlayerSelector(inputGroup, index);
-                break;
-            case 2: // Select Card Type
-                createCardTypeSelector(inputGroup, index);
-                break;
-            case 3: // Select Card
-                createCardSelector(inputGroup, index);
-                break;
-            case 4: // Draw Card (no input needed)
-                createInfoDisplay(inputGroup, 'You will draw a card', 'draw-card');
-                break;
-            default:
-                createInfoDisplay(inputGroup, 'Unknown requirement', 'unknown');
-                break;
+    // Display message from requirements if available
+    if (requirementsObj.message) {
+        const messageDiv = document.createElement('div');
+        messageDiv.className = 'requirements-message';
+        messageDiv.textContent = requirementsObj.message;
+        messageDiv.style.padding = '0.75rem';
+        messageDiv.style.marginBottom = '1rem';
+        messageDiv.style.backgroundColor = '#f0f4ff';
+        messageDiv.style.border = '1px solid #ccd5ff';
+        messageDiv.style.borderRadius = '4px';
+        messageDiv.style.fontSize = '0.9rem';
+        inputContainer.appendChild(messageDiv);
+    }
+    
+    // Create inputs based on requirements array
+    requirementsArray.forEach((requirement, index) => {
+        if (requirement !== 0) { // Skip "None" requirement
+            const inputGroup = document.createElement('div');
+            inputGroup.className = 'input-group';
+            
+            switch(requirement) {
+                case 0: // None (skip)
+                    break;
+                case 1: // Select Player
+                    // Pass the possible targets from the requirements
+                    createPlayerSelector(inputGroup, index, requirementsObj.possibleTargets);
+                    break;
+                case 2: // Select Card Type
+                    // Pass the possible card types from the requirements
+                    createCardTypeSelector(inputGroup, index, requirementsObj.possibleCardTypes);
+                    break;
+                case 3: // Select Card
+                    createCardSelector(inputGroup, index);
+                    break;
+                case 4: // Draw Card (no input needed)
+                    createInfoDisplay(inputGroup, 'You will draw a card', 'draw-card');
+                    break;
+                default:
+                    createInfoDisplay(inputGroup, 'Unknown requirement', 'unknown');
+                    break;
+            }
+            
+            inputContainer.appendChild(inputGroup);
         }
-        
-        inputContainer.appendChild(inputGroup);
     });
     
     // Show modal
@@ -611,14 +669,14 @@ function showCardInputModal(cardType, requirements, cardName, requirementNames) 
     // Handle form submission
     cardForm.onsubmit = (e) => {
         e.preventDefault();
-        handleModalSubmit(cardType, requirements);
+        handleModalSubmit(cardType, requirementsArray);
     };
     
     // Setup modal close handlers
     setupModalCloseHandlers();
 }
 
-function createPlayerSelector(container, index) {
+function createPlayerSelector(container, index, possibleTargets = []) {
     const label = document.createElement('label');
     label.textContent = 'Select a player:';
     container.appendChild(label);
@@ -626,15 +684,27 @@ function createPlayerSelector(container, index) {
     const playersDiv = document.createElement('div');
     playersDiv.className = 'players-selection';
     
-    // Get players from the last game status (excluding yourself)
-    const availablePlayers = currentGamePlayers.filter(p => {
-        const userEmail = p.UserEmail || p.userEmail;
-        return userEmail !== (currentUser?.email || currentUser?.username);
-    });
+    // Use possible targets from requirements if available, otherwise fall back to current game players
+    let availablePlayers = [];
+    
+    if (possibleTargets && possibleTargets.length > 0) {
+        // Use the server-provided list of possible targets
+        availablePlayers = currentGamePlayers.filter(player => {
+            const email = player.UserEmail || player.userEmail;
+            return possibleTargets.includes(email);
+        });
+    } else {
+        // Fall back to all players excluding yourself
+        availablePlayers = currentGamePlayers.filter(p => {
+            const userEmail = p.UserEmail || p.userEmail;
+            return userEmail !== (currentUser?.email || currentUser?.username);
+        });
+    }
     
     if (availablePlayers.length === 0) {
         const noPlayersMsg = document.createElement('p');
-        noPlayersMsg.textContent = 'No other players available';
+        noPlayersMsg.textContent = possibleTargets.length > 0 ? 
+            'No matching players available' : 'No other players available';
         noPlayersMsg.style.color = '#999';
         playersDiv.appendChild(noPlayersMsg);
     } else {
@@ -676,7 +746,7 @@ function createPlayerSelector(container, index) {
     container.appendChild(playersDiv);
 }
 
-function createCardTypeSelector(container, index) {
+function createCardTypeSelector(container, index, possibleCardTypes = []) {
     const label = document.createElement('label');
     label.textContent = 'Select a card type:';
     container.appendChild(label);
@@ -691,15 +761,26 @@ function createCardTypeSelector(container, index) {
     defaultOption.textContent = 'Choose a card type...';
     select.appendChild(defaultOption);
     
-    // Add card type options (excluding Spy which is 0)
-    Object.entries(CARD_TYPES).forEach(([value, name]) => {
-        if (parseInt(value) > 0) { // Exclude Spy
+    // Use possible card types from requirements if available, otherwise show all cards
+    if (possibleCardTypes && possibleCardTypes.length > 0) {
+        // Use the server-provided list of possible card types
+        possibleCardTypes.forEach(cardTypeValue => {
             const option = document.createElement('option');
-            option.value = value;
-            option.textContent = name;
+            option.value = cardTypeValue;
+            option.textContent = CARD_TYPES[cardTypeValue] || `Card Type ${cardTypeValue}`;
             select.appendChild(option);
-        }
-    });
+        });
+    } else {
+        // Fall back to all card types excluding Spy (0)
+        Object.entries(CARD_TYPES).forEach(([value, name]) => {
+            if (parseInt(value) > 0) { // Exclude Spy
+                const option = document.createElement('option');
+                option.value = value;
+                option.textContent = name;
+                select.appendChild(option);
+            }
+        });
+    }
     
     container.appendChild(select);
 }
@@ -743,13 +824,15 @@ function createInfoDisplay(container, message, className) {
     container.appendChild(infoDiv);
 }
 
-function handleModalSubmit(cardType, requirements) {
+function handleModalSubmit(cardType, requirementsArray) {
     const inputs = [];
     const inputContainer = document.getElementById('input-container');
     let hasError = false;
     
-    requirements.forEach((requirement, index) => {
+    requirementsArray.forEach((requirement, index) => {
         switch(requirement) {
+            case 0: // None (skip)
+                break;
             case 1: // Select Player
                 const selectedPlayer = inputContainer.querySelector(`input[name="player-select-${index}"]:checked`);
                 if (selectedPlayer) {
@@ -794,17 +877,8 @@ function handleModalSubmit(cardType, requirements) {
     // Close modal
     hideCardInputModal();
     
-    // Send the card input to the server
-    if (signalRConnection) {
-        signalRConnection.invoke('InformCardInput', currentRoom.id, cardType, inputs)
-            .then(() => {
-                showMessage(`${CARD_TYPES[cardType]} played with selected inputs`, 'success');
-            })
-            .catch(error => {
-                console.error('Error sending card input:', error);
-                showMessage('Failed to send card input', 'error');
-            });
-    }
+    // After collecting inputs, play the card
+    playCard(cardType, inputs);
 }
 
 function setupModalCloseHandlers() {
@@ -903,9 +977,35 @@ function setupSignalRHandlers() {
         showMessage(`Failed to start game: ${error}`, 'error');
     });
     
-    signalRConnection.on('RequestCardInput', (cardType, requirements) => {
-        console.log('Card requires additional input:', cardType, requirements);
-        handleCardInputRequest(cardType, requirements);
+    signalRConnection.on('CardRequirements', (requirementsDto) => {
+        console.log('Received card requirements:', requirementsDto);
+        
+        // Handle both camelCase and PascalCase property names
+        const requirements = requirementsDto.Requirements || requirementsDto.requirements || [];
+        
+        // Check if this is a requirements DTO with requirements array
+        if (requirements && requirements.length > 0) {
+            // Card has requirements, show modal to collect inputs
+            handleCardInputRequest(requirementsDto);
+        } else {
+            // Card has no requirements, play it immediately
+            const cardType = requirementsDto.CardType || requirementsDto.cardType || 
+                parseInt(sessionStorage.getItem('currentCardType'));
+            playCard(cardType);
+        }
+    });
+    
+    signalRConnection.on('RequestCardInput', (cardType, requirementsArray, possibleTargets, possibleCardTypes, message) => {
+        console.log('Card requires additional input:', cardType, requirementsArray, possibleTargets, possibleCardTypes, message);
+        // Create a complete requirements object with the same structure as CardRequirementsDto
+        const requirementsDto = {
+            CardType: cardType,
+            Requirements: requirementsArray,
+            PossibleTargets: possibleTargets || [],
+            PossibleCardTypes: possibleCardTypes || [],
+            Message: message
+        };
+        handleCardInputRequest(requirementsDto);
     });
     
     signalRConnection.on('CardPlayed', (userEmail, cardType) => {

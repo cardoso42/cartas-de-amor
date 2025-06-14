@@ -26,7 +26,7 @@ public class Game
     {
         if (Players.Count == 0 || CurrentPlayerIndex >= Players.Count)
             return null;
-            
+
         return Players.ElementAt(CurrentPlayerIndex);
     }
 
@@ -37,7 +37,7 @@ public class Game
     {
         if (Players.Count == 0)
             return null;
-            
+
         var nextIndex = (CurrentPlayerIndex + 1) % Players.Count;
         return Players.ElementAt(nextIndex);
     }
@@ -46,7 +46,7 @@ public class Game
     /// Advances to the next player's turn
     /// </summary>
     public void AdvanceToNextPlayer()
-    {       
+    {
         if (Players.Count > 0)
         {
             CurrentPlayerIndex = (CurrentPlayerIndex + 1) % Players.Count;
@@ -132,10 +132,10 @@ public class Game
     public Player? GetRoundWinner()
     {
         var activePlayers = GetActivePlayers().ToList();
-        
+
         if (activePlayers.Count == 1)
             return activePlayers.First();
-            
+
         if (activePlayers.Count == 0)
             return null;
 
@@ -155,7 +155,7 @@ public class Game
         var card = CardsDeck.First();
         CardsDeck.Remove(card);
         UpdatedAt = DateTime.UtcNow;
-        
+
         return card;
     }
 
@@ -167,12 +167,12 @@ public class Game
         var random = new Random();
         var shuffledCards = CardsDeck.OrderBy(x => random.Next()).ToList();
         CardsDeck.Clear();
-        
+
         foreach (var card in shuffledCards)
         {
             CardsDeck.Add(card);
         }
-        
+
         UpdatedAt = DateTime.UtcNow;
     }
 
@@ -182,36 +182,36 @@ public class Game
     public void InitializeDeck()
     {
         CardsDeck.Clear();
-        
+
         // Standard Love Letter deck composition
         CardsDeck.Add(CardType.Spy);         // 2 cards
         CardsDeck.Add(CardType.Spy);
-        
+
         CardsDeck.Add(CardType.Guard);       // 5 cards
         CardsDeck.Add(CardType.Guard);
         CardsDeck.Add(CardType.Guard);
         CardsDeck.Add(CardType.Guard);
         CardsDeck.Add(CardType.Guard);
-        
+
         CardsDeck.Add(CardType.Priest);      // 2 cards
         CardsDeck.Add(CardType.Priest);
-        
+
         CardsDeck.Add(CardType.Baron);       // 2 cards
         CardsDeck.Add(CardType.Baron);
-        
+
         CardsDeck.Add(CardType.Servant);     // 2 cards
         CardsDeck.Add(CardType.Servant);
-        
+
         CardsDeck.Add(CardType.Prince);      // 2 cards
         CardsDeck.Add(CardType.Prince);
-        
+
         CardsDeck.Add(CardType.Chanceller);  // 2 cards
         CardsDeck.Add(CardType.Chanceller);
 
         CardsDeck.Add(CardType.King);        // 1 card
         CardsDeck.Add(CardType.Countess);    // 1 card
         CardsDeck.Add(CardType.Princess);    // 1 card
-        
+
         UpdatedAt = DateTime.UtcNow;
     }
 
@@ -282,15 +282,15 @@ public class Game
     public void TransitionToState(GameStateEnum newState)
     {
         bool isValid = CanTransitionToState(newState);
-        
+
         if (!isValid)
         {
             throw new InvalidOperationException($"Invalid state transition from {GameState} to {newState}");
         }
-        
+
         GameState = newState;
     }
-    
+
     /// <summary>
     /// Checks if a state transition is valid according to the game rules
     /// </summary>
@@ -307,5 +307,10 @@ public class Game
             GameStateEnum.Finished => false,
             _ => false,
         };
+    }
+    
+    public void PlayCard(string playerEmail, CardType cardType)
+    {
+
     }
 }
