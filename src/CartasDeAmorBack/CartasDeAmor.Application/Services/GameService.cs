@@ -157,9 +157,12 @@ public class GameService : IGameService
         game.AdvanceToNextPlayer();
         game.TransitionToState(GameStateEnum.WaitingForDraw);
 
+        var newPlayer = game.GetCurrentPlayer() ?? throw new InvalidOperationException("Current player not found");
+        newPlayer.SetProtection(false); // Remove protection at the start of a new turn
+
         await _roomRepository.UpdateAsync(game);
 
-        return game.GetCurrentPlayer()?.UserEmail ?? throw new InvalidOperationException("Current player not found");
+        return newPlayer.UserEmail;
     }
 
     public async Task<CardActionResultDto> PlayCardAsync(Guid roomId, string userEmail, CardPlayDto cardPlay)
