@@ -1,10 +1,8 @@
 using Microsoft.AspNetCore.SignalR;
-using Microsoft.Extensions.Logging;
 using CartasDeAmor.Domain.Services;
 using CartasDeAmor.Domain.Enums;
 using CartasDeAmor.Application.Interfaces;
 using Microsoft.AspNetCore.Authorization;
-using System.Security.Claims;
 
 namespace CartasDeAmor.Presentation.Hubs;
 
@@ -87,7 +85,7 @@ public class GameHub(
                 var connectionIds = await GetUserConnectionIds(players[i].UserEmail, roomId);
                 foreach (var connectionId in connectionIds)
                 {
-                    await Clients.Client(connectionId).SendAsync("GameStarted", gameStatus[i]);
+                    await Clients.Client(connectionId).SendAsync("RoundStarted", gameStatus[i]);
                 }
             }
 
@@ -151,6 +149,26 @@ public class GameHub(
             }
 
             _logger.LogInformation("User {User} played card {CardType} in room {RoomId}", userEmail, cardPlayDto.CardType, roomId);
+
+            var roundWinner = await _gameService.GetRoundWinnerAsync(roomId);
+            if (roundWinner != null)
+            {
+                _logger.LogInformation("Round winner in room {RoomId} is {Winner}", roomId, roundWinner);
+
+                var newRoundData = await _gameService.StartNewRoundAsync(roomId);
+
+                await Clients.Group(roomId.ToString()).SendAsync("RoundWinner", roundWinner);
+
+                var players = (await _gameService.GetPlayersAsync(roomId)).Select(p => p.UserEmail).ToList();
+                foreach (var playerEmail in players)
+                {
+                    var connectionIds = await GetUserConnectionIds(playerEmail, roomId);
+                    foreach (var connectionId in connectionIds)
+                    {
+                        await Clients.Client(connectionId).SendAsync("RoundStarted", newRoundData);
+                    }
+                }
+            }
 
             var nextTurnPlayer = await _gameService.NextPlayerAsync(roomId);
             await Clients.Group(roomId.ToString()).SendAsync("NextTurn", nextTurnPlayer);

@@ -974,7 +974,7 @@ async function connectToSignalR() {
 function setupSignalRHandlers() {
     if (!signalRConnection) return;
     
-    signalRConnection.on('GameStarted', (gameStatus) => {
+    signalRConnection.on('RoundStarted', (gameStatus) => {
         playerCards = []; // Clear old cards when a new game starts
         showMessage('Game started!', 'success');
         showGame();
@@ -1130,6 +1130,10 @@ function setupSignalRHandlers() {
         showMessage('Authentication failed. Please login again.', 'error');
         // Force logout and redirect to login
         handleLogout();
+    });
+
+    signalRConnection.on('RoundWinner', (winner) => {
+        showMessage(`Round winner: ${winner}`, 'success');
     });
     
     signalRConnection.onclose(() => {

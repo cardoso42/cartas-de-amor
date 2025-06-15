@@ -65,8 +65,8 @@ public class GameService : IGameService
             throw new InvalidOperationException("At least 2 players are required to start the game");
         }
 
-        game.GameStarted = true;
         game.StartNewRound();
+        game.GameStarted = true;
 
         await _roomRepository.UpdateAsync(game);
 
@@ -195,12 +195,12 @@ public class GameService : IGameService
 
         // Play the card
         _logger.LogInformation("Player {UserEmail} is playing card {CardType} in room {RoomId}", userEmail, cardPlay.CardType, roomId);
-        
+
         var card = CardFactory.Create(cardPlay.CardType);
         var targetPlayer = game.GetPlayerByEmail(cardPlay.TargetPlayerEmail ?? string.Empty);
 
         currentPlayer.PlayCard(cardPlay.CardType);
-        var result = card.Play(game, currentPlayer,  targetPlayer, cardPlay.TargetCardType);
+        var result = card.Play(game, currentPlayer, targetPlayer, cardPlay.TargetCardType);
 
         await _roomRepository.UpdateAsync(game);
 
@@ -256,5 +256,37 @@ public class GameService : IGameService
         }
 
         return requirementsDto;
+    }
+
+    public async Task<string?> GetRoundWinnerAsync(Guid roomId)
+    {
+        var game = await _roomRepository.GetByIdAsync(roomId) ?? throw new InvalidOperationException("Room not found");
+        return game.GetRoundWinner()?.UserEmail;
+    }
+
+    public async Task<string?> GetGameWinnerAsync(Guid roomdId)
+    {
+        var game = await _roomRepository.GetByIdAsync(roomdId) ?? throw new InvalidOperationException("Room not found");
+        return game.GetGameWinner()?.UserEmail;
+    }
+
+    public async Task<IList<InitialGameStatusDto>> StartNewRoundAsync(Guid roomId)
+    {
+        var game = await _roomRepository.GetByIdAsync(roomId) ?? throw new InvalidOperationException("Room not found");
+
+        if (!game.GameStarted)
+        {
+            throw new InvalidOperationException("Game has not started yet");
+        }
+
+        if (!game.IsRoundOver())
+        {
+            throw new InvalidOperationException("Cannot start a new round while the current round is still ongoing");
+        }
+
+        game.StartNewRound();
+        await _roomRepository.UpdateAsync(game);
+
+        return GetGameStatusDtos(game);
     }
 }

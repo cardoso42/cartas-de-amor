@@ -100,7 +100,7 @@ public class Game
     /// </summary>
     public int GetActivePlayerCount()
     {
-        return Players.Count(p => p.HoldingCards.Count > 0);
+        return Players.Count(p => p.Status == PlayerStatus.Active || p.Status == PlayerStatus.Protected);
     }
 
     /// <summary>
@@ -108,7 +108,7 @@ public class Game
     /// </summary>
     public IEnumerable<Player> GetActivePlayers()
     {
-        return Players.Where(p => p.HoldingCards.Count > 0);
+        return Players.Where(p => p.Status == PlayerStatus.Active || p.Status == PlayerStatus.Protected);
     }
 
     /// <summary>
@@ -116,7 +116,7 @@ public class Game
     /// </summary>
     public IEnumerable<Player> GetEliminatedPlayers()
     {
-        return Players.Where(p => p.HoldingCards.Count == 0);
+        return Players.Where(p => p.Status == PlayerStatus.Eliminated);
     }
 
     /// <summary>
@@ -124,7 +124,7 @@ public class Game
     /// </summary>
     public bool IsRoundOver()
     {
-        return GetActivePlayerCount() <= 1 || CardsDeck.Count == 0;
+        return GameStarted && (GetActivePlayerCount() <= 1 || CardsDeck.Count == 0);
     }
 
     /// <summary>
@@ -132,6 +132,9 @@ public class Game
     /// </summary>
     public Player? GetRoundWinner()
     {
+        if (!IsRoundOver())
+            return null;
+
         var activePlayers = GetActivePlayers().ToList();
 
         if (activePlayers.Count == 1)
@@ -257,6 +260,8 @@ public class Game
     /// </summary>
     public void StartNewRound()
     {
+        var lastRoundWinner = GetRoundWinner();
+
         // Clear all players' cards and reset protection
         foreach (var player in Players)
         {
@@ -277,7 +282,7 @@ public class Game
         }
 
         // Reset current player index
-        CurrentPlayerIndex = 0;
+        CurrentPlayerIndex = lastRoundWinner != null ? Players.IndexOf(lastRoundWinner) : 0;
         // Set game state to WaitingForDraw at the beginning of a round
         TransitionToState(GameStateEnum.WaitingForDraw);
         UpdatedAt = DateTime.UtcNow;
