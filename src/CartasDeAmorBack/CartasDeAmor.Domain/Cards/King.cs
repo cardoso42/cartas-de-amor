@@ -13,9 +13,20 @@ public class King : Card
 
     public override CardType CardType => CardType.King;
 
-    public override void Play(Player currentPlayer, Game game)
+    public override CardActionResults Play(Game game, Player invokerPlayer, Player? targetPlayer, CardType? targetCardType)
     {
-        
+        if (targetPlayer == null)
+        {
+            throw new ArgumentNullException(nameof(targetPlayer), "Target player must be specified for King card action.");
+        }
+
+        // Swap the invoker's hand with the target player's hand
+        var targetPlayerCard = targetPlayer.RemoveCard();
+        var invokerPlayerCard = invokerPlayer.RemoveCard();
+        invokerPlayer.HandCard(targetPlayerCard);
+        targetPlayer.HandCard(invokerPlayerCard);
+
+        return CardActionResults.SwitchCards;
     }
 
     public override CardRequirements? GetCardActionRequirements()

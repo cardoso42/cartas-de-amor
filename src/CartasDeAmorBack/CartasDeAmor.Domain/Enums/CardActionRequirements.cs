@@ -4,7 +4,5 @@ public enum CardActionRequirements
 {
     None,
     SelectPlayer,
-    SelectCardType,
-    SelectCard,
-    DrawCard,
+    SelectCardType
 }

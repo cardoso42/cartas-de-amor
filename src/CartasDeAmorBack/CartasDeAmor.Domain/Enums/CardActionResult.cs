@@ -4,9 +4,9 @@ public enum CardActionResults
 {
     None,
     ShowCard,
-    SelfPlayerEleminated,
-    AdversaryPlayerEliminated,
+    PlayerEliminated,
     SwitchCards,
-    DiscardCard,
-    DrawCard,
+    DiscardAndDrawCard,
+    ProtectionGranted,
+    ChooseCard
 }

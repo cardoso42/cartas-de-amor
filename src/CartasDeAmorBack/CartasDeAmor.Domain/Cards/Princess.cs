@@ -13,9 +13,11 @@ public class Princess : Card
 
     public override CardType CardType => CardType.Princess;
 
-    public override void Play(Player currentPlayer, Game game)
+    public override CardActionResults Play(Game game, Player invokerPlayer, Player? targetPlayer, CardType? targetCardType)
     {
-        
+        // Player loses round
+        invokerPlayer.Eliminate();
+        return CardActionResults.PlayerEliminated;
     }
 
     public override CardRequirements? GetCardActionRequirements()

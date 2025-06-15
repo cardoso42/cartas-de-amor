@@ -3,20 +3,20 @@ using CartasDeAmor.Domain.Enums;
 
 namespace CartasDeAmor.Application.DTOs;
 
-public class PlayerUpdateDto
+public class PrivatePlayerUpdateDto
 {
     public string UserEmail { get; set; } = string.Empty;
-    public bool IsProtected { get; set; } = false;
+    public PlayerStatus Status { get; set; } = PlayerStatus.Active;
     public List<CardType> HoldingCards { get; set; } = [];
-    public ICollection<CardType> PlayedCards { get; set; } = [];
+    public List<CardType> PlayedCards { get; set; } = [];
     public int Score { get; set; } = 0;
     
-    public PlayerUpdateDto() { }
+    public PrivatePlayerUpdateDto() { }
 
-    public PlayerUpdateDto(Player player)
+    public PrivatePlayerUpdateDto(Player player)
     {
         UserEmail = player.UserEmail;
-        IsProtected = player.Protected;
+        Status = player.Status;
         HoldingCards = player.HoldingCards.ToList();
         PlayedCards = player.PlayedCards.ToList();
         Score = player.Score;

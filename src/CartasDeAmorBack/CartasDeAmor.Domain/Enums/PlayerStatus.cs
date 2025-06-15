@@ -2,8 +2,8 @@ namespace CartasDeAmor.Domain.Enums;
 
 public enum PlayerStatus
 {
-    Waiting,
-    Playing,
+    Active,
+    Protected,
     Eliminated,
     Disconnected,
     Abandoned

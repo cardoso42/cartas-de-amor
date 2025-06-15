@@ -13,8 +13,18 @@ public class Chanceller : Card
 
     public override CardType CardType => CardType.Chanceller;
 
-    public override void Play(Player currentPlayer, Game game)
+    public override CardActionResults Play(Game game, Player invokerPlayer, Player? targetPlayer, CardType? targetCardType)
     {
+        // Player draws two cards from the deck and chooses one to keep.
+        
+        for (int i = 0; i < 2; i++)
+        {
+            var drawnCard = game.DrawCard();
+            if (drawnCard == null) break;
+            invokerPlayer.HandCard(drawnCard.Value);
+        }
+
+        return CardActionResults.ChooseCard;
 
     }
     

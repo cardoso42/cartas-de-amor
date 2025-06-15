@@ -455,7 +455,28 @@ async function playCard(cardType, inputs = []) {
     try {
         if (signalRConnection) {
             const cardTypeInt = parseInt(cardType);
-            await signalRConnection.invoke('PlayCard', currentRoom.id, cardTypeInt);
+            
+            // Create CardPlayDto object with PascalCase property names to match C# backend
+            const cardPlayDto = {
+                CardType: cardTypeInt,
+                TargetPlayerEmail: null,
+                TargetCardType: null
+            };
+            
+            // Check if inputs are provided and assign them to the DTO
+            if (inputs && inputs.length > 0) {
+                // If player target is provided
+                if (inputs[0]) {
+                    cardPlayDto.TargetPlayerEmail = inputs[0];
+                }
+                
+                // If card type target is provided
+                if (inputs[1] !== undefined) {
+                    cardPlayDto.TargetCardType = parseInt(inputs[1]);
+                }
+            }
+            
+            await signalRConnection.invoke('PlayCard', currentRoom.id, cardPlayDto);
             addGameMessage(`You played: ${CARD_TYPES[cardTypeInt]}`, 'info');
             
             // Optimistically remove the card from hand (will be corrected by server response if needed)
@@ -467,7 +488,9 @@ async function playCard(cardType, inputs = []) {
         }
     } catch (error) {
         console.error('Play card error:', error);
-        showMessage('Failed to play card', 'error');
+        // Try to extract more detailed error info if available
+        const errorMessage = error.message || 'Unknown error';
+        showMessage(`Failed to play card: ${errorMessage}`, 'error');
     }
 }
 
@@ -1022,8 +1045,31 @@ function setupSignalRHandlers() {
         console.error('Play card error from server:', error);
         showMessage(`Card play failed: ${error}`, 'error');
     });
+
+    signalRConnection.on('CardResult-ShowCard', (cardResult) => {
+        addGameMessage(`${cardResult.invoker.userEmail} looked at ${cardResult.target.userEmail}'s card`);
+    });
+
+    signalRConnection.on('CardResult-PlayerEliminated', (cardResult) => {
+        if (cardResult.target.status == 2)
+            addGameMessage(`${cardResult.invoker.userEmail} eliminated ${cardResult.target.userEmail}`, 'danger');
+        else
+            addGameMessage(`${cardResult.target.userEmail} eliminated ${cardResult.inovker.userEmail}`, 'danger');
+    });
+
+    signalRConnection.on('CardResult-SwitchCards', (cardResult) => {
+        addGameMessage(`${cardResult.invoker.userEmail} switched cards with ${cardResult.target.userEmail}`, 'info');
+    });
+
+    signalRConnection.on('CardResult-DiscardAndDrawCard', (cardResult) => {
+        addGameMessage(`${cardResult.invoker.userEmail} discarded ${cardResult.invoker.playedCards} and drew a new one`, 'info');
+    });
+
+    signalRConnection.on('CardResult-ProtectionGranted', (cardResult) => {
+        addGameMessage(`${cardResult.invoker.userEmail} is now protected for 1 turn`, 'info');
+    });
     
-    signalRConnection.on('CardDrawn', (playerUpdate) => {        
+    signalRConnection.on('PrivatePlayerUpdate', (playerUpdate) => {        
         // Update player's full status from the PlayerUpdateDto
         if (playerUpdate.HoldingCards || playerUpdate.holdingCards) {
             const holdingCards = playerUpdate.HoldingCards || playerUpdate.holdingCards;

@@ -13,9 +13,10 @@ public class Spy : Card
 
     public override CardType CardType => CardType.Spy;
 
-    public override void Play(Player currentPlayer, Game game)
+    public override CardActionResults Play(Game game, Player invokerPlayer, Player? targetPlayer, CardType? targetCardType)
     {
-        
+        // No immediate effect
+        return CardActionResults.None;
     }
     
     public override CardRequirements? GetCardActionRequirements()

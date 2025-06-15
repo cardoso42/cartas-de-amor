@@ -7,7 +7,7 @@ public class PlayerStatusDto
 {
     public string UserEmail { get; set; } = string.Empty;
     public string Username { get; set; } = string.Empty;
-    public PlayerStatus Status { get; set; } = PlayerStatus.Waiting;
+    public PlayerStatus Status { get; set; } = PlayerStatus.Active;
     public bool IsProtected { get; set; } = false;
     public int Score { get; set; } = 0;
     public int CardsInHand { get; set; } = 1;
@@ -18,9 +18,9 @@ public class PlayerStatusDto
     {
         UserEmail = player.UserEmail;
         Username = player.Username;
-        IsProtected = player.Protected;
+        IsProtected = player.IsProtected();
         Score = player.Score;
         CardsInHand = player.HoldingCards.Count;
-        Status = PlayerStatus.Waiting;
+        Status = PlayerStatus.Active;
     }
 }

@@ -11,13 +11,11 @@ namespace CartasDeAmor.Application.Services;
 public class GameService : IGameService
 {
     private readonly IGameRoomRepository _roomRepository;
-    private readonly ICardService _cardService;
     private readonly ILogger<GameService> _logger;
 
-    public GameService(IGameRoomRepository roomRepository, ICardService cardService, ILogger<GameService> logger)
+    public GameService(IGameRoomRepository roomRepository, ILogger<GameService> logger)
     {
         _roomRepository = roomRepository;
-        _cardService = cardService;
         _logger = logger;
     }
 
@@ -33,14 +31,7 @@ public class GameService : IGameService
             players.RemoveAll(p => p.UserEmail == player.UserEmail); // Exclude the current player
 
             playersStatuses.AddRange(
-                players.Select(p => new PlayerStatusDto
-                {
-                    UserEmail = p.UserEmail,
-                    Username = p.Username,
-                    IsProtected = p.Protected,
-                    Score = p.Score,
-                    CardsInHand = p.HoldingCards.Count
-                })
+                players.Select(p => new PlayerStatusDto(p))
             );
 
             // Add the current player's private information
@@ -50,7 +41,7 @@ public class GameService : IGameService
                 YourCards = player.HoldingCards,
                 AllPlayersInOrder = game.Players.Select(p => p.UserEmail).ToList(),
                 FirstPlayerIndex = game.CurrentPlayerIndex + 1,
-                IsProtected = player.Protected
+                IsProtected = player.IsProtected()
             });
         }
 
@@ -93,13 +84,13 @@ public class GameService : IGameService
         return [.. game.Players];
     }
 
-    public async Task<PlayerUpdateDto> GetPlayerStatusAsync(Guid roomId, string userEmail)
+    public async Task<PrivatePlayerUpdateDto> GetPlayerStatusAsync(Guid roomId, string userEmail)
     {
         var game = await _roomRepository.GetByIdAsync(roomId) ?? throw new InvalidOperationException("Room not found");
 
         var player = game.Players.FirstOrDefault(p => p.UserEmail == userEmail) ?? throw new InvalidOperationException("Player not found in the game");
 
-        return new PlayerUpdateDto(player);
+        return new PrivatePlayerUpdateDto(player);
     }
 
     public async Task<bool> IsPlayerTurnAsync(Guid roomId, string userEmail)
@@ -122,7 +113,7 @@ public class GameService : IGameService
         return players[game.CurrentPlayerIndex].UserEmail == userEmail;
     }
 
-    public async Task<PlayerUpdateDto> DrawCardAsync(Guid roomId, string userEmail)
+    public async Task<PrivatePlayerUpdateDto> DrawCardAsync(Guid roomId, string userEmail)
     {
         var game = await _roomRepository.GetByIdAsync(roomId) ?? throw new InvalidOperationException("Room not found");
 
@@ -151,10 +142,10 @@ public class GameService : IGameService
 
         await _roomRepository.UpdateAsync(game);
 
-        return new PlayerUpdateDto(currentPlayer);
+        return new PrivatePlayerUpdateDto(currentPlayer);
     }
 
-    public async Task NextPlayerAsync(Guid roomId)
+    public async Task<string> NextPlayerAsync(Guid roomId)
     {
         var game = await _roomRepository.GetByIdAsync(roomId) ?? throw new InvalidOperationException("Room not found");
 
@@ -167,9 +158,11 @@ public class GameService : IGameService
         game.TransitionToState(GameStateEnum.WaitingForDraw);
 
         await _roomRepository.UpdateAsync(game);
+
+        return game.GetCurrentPlayer()?.UserEmail ?? throw new InvalidOperationException("Current player not found");
     }
 
-    public async Task<CardActionResultDto> PlayCardAsync(Guid roomId, string userEmail, CardType cardType)
+    public async Task<CardActionResultDto> PlayCardAsync(Guid roomId, string userEmail, CardPlayDto cardPlay)
     {
         var game = await _roomRepository.GetByIdAsync(roomId) ?? throw new InvalidOperationException("Room not found");
         if (!game.GameStarted)
@@ -193,30 +186,75 @@ public class GameService : IGameService
         }
 
         var players = game.Players.ToList();
-        var currentPlayer = players[game.CurrentPlayerIndex];
-        if (!currentPlayer.HoldingCards.Contains(cardType))
+        var currentPlayer = players[game.CurrentPlayerIndex] ?? throw new InvalidOperationException("Current player not found");
+        if (!currentPlayer.HoldingCards.Contains(cardPlay.CardType))
         {
-            _logger.LogWarning("Player {UserEmail} does not have card {CardType} in hand for room {RoomId}", userEmail, cardType, roomId);
+            _logger.LogWarning("Player {UserEmail} does not have card {CardType} in hand for room {RoomId}", userEmail, cardPlay.CardType, roomId);
             throw new InvalidOperationException("You do not have this card in your hand");
         }
 
         // Play the card
-        _logger.LogInformation("Player {UserEmail} is playing card {CardType} in room {RoomId}", userEmail, cardType, roomId);
-        game.PlayCard(currentPlayer.UserEmail, cardType);
+        _logger.LogInformation("Player {UserEmail} is playing card {CardType} in room {RoomId}", userEmail, cardPlay.CardType, roomId);
+        
+        var card = CardFactory.Create(cardPlay.CardType);
+        var targetPlayer = game.GetPlayerByEmail(cardPlay.TargetPlayerEmail ?? string.Empty);
+
+        currentPlayer.PlayCard(cardPlay.CardType);
+        var result = card.Play(game, currentPlayer,  targetPlayer, cardPlay.TargetCardType);
+
+        await _roomRepository.UpdateAsync(game);
 
         return new CardActionResultDto
         {
-            
-            Success = true,
+            Result = result,
+            CardType = cardPlay.CardType,
+            Invoker = new PublicPlayerUpdateDto(currentPlayer),
+            Target = targetPlayer != null ? new PublicPlayerUpdateDto(targetPlayer) : null
         };
     }
 
-    public async Task<CardRequirementsDto> GetCardActionRequirements(Guid roomId, string userEmail, CardType cardType)
+    public async Task<CardRequirementsDto> GetCardActionRequirementsAsync(Guid roomId, string currentPlayer, CardType cardType)
     {
-        var requirements = await _cardService.GetCardActionRequirementsAsync(roomId, userEmail, cardType);
+        var gameRoom = await _roomRepository.GetByIdAsync(roomId) ?? throw new ArgumentException("Game room not found.");
+        var card = CardFactory.Create(cardType);
 
-        _logger.LogInformation("Card {CardType} action requirements: {Requirements}", cardType, requirements);
+        var requirements = card.GetCardActionRequirements();
 
-        return requirements;
+        if (requirements == null)
+        {
+            return new CardRequirementsDto
+            {
+                CardType = cardType,
+                Message = "No specific requirements for this card type."
+            };
+        }
+
+        var requirementsDto = new CardRequirementsDto { CardType = cardType };
+
+        if (requirements.IsTargetRequired)
+        {
+            requirementsDto.Requirements.Add(CardActionRequirements.SelectPlayer);
+            requirementsDto.PossibleTargets = gameRoom.Players
+                .Select(p => p.UserEmail)
+                .ToList();
+
+            if (!requirements.CanChooseSelf)
+            {
+                requirementsDto.PossibleTargets.Remove(currentPlayer);
+            }
+        }
+
+        if (requirements.IsCardTypeRequired)
+        {
+            requirementsDto.Requirements.Add(CardActionRequirements.SelectCardType);
+            requirementsDto.PossibleCardTypes = Enum.GetValues<CardType>().ToList();
+
+            if (!requirements.CanChooseEqualCardType)
+            {
+                requirementsDto.PossibleCardTypes.Remove(cardType);
+            }
+        }
+
+        return requirementsDto;
     }
 }

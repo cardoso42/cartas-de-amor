@@ -5,7 +5,8 @@ namespace CartasDeAmor.Application.DTOs;
 
 public class CardActionResultDto
 {
-    public bool Success { get; set; }
-    public PlayerUpdateDto? Invoker { get; set; }
-    public PlayerUpdateDto? Target { get; set; }
+    public CardActionResults Result { get; set; } = CardActionResults.None;
+    public CardType CardType { get; set; }
+    public PublicPlayerUpdateDto? Invoker { get; set; }
+    public PublicPlayerUpdateDto? Target { get; set; }
 }

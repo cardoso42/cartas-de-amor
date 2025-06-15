@@ -50,7 +50,6 @@ builder.Services.AddScoped<IPlayerRepository, PlayerRepository>();
 builder.Services.AddScoped<IAccountService, AccountService>();
 builder.Services.AddScoped<IGameRoomService, GameRoomService>();
 builder.Services.AddScoped<IGameService, GameService>();
-builder.Services.AddScoped<ICardService, CardService>();
 builder.Services.AddSingleton<IConnectionMappingService, ConnectionMappingService>();
 
 // Add JWT Authentication

@@ -13,9 +13,36 @@ public class Baron : Card
         Value = 3;
     }
 
-    public override void Play(Player currentPlayer, Game game)
+    public override CardActionResults Play(Game game, Player invokerPlayer, Player? targetPlayer, CardType? targetCardType)
     {
+        // Compare both the current player's card and the target player's card.
+        // Whoever has the lower value loses the round
 
+        if (targetPlayer == null)
+        {
+            throw new ArgumentNullException(nameof(targetPlayer), "Target player must be specified for Baron action.");
+        }
+
+        if (targetPlayer.IsProtected())
+        {
+            throw new InvalidOperationException("Target player is protected and cannot be affected by Baron action.");
+        }
+
+        var invokerCard = invokerPlayer.GetCard();
+        var targetCard = targetPlayer.GetCard();
+
+        if (invokerCard > targetCard)
+        {
+            targetPlayer.Eliminate();
+            return CardActionResults.PlayerEliminated;
+        }
+        else if (invokerCard < targetCard)
+        {
+            invokerPlayer.Eliminate();
+            return CardActionResults.PlayerEliminated;
+        }
+
+        return CardActionResults.None;
     }
 
     // TODO: Move this to database stored data

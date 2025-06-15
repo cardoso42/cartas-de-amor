@@ -6,7 +6,7 @@ public abstract class Card
 {
     public string Name { get; internal set; } = string.Empty;
     public int Value { get; internal set; }
-    public abstract void Play(Player currentPlayer, Game game);
-    public abstract CardRequirements? GetCardActionRequirements();
     public abstract CardType CardType { get; }
+    public abstract CardActionResults Play(Game game, Player invokerPlayer, Player? targetPlayer, CardType? targetCardType);
+    public abstract CardRequirements? GetCardActionRequirements();
 }

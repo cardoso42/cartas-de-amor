@@ -1,5 +1,6 @@
 using System.Diagnostics.Contracts;
 using CartasDeAmor.Domain.Enums;
+using CartasDeAmor.Domain.Factories;
 
 namespace CartasDeAmor.Domain.Entities;
 
@@ -12,7 +13,7 @@ public class Game
     public required string HostEmail { get; set; }
     public IList<Player> Players { get; set; } = [];
     public ICollection<CardType> CardsDeck { get; set; } = [];
-    public CardType ReservedCard { get; set; }
+    public CardType? ReservedCard { get; set; }
     public int CurrentPlayerIndex { get; set; } = 0;
     public bool GameStarted { get; set; } = false;
     public GameStateEnum GameState { get; set; } = GameStateEnum.WaitingForPlayers;
@@ -159,6 +160,14 @@ public class Game
         return card;
     }
 
+    public CardType GetReservedCard()
+    {
+        if (CardsDeck.Count > 0)
+            throw new InvalidOperationException("Cannot get reserved card while deck still has cards.");
+
+        return ReservedCard ?? throw new InvalidOperationException("No reserved card set. Please draw a card to set the reserved card.");
+    }
+
     /// <summary>
     /// Shuffles the deck
     /// </summary>
@@ -251,9 +260,7 @@ public class Game
         // Clear all players' cards and reset protection
         foreach (var player in Players)
         {
-            player.HoldingCards = [];
-            player.Protected = false;
-            player.PlayedCards.Clear();
+            player.ResetForNewRound();
         }
 
         // Reset deck and shuffle
@@ -307,10 +314,5 @@ public class Game
             GameStateEnum.Finished => false,
             _ => false,
         };
-    }
-    
-    public void PlayCard(string playerEmail, CardType cardType)
-    {
-
     }
 }

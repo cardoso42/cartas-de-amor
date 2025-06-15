@@ -12,11 +12,10 @@ namespace CartasDeAmor.Presentation.Hubs;
 public class GameHub(
     ILogger<GameHub> logger, IGameRoomService gameRoomService,
     IGameService gameService, IAccountService accountService,
-    IConnectionMappingService connectionMapping, ICardService cardService) : Hub
+    IConnectionMappingService connectionMapping) : Hub
 {
     private readonly ILogger<GameHub> _logger = logger;
     private readonly IGameRoomService _gameRoomService = gameRoomService;
-    private readonly ICardService _cardService = cardService;
     private readonly IGameService _gameService = gameService;
     private readonly IAccountService _accountService = accountService;
     private readonly IConnectionMappingService _connectionMapping = connectionMapping;
@@ -53,7 +52,7 @@ public class GameHub(
             var playerStatus = await _gameService.DrawCardAsync(roomId, userEmail);
 
             // Notify all players about the drawn card
-            await Clients.Client(Context.ConnectionId).SendAsync("CardDrawn", playerStatus);
+            await Clients.Client(Context.ConnectionId).SendAsync("PrivatePlayerUpdate", playerStatus);
             await Clients.Group(roomId.ToString()).SendAsync("PlayerDrewCard", userEmail);
 
             _logger.LogInformation("User {User} drew a card in room {RoomId}", userEmail, roomId);
@@ -117,7 +116,7 @@ public class GameHub(
 
         try
         {
-            var requirements = await _cardService.GetCardActionRequirementsAsync(roomId, userEmail, cardType);
+            var requirements = await _gameService.GetCardActionRequirementsAsync(roomId, userEmail, cardType);
             await Clients.Caller.SendAsync("CardRequirements", requirements);
         }
         catch (Exception ex)
@@ -127,26 +126,31 @@ public class GameHub(
         }
     }
 
-    public async Task PlayCard(Guid roomId, CardType cardType)
+    public async Task PlayCard(Guid roomId, CardPlayDto cardPlayDto)
     {
         var userEmail = _accountService.GetEmailFromTokenAsync(Context.User);
-        _logger.LogInformation("User {User} is playing card {CardType} in room {RoomId}", userEmail, cardType, roomId);
+        _logger.LogInformation("User {User} is playing card {CardType} in room {RoomId}", userEmail, cardPlayDto.CardType, roomId);
 
         try
         {
-            var result = await _gameService.PlayCardAsync(roomId, userEmail, cardType);
+            var result = await _gameService.PlayCardAsync(roomId, userEmail, cardPlayDto);
+            var invokerPrivateUpdate = await _gameService.GetPlayerStatusAsync(roomId, userEmail);
 
-            if (result.Success)
+            await Clients.Group(roomId.ToString()).SendAsync($"CardResult-{result.Result}", result);
+            await Clients.Client(Context.ConnectionId).SendAsync("PrivatePlayerUpdate", invokerPrivateUpdate);
+
+            if (result.Target != null)
             {
-                await Clients.Group(roomId.ToString()).SendAsync("CardPlayed", userEmail, cardType);
-                await Clients.Client(Context.ConnectionId).SendAsync("CardPlayedSuccess", result);
-            }
-            else
-            {
-                await Clients.Client(Context.ConnectionId).SendAsync("RequestCardInput", cardType, result);
+                var targetConnectionIds = await GetUserConnectionIds(result.Target.UserEmail, roomId);
+                var targetPrivateUpdate = await _gameService.GetPlayerStatusAsync(roomId, result.Target.UserEmail);
+
+                foreach (var connectionId in targetConnectionIds)
+                {
+                    await Clients.Client(connectionId).SendAsync("PrivatePlayerUpdate", targetPrivateUpdate);
+                }
             }
 
-            _logger.LogInformation("User {User} played card {CardType} in room {RoomId}", userEmail, cardType, roomId);
+            _logger.LogInformation("User {User} played card {CardType} in room {RoomId}", userEmail, cardPlayDto.CardType, roomId);
         }
         catch (InvalidOperationException ex)
         {

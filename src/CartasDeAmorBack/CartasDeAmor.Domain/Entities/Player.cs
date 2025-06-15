@@ -8,41 +8,10 @@ public class Player
     public Guid GameId { get; set; }
     public required string Username { get; set; }
     public required string UserEmail { get; set; }
-    public ICollection<CardType> PlayedCards { get; set; } = [];
+    public IList<CardType> PlayedCards { get; set; } = [];
     public required IList<CardType> HoldingCards { get; set; }
     public int Score { get; set; } = 0;
-    public bool Protected { get; set; } = false;
-
-    // /// <summary>
-    // /// Converts a Player entity to a PlayerStatusDto
-    // /// </summary>
-    // public PlayerStatusDto ToPlayerStatusDto(PlayerStatus status = PlayerStatus.Playing)
-    // {
-    //     return new PlayerStatusDto
-    //     {
-    //         UserEmail = UserEmail,
-    //         Username = Username,
-    //         Status = status,
-    //         IsProtected = Protected,
-    //         Score = Score,
-    //         CardsInHand = HoldingCards.Count
-    //     };
-    // }
-
-    // /// <summary>
-    // /// Converts a Player entity to a PlayerUpdateDto
-    // /// </summary>
-    // public PlayerUpdateDto ToPlayerUpdateDto()
-    // {
-    //     return new PlayerUpdateDto
-    //     {
-    //         UserEmail = UserEmail,
-    //         IsProtected = Protected,
-    //         HoldingCards = HoldingCards.ToList(),
-    //         PlayedCards = PlayedCards.ToList(),
-    //         Score = Score
-    //     };
-    // }
+    public PlayerStatus Status { get; set; } = PlayerStatus.Active;
 
     /// <summary>
     /// Checks if the player has a specific card type in their hand
@@ -60,26 +29,24 @@ public class Player
         return HoldingCards.Count > 0;
     }
 
-    /// <summary>
-    /// Gets the highest value card in the player's hand
-    /// </summary>
-    public CardType? GetHighestCard()
+    public void Eliminate()
     {
-        if (!HasCards())
-            return null;
+        foreach (var card in HoldingCards)
+        {
+            PlayedCards.Add(card);
+        }
 
-        return HoldingCards.OrderByDescending(card => (int)card).FirstOrDefault();
+        HoldingCards.Clear();
+        
+        Status = PlayerStatus.Eliminated;
     }
 
-    /// <summary>
-    /// Gets the lowest value card in the player's hand
-    /// </summary>
-    public CardType? GetLowestCard()
+    public CardType GetCard()
     {
-        if (!HasCards())
-            return null;
+        if (HoldingCards.Count == 0)
+            throw new InvalidOperationException("Player has no cards in hand.");
 
-        return HoldingCards.OrderBy(card => (int)card).FirstOrDefault();
+        return HoldingCards.First();
     }
 
     /// <summary>
@@ -93,6 +60,19 @@ public class Player
             return true;
         }
         return false;
+    }
+
+    /// <summary>
+    /// Removes the first card from the player's hand
+    /// </summary>
+    public CardType RemoveCard()
+    {
+        if (HoldingCards.Count == 0)
+            throw new InvalidOperationException("Player has no cards in hand.");
+
+        var card = HoldingCards.First();
+        HoldingCards.Remove(card);
+        return card;
     }
 
     /// <summary>
@@ -129,7 +109,7 @@ public class Player
     /// </summary>
     public bool IsProtected()
     {
-        return Protected;
+        return Status == PlayerStatus.Protected;
     }
 
     /// <summary>
@@ -137,7 +117,10 @@ public class Player
     /// </summary>
     public void SetProtection(bool isProtected)
     {
-        Protected = isProtected;
+        if (Status != PlayerStatus.Active)
+            throw new InvalidOperationException("Cannot change protection status of an eliminated or protected player.");
+        
+        Status = isProtected ? PlayerStatus.Protected : PlayerStatus.Active;
     }
 
     /// <summary>
@@ -154,7 +137,12 @@ public class Player
     public void ResetForNewRound()
     {
         HoldingCards.Clear();
-        Protected = false;
+        PlayedCards.Clear();
+
+        if (Status == PlayerStatus.Protected || Status == PlayerStatus.Eliminated)
+        {
+            Status = PlayerStatus.Active;
+        }
     }
 
     /// <summary>
@@ -194,7 +182,7 @@ public class Player
     /// </summary>
     public IList<CardType> GetHandCopy()
     {
-        return new List<CardType>(HoldingCards);
+        return HoldingCards.ToList();
     }
 
     /// <summary>

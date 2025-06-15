@@ -13,9 +13,34 @@ public class Guard : Card
 
     public override CardType CardType => CardType.Guard;
 
-    public override void Play(Player currentPlayer, Game game)
+    public override CardActionResults Play(Game game, Player invokerPlayer, Player? targetPlayer, CardType? targetCardType)
     {
-        
+        // If the player guesses the card type of the target player correctly, the target player is eliminated.
+
+        if (targetPlayer == null || targetCardType == null)
+        {
+            throw new ArgumentException("Target player and card type must be provided for Guard action.");
+        }
+
+        if (targetPlayer.IsEliminated())
+        {
+            throw new InvalidOperationException("Target player is already eliminated.");
+        }
+
+        if (!targetPlayer.CanBeTargeted())
+        {
+            throw new InvalidOperationException("Target player cannot be targeted at this time.");
+        }
+
+        if (targetPlayer.HasCard(targetCardType.Value))
+        {
+            targetPlayer.Eliminate();
+            return CardActionResults.PlayerEliminated;
+        }
+        else
+        {
+            return CardActionResults.None;
+        }
     }
     
     public override CardRequirements? GetCardActionRequirements()
