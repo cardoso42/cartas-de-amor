@@ -151,6 +151,9 @@ public class GameHub(
             }
 
             _logger.LogInformation("User {User} played card {CardType} in room {RoomId}", userEmail, cardPlayDto.CardType, roomId);
+
+            var nextTurnPlayer = await _gameService.NextPlayerAsync(roomId);
+            await Clients.Group(roomId.ToString()).SendAsync("NextTurn", nextTurnPlayer);
         }
         catch (InvalidOperationException ex)
         {

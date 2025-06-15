@@ -1072,6 +1072,14 @@ function setupSignalRHandlers() {
     signalRConnection.on('CardResult-ProtectionGranted', (cardResult) => {
         addGameMessage(`${cardResult.invoker.userEmail} is now protected for 1 turn`, 'info');
     });
+
+    signalRConnection.on('NextTurn', (nextPlayer) => {
+        console.log('Next turn:', nextPlayer);
+        addGameMessage(`It's now ${nextPlayer}'s turn`, 'info');
+        // Update the draw card button based on whose turn it is
+        const isMyTurn = nextPlayer === currentUser?.email;
+        updateDrawCardButton(isMyTurn);
+    });
     
     signalRConnection.on('PrivatePlayerUpdate', (playerUpdate) => {        
         // Update player's full status from the PlayerUpdateDto
