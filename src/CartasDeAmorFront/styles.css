@@ -588,6 +588,83 @@ body {
     min-width: 100px;
 }
 
+/* Card Selection Modal Styles */
+.cards-selection {
+    margin: 1rem 0;
+}
+
+.selection-step h4 {
+    margin-bottom: 0.75rem;
+    color: #4a5568;
+    border-bottom: 1px solid #e2e8f0;
+    padding-bottom: 0.5rem;
+}
+
+.card-options {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+}
+
+.card-option {
+    position: relative;
+    width: 120px;
+    height: 160px;
+    background-color: #f8f9ff;
+    border: 2px solid #667eea;
+    border-radius: 8px;
+    padding: 0.5rem;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    transition: all 0.2s ease-in-out;
+}
+
+.card-option:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+}
+
+.card-option.selected {
+    border-color: #4caf50;
+    box-shadow: 0 0 0 3px #4caf50;
+}
+
+.card-option input[type="radio"] {
+    position: absolute;
+    top: 0.5rem;
+    left: 0.5rem;
+}
+
+.sortable-cards {
+    min-height: 200px;
+    padding: 1rem;
+    border: 1px dashed #cbd5e0;
+    border-radius: 8px;
+    background-color: #f9fafc;
+}
+
+.sortable-cards .card-option {
+    cursor: grab;
+    margin-bottom: 0.5rem;
+    width: 100%;
+    height: auto;
+    flex-direction: row;
+    justify-content: space-between;
+    padding: 0.75rem;
+}
+
+.sortable-cards .card-option:last-child {
+    margin-bottom: 0;
+}
+
+.sortable-cards .card-option:active {
+    cursor: grabbing;
+}
+
 /* Responsive Design */
 @media (max-width: 768px) {
     .header {

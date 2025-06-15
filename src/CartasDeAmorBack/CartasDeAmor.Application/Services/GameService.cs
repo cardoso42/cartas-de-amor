@@ -292,4 +292,49 @@ public class GameService : IGameService
 
         return GetGameStatusDtos(game);
     }
+
+    public async Task<PublicPlayerUpdateDto> SubmitCardChoiceAsync(Guid roomId, string userEmail, CardType keepCardType, List<CardType> returnCardsType)
+    {
+        var game = _roomRepository.GetByIdAsync(roomId).Result ?? throw new InvalidOperationException("Room not found");
+
+        if (!game.GameStarted)
+        {
+            throw new InvalidOperationException("Game has not started yet");
+        }
+
+        // Verify it's the player's turn
+        if (!IsPlayerTurnAsync(roomId, userEmail).Result)
+        {
+            throw new InvalidOperationException("It's not your turn");
+        }
+
+        // We can only submit card choices when waiting for card play
+        if (game.GameState != GameStateEnum.WaitingForPlay)
+        {
+            throw new InvalidOperationException($"Cannot submit card choice in current state: {game.GameState}");
+        }
+
+        var player = game.GetPlayerByEmail(userEmail) ?? throw new InvalidOperationException("Player not found in the game");
+        if (!player.HoldingCards.Contains(keepCardType))
+        {
+            throw new InvalidOperationException("You do not have the card you are trying to keep");
+        }
+        if (returnCardsType.Any(card => !player.HoldingCards.Contains(card)))
+        {
+            throw new InvalidOperationException("You do not have all the cards you are trying to return");
+        }
+
+        foreach (var cardType in returnCardsType)
+        {
+            player.RemoveCard(cardType);
+            game.ReturnCardToDeck(cardType);
+        }
+
+        await _roomRepository.UpdateAsync(game);
+
+        _logger.LogInformation("Player {UserEmail} has submitted card choice: keep {KeepCardType}, return {ReturnCardsType} in room {RoomId}",
+            userEmail, keepCardType, string.Join(", ", returnCardsType), roomId);
+
+        return new PublicPlayerUpdateDto(player);
+    }
 }

@@ -3,6 +3,7 @@ using CartasDeAmor.Domain.Services;
 using CartasDeAmor.Domain.Enums;
 using CartasDeAmor.Application.Interfaces;
 using Microsoft.AspNetCore.Authorization;
+using CartasDeAmor.Domain.Entities;
 
 namespace CartasDeAmor.Presentation.Hubs;
 
@@ -124,6 +125,33 @@ public class GameHub(
         }
     }
 
+    private async Task AdvanceGame(Guid roomId)
+    {
+        var roundWinner = await _gameService.GetRoundWinnerAsync(roomId);
+        if (roundWinner != null)
+        {
+            _logger.LogInformation("Round winner in room {RoomId} is {Winner}", roomId, roundWinner);
+
+            var newRoundData = await _gameService.StartNewRoundAsync(roomId);
+
+            await Clients.Group(roomId.ToString()).SendAsync("RoundWinner", roundWinner);
+
+            var players = (await _gameService.GetPlayersAsync(roomId)).Select(p => p.UserEmail).ToList();
+            foreach (var playerEmail in players)
+            {
+                var connectionIds = await GetUserConnectionIds(playerEmail, roomId);
+                foreach (var connectionId in connectionIds)
+                {
+                    await Clients.Client(connectionId).SendAsync("RoundStarted", newRoundData);
+                }
+            }
+        }
+
+        // TODO: Calling NextPlayerAsync after StartNewRoundAsync makes the next round start with the after the one who won (it should be the one who just won)
+        var nextTurnPlayer = await _gameService.NextPlayerAsync(roomId);
+        await Clients.Group(roomId.ToString()).SendAsync("NextTurn", nextTurnPlayer);
+    }
+
     public async Task PlayCard(Guid roomId, CardPlayDto cardPlayDto)
     {
         var userEmail = _accountService.GetEmailFromTokenAsync(Context.User);
@@ -132,9 +160,9 @@ public class GameHub(
         try
         {
             var result = await _gameService.PlayCardAsync(roomId, userEmail, cardPlayDto);
-            var invokerPrivateUpdate = await _gameService.GetPlayerStatusAsync(roomId, userEmail);
-
             await Clients.Group(roomId.ToString()).SendAsync($"CardResult-{result.Result}", result);
+
+            var invokerPrivateUpdate = await _gameService.GetPlayerStatusAsync(roomId, userEmail);
             await Clients.Client(Context.ConnectionId).SendAsync("PrivatePlayerUpdate", invokerPrivateUpdate);
 
             if (result.Target != null)
@@ -150,28 +178,13 @@ public class GameHub(
 
             _logger.LogInformation("User {User} played card {CardType} in room {RoomId}", userEmail, cardPlayDto.CardType, roomId);
 
-            var roundWinner = await _gameService.GetRoundWinnerAsync(roomId);
-            if (roundWinner != null)
+            if (result.Result == CardActionResults.ChooseCard)
             {
-                _logger.LogInformation("Round winner in room {RoomId} is {Winner}", roomId, roundWinner);
-
-                var newRoundData = await _gameService.StartNewRoundAsync(roomId);
-
-                await Clients.Group(roomId.ToString()).SendAsync("RoundWinner", roundWinner);
-
-                var players = (await _gameService.GetPlayersAsync(roomId)).Select(p => p.UserEmail).ToList();
-                foreach (var playerEmail in players)
-                {
-                    var connectionIds = await GetUserConnectionIds(playerEmail, roomId);
-                    foreach (var connectionId in connectionIds)
-                    {
-                        await Clients.Client(connectionId).SendAsync("RoundStarted", newRoundData);
-                    }
-                }
+                await Clients.Client(Context.ConnectionId).SendAsync("ChooseCard", result.CardType);
+                return; // Do not advance the game until the user chooses a card
             }
 
-            var nextTurnPlayer = await _gameService.NextPlayerAsync(roomId);
-            await Clients.Group(roomId.ToString()).SendAsync("NextTurn", nextTurnPlayer);
+            await AdvanceGame(roomId);
         }
         catch (InvalidOperationException ex)
         {
@@ -182,6 +195,33 @@ public class GameHub(
         {
             _logger.LogError(ex, "Error playing card for user {User} in room {RoomId}", userEmail, roomId);
             throw new HubException("Failed to play card");
+        }
+    }
+
+    public async Task SubmitCardChoice(Guid roomId, CardType keepCardType, List<CardType> returnCardTypes)
+    {
+        var userEmail = _accountService.GetEmailFromTokenAsync(Context.User);
+        _logger.LogInformation("User {User} is submitting card choice in room {RoomId}", userEmail, roomId);
+
+        try
+        {
+            var playerUpdate = await _gameService.SubmitCardChoiceAsync(roomId, userEmail, keepCardType, returnCardTypes);
+            await Clients.Group(roomId.ToString()).SendAsync("CardChoiceSubmitted", playerUpdate);
+
+            var invokerPrivateUpdate = await _gameService.GetPlayerStatusAsync(roomId, userEmail);
+            await Clients.Client(Context.ConnectionId).SendAsync("PrivatePlayerUpdate", invokerPrivateUpdate);
+
+            await AdvanceGame(roomId);
+        }
+        catch (InvalidOperationException ex)
+        {
+            _logger.LogWarning(ex, "Failed to submit card choice for user {User} in room {RoomId}", userEmail, roomId);
+            await Clients.Caller.SendAsync("CardChoiceError", ex.Message);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error submitting card choice for user {User} in room {RoomId}", userEmail, roomId);
+            throw new HubException("Failed to submit card choice");
         }
     }
 
@@ -203,7 +243,6 @@ public class GameHub(
 
             _connectionMapping.AddConnection(userEmail, Context.ConnectionId);
             await Groups.AddToGroupAsync(Context.ConnectionId, roomId.ToString());
-            // TODO: Send current game state to the reconnected client
         }
         catch (Exception ex)
         {

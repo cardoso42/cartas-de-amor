@@ -45,8 +45,6 @@ public class Baron : Card
         return CardActionResults.None;
     }
 
-    // TODO: Move this to database stored data
-
     public override CardRequirements? GetCardActionRequirements()
     {
         return new()

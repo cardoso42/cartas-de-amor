@@ -998,6 +998,20 @@ function setupSignalRHandlers() {
         // Update the card buttons to reflect the new hand
         generateCardButtons();
     });
+
+    signalRConnection.on('ChooseCard', (cardType) => {
+        console.log('Choose card request:', cardType);
+        
+        // The cardType parameter is just to answer the server back
+        // Use the player's current cards stored in playerCards array
+        if (playerCards && playerCards.length > 0) {
+            // Show the modal to choose and sort cards from player's hand
+            showChooseCardModal(playerCards);
+        } else {
+            console.error('ChooseCard event received but player has no cards');
+            showMessage('Error: No cards to choose from', 'error');
+        }
+    });
     
     signalRConnection.on('GameStartError', (error) => {
         console.error('Game start error from server:', error);
@@ -1316,3 +1330,343 @@ window.addEventListener('beforeunload', () => {
         signalRConnection.stop();
     }
 });
+function showChooseCardModal(cards) {
+    const modal = document.getElementById('card-input-modal');
+    const modalTitle = document.getElementById('modal-title');
+    const modalDescription = document.getElementById('modal-description');
+    const inputContainer = document.getElementById('input-container');
+    const cardForm = document.getElementById('card-input-form');
+    
+    // Store cards globally for reference in other functions
+    window.cardsToChooseFrom = cards;
+    
+    // Set modal title and description
+    modalTitle.textContent = 'Choose a Card to Keep';
+    modalDescription.textContent = 'Choose one card to keep. The remaining cards will be placed back on the deck in the order you arrange them.';
+    
+    // Clear previous inputs
+    inputContainer.innerHTML = '';
+    
+    // Create the instructions div
+    const instructionsDiv = document.createElement('div');
+    instructionsDiv.className = 'instructions';
+    instructionsDiv.innerHTML = `
+        <p><strong>1.</strong> Select the card you want to keep</p>
+        <p><strong>2.</strong> Arrange the remaining cards in the order they should go back on the deck (top to bottom)</p>
+    `;
+    instructionsDiv.style.marginBottom = '1rem';
+    instructionsDiv.style.padding = '0.75rem';
+    instructionsDiv.style.backgroundColor = '#f0f4ff';
+    instructionsDiv.style.border = '1px solid #ccd5ff';
+    instructionsDiv.style.borderRadius = '4px';
+    inputContainer.appendChild(instructionsDiv);
+    
+    // Create a container for all cards
+    const cardsContainer = document.createElement('div');
+    cardsContainer.className = 'cards-selection';
+    cardsContainer.style.display = 'flex';
+    cardsContainer.style.flexDirection = 'column';
+    cardsContainer.style.gap = '1rem';
+    inputContainer.appendChild(cardsContainer);
+    
+    // Step 1: Choose card to keep
+    const step1Container = document.createElement('div');
+    step1Container.className = 'selection-step';
+    step1Container.innerHTML = '<h4>Step 1: Select card to keep</h4>';
+    
+    const keepCardContainer = document.createElement('div');
+    keepCardContainer.className = 'card-options';
+    keepCardContainer.style.display = 'flex';
+    keepCardContainer.style.gap = '0.75rem';
+    keepCardContainer.style.flexWrap = 'wrap';
+    
+    // Create a card option for each card
+    cards.forEach((cardType, index) => {
+        const cardOption = createCardElement(cardType, index, true);
+        keepCardContainer.appendChild(cardOption);
+    });
+    
+    step1Container.appendChild(keepCardContainer);
+    cardsContainer.appendChild(step1Container);
+    
+    // Step 2: Sort remaining cards
+    const step2Container = document.createElement('div');
+    step2Container.className = 'selection-step';
+    step2Container.innerHTML = '<h4>Step 2: Arrange remaining cards (drag to reorder)</h4>';
+    
+    const sortCardsContainer = document.createElement('div');
+    sortCardsContainer.id = 'sort-cards-container';
+    sortCardsContainer.className = 'sortable-cards';
+    sortCardsContainer.style.display = 'flex';
+    sortCardsContainer.style.flexDirection = 'column';
+    sortCardsContainer.style.gap = '0.5rem';
+    sortCardsContainer.style.minHeight = '200px';
+    sortCardsContainer.style.padding = '0.75rem';
+    sortCardsContainer.style.border = '1px dashed #ccd5ff';
+    sortCardsContainer.style.borderRadius = '4px';
+    
+    // Add a message that will be replaced with cards when a card is selected to keep
+    const placeholderMsg = document.createElement('p');
+    placeholderMsg.textContent = 'Cards to return will appear here after you select a card to keep';
+    placeholderMsg.style.color = '#999';
+    placeholderMsg.style.textAlign = 'center';
+    placeholderMsg.style.padding = '1rem 0';
+    sortCardsContainer.appendChild(placeholderMsg);
+    
+    step2Container.appendChild(sortCardsContainer);
+    cardsContainer.appendChild(step2Container);
+    
+    // Show modal
+    modal.style.display = 'flex';
+    
+    // Setup drag and drop functionality
+    setupDragAndDrop();
+    
+    // Handle form submission
+    cardForm.onsubmit = (e) => {
+        e.preventDefault();
+        handleChooseCardSubmit();
+    };
+    
+    // Setup modal close handlers
+    setupModalCloseHandlers();
+}
+
+function createCardElement(cardType, index, isSelectable) {
+    const cardOption = document.createElement('div');
+    cardOption.className = 'card-option';
+    cardOption.dataset.cardType = cardType;
+    cardOption.dataset.index = index;
+    
+    // Style the card
+    Object.assign(cardOption.style, {
+        width: '120px',
+        height: '160px',
+        backgroundColor: '#f8f9ff',
+        border: '2px solid #667eea',
+        borderRadius: '8px',
+        padding: '0.5rem',
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        justifyContent: 'center',
+        textAlign: 'center',
+        position: 'relative',
+        cursor: isSelectable ? 'pointer' : 'grab'
+    });
+    
+    // Add card content
+    const cardName = document.createElement('h5');
+    cardName.textContent = CARD_TYPES[cardType] || `Card ${cardType}`;
+    cardName.style.margin = '0 0 0.5rem 0';
+    
+    const cardValue = document.createElement('div');
+    cardValue.textContent = cardType;
+    cardValue.style.fontSize = '1.5rem';
+    cardValue.style.fontWeight = 'bold';
+    
+    cardOption.appendChild(cardName);
+    cardOption.appendChild(cardValue);
+    
+    // Add selection functionality if needed
+    if (isSelectable) {
+        const radioInput = document.createElement('input');
+        radioInput.type = 'radio';
+        radioInput.name = 'keep-card';
+        radioInput.value = cardType;
+        radioInput.style.position = 'absolute';
+        radioInput.style.top = '0.5rem';
+        radioInput.style.left = '0.5rem';
+        
+        cardOption.appendChild(radioInput);
+        
+        // Make the whole card clickable for selection
+        cardOption.addEventListener('click', () => {
+            radioInput.checked = true;
+            
+            // Remove selected class from all cards
+            document.querySelectorAll('.card-option').forEach(card => {
+                card.classList.remove('selected');
+                card.style.boxShadow = 'none';
+            });
+            
+            // Add selected class and visual indicator
+            cardOption.classList.add('selected');
+            cardOption.style.boxShadow = '0 0 0 3px #4caf50';
+            
+            // Store which card was selected in the DOM element
+            cardOption.dataset.selected = 'true';
+            
+            // Update the sorting area with remaining cards
+            // Pass both card type and the original index
+            updateRemainingCards(window.cardsToChooseFrom, cardType);
+        });
+    }
+    
+    // Add drag attributes if not selectable (for sorting)
+    if (!isSelectable) {
+        cardOption.draggable = true;
+        cardOption.addEventListener('dragstart', (e) => {
+            e.dataTransfer.setData('text/plain', index);
+            cardOption.style.opacity = '0.5';
+        });
+        cardOption.addEventListener('dragend', () => {
+            cardOption.style.opacity = '1';
+        });
+    }
+    
+    return cardOption;
+}
+
+function updateRemainingCards(allCards, selectedCardType) {
+    // Get the sorting container
+    const sortCardsContainer = document.getElementById('sort-cards-container');
+    
+    // Clear the container
+    sortCardsContainer.innerHTML = '';
+        
+    // We need to make a copy of the array with all the cards
+    const remainingCards = [...allCards];
+    
+    // Get the original dataset index of the clicked card from the DOM
+    const selectedCardElement = document.querySelector('.card-option.selected');
+    const selectedOriginalIndex = selectedCardElement ? parseInt(selectedCardElement.dataset.index) : -1;
+        
+    // If we have a valid index from the DOM element, use that for precise removal
+    if (selectedOriginalIndex >= 0 && selectedOriginalIndex < remainingCards.length) {
+        remainingCards.splice(selectedOriginalIndex, 1);
+    } else {
+        // Fallback: Remove the first occurrence of the card type
+        const selectedIndex = remainingCards.findIndex(card => card == selectedCardType);
+        if (selectedIndex !== -1) {
+            remainingCards.splice(selectedIndex, 1);
+        }
+    }
+        
+    if (remainingCards.length === 0) {
+        // If no cards remain (should not happen but just in case)
+        const noCardsMsg = document.createElement('p');
+        noCardsMsg.textContent = 'No cards to arrange';
+        noCardsMsg.style.color = '#999';
+        sortCardsContainer.appendChild(noCardsMsg);
+        return;
+    }
+    
+    // Add instructions for drag and drop
+    const instructions = document.createElement('p');
+    instructions.textContent = 'Drag and drop to reorder:';
+    instructions.style.margin = '0 0 0.75rem 0';
+    sortCardsContainer.appendChild(instructions);
+    
+    // Add the remaining cards to the container
+    // We need to ensure each card gets a unique identifier
+    remainingCards.forEach((cardType, newIndex) => {
+        // Create a draggable card element
+        const cardElement = createCardElement(cardType, newIndex, false);
+        
+        // Store the original type for submission
+        cardElement.dataset.originalType = cardType;
+        
+        // Add to container
+        sortCardsContainer.appendChild(cardElement);
+    });
+}
+
+function setupDragAndDrop() {
+    const sortCardsContainer = document.getElementById('sort-cards-container');
+    
+    // Make the container a drop target
+    sortCardsContainer.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        const afterElement = getDragAfterElement(sortCardsContainer, e.clientY);
+        const draggable = document.querySelector('.card-option[draggable="true"][style*="opacity: 0.5"]');
+        
+        if (draggable && afterElement) {
+            sortCardsContainer.insertBefore(draggable, afterElement);
+        } else if (draggable) {
+            sortCardsContainer.appendChild(draggable);
+        }
+    });
+}
+
+function getDragAfterElement(container, y) {
+    // Get all draggable elements that are not being dragged
+    const draggableElements = [...container.querySelectorAll('.card-option[draggable="true"]:not([style*="opacity: 0.5"])')];
+    
+    return draggableElements.reduce((closest, child) => {
+        const box = child.getBoundingClientRect();
+        const offset = y - box.top - box.height / 2;
+        
+        if (offset < 0 && offset > closest.offset) {
+            return { offset: offset, element: child };
+        } else {
+            return closest;
+        }
+    }, { offset: Number.NEGATIVE_INFINITY }).element;
+}
+
+function handleChooseCardSubmit() {
+    // Get the selected card to keep
+    const selectedCardRadio = document.querySelector('input[name="keep-card"]:checked');
+    
+    if (!selectedCardRadio) {
+        showMessage('Please select a card to keep', 'error');
+        return;
+    }
+    
+    const keepCardType = parseInt(selectedCardRadio.value);
+    
+    // Get the order of remaining cards
+    const sortedCards = [];
+    document.querySelectorAll('#sort-cards-container .card-option').forEach(cardElement => {
+        // Use originalType if available, otherwise fall back to cardType
+        const cardType = cardElement.dataset.originalType || cardElement.dataset.cardType;
+        if (cardType) {
+            sortedCards.push(parseInt(cardType));
+        }
+    });
+    
+    // Check if we have all the necessary inputs
+    if (sortedCards.length === 0 && document.querySelectorAll('#sort-cards-container .card-option').length > 0) {
+        showMessage('Please arrange the remaining cards', 'error');
+        return;
+    }
+    
+    console.log('Card to keep:', keepCardType);
+    console.log('Cards to return (in order):', sortedCards);
+    
+    // Check if we have the correct number of cards in total
+    const totalCards = 1 + sortedCards.length; // 1 for keep card + sorted cards
+    console.log(`Total cards: ${totalCards} (expected ${window.cardsToChooseFrom.length})`);
+    if (totalCards !== window.cardsToChooseFrom.length) {
+        console.warn('Warning: Card count mismatch! Original:', window.cardsToChooseFrom, 'Submitted:', [keepCardType, ...sortedCards]);
+    }
+    
+    // Send the selection to the server
+    submitCardChoice(keepCardType, sortedCards);
+    
+    // Close modal
+    hideCardInputModal();
+}
+
+async function submitCardChoice(keepCardType, sortedReturnCards) {
+    if (!currentRoom) return;
+    
+    try {
+        if (signalRConnection && signalRConnection.state === signalR.HubConnectionState.Connected) {
+            // Send the choice back to the server - the server will replace the player's cards
+            await signalRConnection.invoke('SubmitCardChoice', currentRoom.id, keepCardType, sortedReturnCards);
+            addGameMessage(`You chose to keep: ${CARD_TYPES[keepCardType]}`, 'info');
+            
+            // Update the player's hand optimistically (the server will send the correct state later)
+            playerCards = [keepCardType];
+            updatePlayerCard(keepCardType);
+            generateCardButtons();
+        } else {
+            showMessage('Not connected to game server', 'error');
+        }
+    } catch (error) {
+        console.error('Submit card choice error:', error);
+        showMessage(`Failed to submit card choice: ${error.message}`, 'error');
+    }
+}

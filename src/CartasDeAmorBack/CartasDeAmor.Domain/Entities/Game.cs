@@ -12,7 +12,7 @@ public class Game
     public bool PasswordProtected => !string.IsNullOrEmpty(Password);
     public required string HostEmail { get; set; }
     public IList<Player> Players { get; set; } = [];
-    public ICollection<CardType> CardsDeck { get; set; } = [];
+    public IList<CardType> CardsDeck { get; set; } = [];
     public CardType? ReservedCard { get; set; }
     public int CurrentPlayerIndex { get; set; } = 0;
     public bool GameStarted { get; set; } = false;
@@ -319,5 +319,12 @@ public class Game
             GameStateEnum.Finished => false,
             _ => false,
         };
+    }
+
+    public bool ReturnCardToDeck(CardType cardType)
+    {
+        CardsDeck = CardsDeck.Append(cardType).ToList();
+        UpdatedAt = DateTime.UtcNow;
+        return true;
     }
 }

@@ -12,6 +12,7 @@ public interface IGameService
     Task<PrivatePlayerUpdateDto> DrawCardAsync(Guid roomId, string userEmail);
     Task<CardRequirementsDto> GetCardActionRequirementsAsync(Guid roomId, string currentPlayer, CardType cardType);
     Task<CardActionResultDto> PlayCardAsync(Guid roomId, string userEmail, CardPlayDto cardPlay);
+    Task<PublicPlayerUpdateDto> SubmitCardChoiceAsync(Guid roomId, string userEmail, CardType keepCardType, List<CardType> returnCardsType);
     Task<IList<Player>> GetPlayersAsync(Guid roomId);
     Task<bool> IsPlayerTurnAsync(Guid roomId, string userEmail);
     Task<string> NextPlayerAsync(Guid roomId);

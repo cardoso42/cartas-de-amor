@@ -13,8 +13,6 @@ public class Player
     public int Score { get; set; } = 0;
     public PlayerStatus Status { get; set; } = PlayerStatus.Active;
 
-    // TODO: Remove Protected Status after one turn
-
     /// <summary>
     /// Checks if the player has a specific card type in their hand
     /// </summary>
