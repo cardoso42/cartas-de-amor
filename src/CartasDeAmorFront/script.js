@@ -118,8 +118,12 @@ async function handleLogin(e) {
         
         if (response.ok) {
             const data = await response.json();
-            accessToken = data.accessToken;
-            currentUser = { username: username };
+
+            accessToken = data.token;
+            currentUser = { 
+                username: username,
+                email: data.email || null // Email may not be returned in login response 
+            };
             
             // Debug: decode JWT token to see claims
             try {

@@ -59,18 +59,14 @@ public class AccountController : ControllerBase
 
         try
         {
-            var accessToken = await _accountService.LoginAsync(
+            var loginResult = await _accountService.LoginAsync(
                 loginRequest.Username,
                 loginRequest.Password
             );
 
             _logger.LogInformation("Successfully authenticated user {Username}", loginRequest.Username);
 
-            return Ok(new
-            {
-                AccessToken = accessToken,
-                Message = "Login successful."
-            });
+            return Ok(loginResult);
         }
         catch (UnauthorizedAccessException ex)
         {

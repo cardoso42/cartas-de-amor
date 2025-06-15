@@ -1,4 +1,5 @@
 using System.Security.Claims;
+using CartasDeAmor.Application.DTOs;
 
 namespace CartasDeAmor.Domain.Services;
 
@@ -19,7 +20,7 @@ public interface IAccountService
     /// <param name="username">The username of the account.</param>
     /// <param name="password">The password to verify.</param>
     /// <returns>A JWT token if authentication is successful, or throws an exception if it fails.</returns>
-    Task<string> LoginAsync(string username, string password);
+    Task<LoginResultDto> LoginAsync(string username, string password);
 
     /// <summary>
     /// Deletes a user account.

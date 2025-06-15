@@ -7,6 +7,7 @@ using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
 using BCrypt.Net;
+using CartasDeAmor.Application.DTOs;
 
 namespace CartasDeAmor.Application.Services;
 
@@ -44,7 +45,7 @@ public class AccountService : IAccountService
         return GenerateJwtToken(newUser);
     }
 
-    public async Task<string> LoginAsync(string username, string password)
+    public async Task<LoginResultDto> LoginAsync(string username, string password)
     {
         var user = await _userRepository.GetByUsernameAsync(username);
         if (user == null)
@@ -53,7 +54,14 @@ public class AccountService : IAccountService
         if (!BCrypt.Net.BCrypt.Verify(password, user.PasswordHash))
             throw new UnauthorizedAccessException("Invalid username or password");
 
-        return GenerateJwtToken(user);
+        return new LoginResultDto()
+        {
+            Username = user.Username,
+            Email = user.Email,
+            Token = GenerateJwtToken(user),
+            Expiration = DateTime.Now.AddMinutes(Convert.ToDouble(_configuration["Jwt:ExpirationInMinutes"])),
+            Message = "Login successful"
+        };
     }
 
     public async Task DeleteAccountAsync(string email)
