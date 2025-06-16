@@ -67,6 +67,7 @@ public class GameService : IGameService
             throw new InvalidOperationException("At least 2 players are required to start the game");
         }
 
+        game.ConfigureGame();
         game.StartNewRound();
         game.TransitionToState(GameStateEnum.WaitingForDraw);
 

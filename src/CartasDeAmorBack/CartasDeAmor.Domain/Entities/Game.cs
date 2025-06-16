@@ -16,6 +16,7 @@ public class Game
     public IList<CardType> CardsDeck { get; set; } = [];
     public CardType? ReservedCard { get; set; }
     public int CurrentPlayerIndex { get; set; } = 0;
+    public int MaxTokens { get; set; } = 3;
     public GameStateEnum GameState { get; set; } = GameStateEnum.WaitingForPlayers;
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
@@ -58,7 +59,7 @@ public class Game
     /// <summary>
     /// Checks if the game is full (reached maximum players)
     /// </summary>
-    public bool IsFull(int maxPlayers = 4)
+    public bool IsFull(int maxPlayers = 6)
     {
         return Players.Count >= maxPlayers;
     }
@@ -243,17 +244,17 @@ public class Game
     /// <summary>
     /// Checks if the game is over (a player reached the target score)
     /// </summary>
-    public bool IsGameOver(int targetScore = 2)
+    public bool IsGameOver()
     {
-        return Players.Any(p => p.Score >= targetScore);
+        return Players.Any(p => p.Score >= MaxTokens);
     }
 
     /// <summary>
     /// Gets the overall winner of the game
     /// </summary>
-    public IList<Player> GetGameWinner(int targetScore = 2)
+    public IList<Player> GetGameWinner()
     {
-        return Players.Where(p => p.Score >= targetScore).ToList();
+        return Players.Where(p => p.Score >= MaxTokens).ToList();
     }
 
     /// <summary>
@@ -270,6 +271,19 @@ public class Game
         player.HandCard(card);
 
         return player;
+    }
+
+    public void ConfigureGame()
+    {
+        MaxTokens = Players.Count switch
+        {
+            2 => 6,
+            3 => 5,
+            4 => 4,
+            5 => 3,
+            6 => 3,
+            _ => throw new InvalidOperationException("Invalid number of players for game configuration.")
+        };
     }
 
     /// <summary>
