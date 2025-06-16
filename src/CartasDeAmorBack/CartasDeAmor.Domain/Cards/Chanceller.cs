@@ -1,5 +1,6 @@
 using CartasDeAmor.Domain.Entities;
 using CartasDeAmor.Domain.Enums;
+using CartasDeAmor.Domain.Exceptions;
 
 namespace CartasDeAmor.Domain.Cards;
 
@@ -16,16 +17,23 @@ public class Chanceller : Card
     public override CardActionResults Play(Game game, Player invokerPlayer, Player? targetPlayer, CardType? targetCardType)
     {
         // Player draws two cards from the deck and chooses one to keep.
-        
-        for (int i = 0; i < 2; i++)
+
+        try
         {
-            var drawnCard = game.DrawCard();
-            if (drawnCard == null) break;
-            invokerPlayer.HandCard(drawnCard.Value);
+            for (int i = 0; i < 2; i++)
+            {
+                var drawnCard = game.DrawCard();
+                invokerPlayer.HandCard(drawnCard);
+            }
+        }
+        catch (EmptyDeckException)
+        {
+            // According to the rules, if the card deck is empty when playing a
+            // Chanceller card, the player just draws what is available (if any)
+            // So, we don't need to handle this case specifically.
         }
 
         return CardActionResults.ChooseCard;
-
     }
     
     public override CardRequirements? GetCardActionRequirements()

@@ -1,5 +1,6 @@
 using System.Diagnostics.Contracts;
 using CartasDeAmor.Domain.Enums;
+using CartasDeAmor.Domain.Exceptions;
 using CartasDeAmor.Domain.Factories;
 
 namespace CartasDeAmor.Domain.Entities;
@@ -151,10 +152,10 @@ public class Game
     /// <summary>
     /// Draws a card from the deck
     /// </summary>
-    public CardType? DrawCard()
+    public CardType DrawCard()
     {
         if (CardsDeck.Count == 0)
-            return null;
+            throw new EmptyDeckException();
 
         var card = CardsDeck.First();
         CardsDeck.Remove(card);
@@ -249,7 +250,7 @@ public class Game
         if (player == null)
             throw new InvalidOperationException($"Player with email {playerEmail} not found in the ");
 
-        var card = DrawCard() ?? throw new InvalidOperationException("No cards left in the deck to draw.");
+        var card = DrawCard();
         player.HandCard(card);
 
         return player;
@@ -273,12 +274,12 @@ public class Game
         ShuffleDeck();
 
         // Set aside the reserved card
-        ReservedCard = DrawCard() ?? throw new InvalidOperationException("Failed to draw reserved card");
+        ReservedCard = DrawCard();
 
         // Deal initial cards to players
         foreach (var player in Players)
         {
-            player.HandCard(DrawCard() ?? throw new InvalidOperationException("Failed to draw initial card for player"));
+            player.HandCard(DrawCard());
         }
 
         // Reset current player index

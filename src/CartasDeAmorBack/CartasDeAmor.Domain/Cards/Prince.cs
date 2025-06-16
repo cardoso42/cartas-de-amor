@@ -1,5 +1,6 @@
 using CartasDeAmor.Domain.Entities;
 using CartasDeAmor.Domain.Enums;
+using CartasDeAmor.Domain.Exceptions;
 
 namespace CartasDeAmor.Domain.Cards;
 
@@ -32,7 +33,16 @@ public class Prince : Card
             return CardActionResults.PlayerEliminated;
         }
 
-        var newCard = game.DrawCard() ?? game.GetReservedCard();
+        CardType newCard;
+        try
+        {
+            newCard = game.DrawCard();
+        }
+        catch (EmptyDeckException)
+        {
+            newCard = game.GetReservedCard();
+        }
+
         targetPlayer.HandCard(newCard);
 
         return CardActionResults.DiscardAndDrawCard;
