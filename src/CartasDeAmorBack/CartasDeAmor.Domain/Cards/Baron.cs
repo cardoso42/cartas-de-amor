@@ -1,5 +1,6 @@
 using CartasDeAmor.Domain.Entities;
 using CartasDeAmor.Domain.Enums;
+using CartasDeAmor.Domain.Exceptions;
 
 namespace CartasDeAmor.Domain.Cards;
 
@@ -20,7 +21,7 @@ public class Baron : Card
 
         if (targetPlayer == null)
         {
-            throw new ArgumentNullException(nameof(targetPlayer), "Target player must be specified for Baron action.");
+            throw new CardRequirementsNotMetException("Target player must be specified for Baron action.");
         }
 
         if (targetPlayer.IsProtected())

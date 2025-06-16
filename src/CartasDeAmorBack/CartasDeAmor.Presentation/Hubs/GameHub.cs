@@ -4,6 +4,7 @@ using CartasDeAmor.Domain.Enums;
 using CartasDeAmor.Application.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using CartasDeAmor.Domain.Entities;
+using CartasDeAmor.Domain.Exceptions;
 
 namespace CartasDeAmor.Presentation.Hubs;
 
@@ -185,6 +186,12 @@ public class GameHub(
             }
 
             await AdvanceGame(roomId);
+        }
+        catch (CardRequirementsNotMetException ex)
+        {
+            _logger.LogWarning(ex, "Card requirements not met for user {User} in room {RoomId}. Resending them", userEmail, roomId);
+            var requirements = await _gameService.GetCardActionRequirementsAsync(roomId, userEmail, cardPlayDto.CardType);
+            await Clients.Caller.SendAsync("CardRequirements", requirements);
         }
         catch (InvalidOperationException ex)
         {

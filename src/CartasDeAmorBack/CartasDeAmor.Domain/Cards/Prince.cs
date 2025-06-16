@@ -20,7 +20,7 @@ public class Prince : Card
 
         if (targetPlayer == null)
         {
-            throw new ArgumentException("Target player is required for Prince card action.");
+            throw new CardRequirementsNotMetException("Target player is required for Prince card action.");
         }
 
         // Discard the target player's hand

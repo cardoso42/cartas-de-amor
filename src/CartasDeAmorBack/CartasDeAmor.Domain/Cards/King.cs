@@ -1,5 +1,6 @@
 using CartasDeAmor.Domain.Entities;
 using CartasDeAmor.Domain.Enums;
+using CartasDeAmor.Domain.Exceptions;
 
 namespace CartasDeAmor.Domain.Cards;
 
@@ -17,7 +18,7 @@ public class King : Card
     {
         if (targetPlayer == null)
         {
-            throw new ArgumentNullException(nameof(targetPlayer), "Target player must be specified for King card action.");
+            throw new CardRequirementsNotMetException("Target player must be specified for King card action.");
         }
 
         // Swap the invoker's hand with the target player's hand

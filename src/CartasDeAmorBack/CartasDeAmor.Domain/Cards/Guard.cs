@@ -1,5 +1,6 @@
 using CartasDeAmor.Domain.Entities;
 using CartasDeAmor.Domain.Enums;
+using CartasDeAmor.Domain.Exceptions;
 
 namespace CartasDeAmor.Domain.Cards;
 
@@ -19,7 +20,7 @@ public class Guard : Card
 
         if (targetPlayer == null || targetCardType == null)
         {
-            throw new ArgumentException("Target player and card type must be provided for Guard action.");
+            throw new CardRequirementsNotMetException("Target player and card type must be provided for Guard action.");
         }
 
         if (targetPlayer.IsEliminated())

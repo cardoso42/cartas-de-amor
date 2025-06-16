@@ -188,8 +188,7 @@ public class GameService : IGameService
             throw new InvalidOperationException($"Cannot play a card in current state: {game.GameState}");
         }
 
-        var players = game.Players.ToList();
-        var currentPlayer = players[game.CurrentPlayerIndex] ?? throw new InvalidOperationException("Current player not found");
+        var currentPlayer = game.GetPlayerByEmail(userEmail) ?? throw new InvalidOperationException("Player not found in the game");
         if (!currentPlayer.HoldingCards.Contains(cardPlay.CardType))
         {
             _logger.LogWarning("Player {UserEmail} does not have card {CardType} in hand for room {RoomId}", userEmail, cardPlay.CardType, roomId);
@@ -202,8 +201,8 @@ public class GameService : IGameService
         var card = CardFactory.Create(cardPlay.CardType);
         var targetPlayer = game.GetPlayerByEmail(cardPlay.TargetPlayerEmail ?? string.Empty);
 
-        currentPlayer.PlayCard(cardPlay.CardType);
         var result = card.Play(game, currentPlayer, targetPlayer, cardPlay.TargetCardType);
+        currentPlayer.PlayCard(cardPlay.CardType);
 
         await _roomRepository.UpdateAsync(game);
 
