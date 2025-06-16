@@ -72,7 +72,7 @@ public class AccountService : IAccountService
         await _userRepository.DeleteAsync(email);
     }
 
-    public string GetEmailFromTokenAsync(ClaimsPrincipal? user)
+    public string GetEmailFromToken(ClaimsPrincipal? user)
     {
         if (user == null || (!user.Identity?.IsAuthenticated ?? true))
             throw new InvalidOperationException("User is not authenticated");

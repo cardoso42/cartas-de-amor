@@ -3,7 +3,6 @@ using CartasDeAmor.Domain.Services;
 using CartasDeAmor.Domain.Enums;
 using CartasDeAmor.Application.Interfaces;
 using Microsoft.AspNetCore.Authorization;
-using CartasDeAmor.Domain.Entities;
 using CartasDeAmor.Domain.Exceptions;
 
 namespace CartasDeAmor.Presentation.Hubs;
@@ -22,7 +21,7 @@ public class GameHub(
 
     public async Task JoinRoom(Guid roomId)
     {
-        var userEmail = _accountService.GetEmailFromTokenAsync(Context.User);
+        var userEmail = _accountService.GetEmailFromToken(Context.User);
         _connectionMapping.AddConnection(userEmail, Context.ConnectionId);
 
         await Groups.AddToGroupAsync(Context.ConnectionId, roomId.ToString());
@@ -33,7 +32,7 @@ public class GameHub(
 
     public async Task LeaveRoom(Guid roomId)
     {
-        var userEmail = _accountService.GetEmailFromTokenAsync(Context.User);
+        var userEmail = _accountService.GetEmailFromToken(Context.User);
         _connectionMapping.RemoveConnection(userEmail, Context.ConnectionId);
         
         await Groups.RemoveFromGroupAsync(Context.ConnectionId, roomId.ToString());
@@ -44,7 +43,7 @@ public class GameHub(
 
     public async Task DrawCard(Guid roomId)
     {
-        var userEmail = _accountService.GetEmailFromTokenAsync(Context.User);
+        var userEmail = _accountService.GetEmailFromToken(Context.User);
         _logger.LogInformation("User {User} is drawing a card in room {RoomId}", userEmail, roomId);
 
         try
@@ -73,7 +72,7 @@ public class GameHub(
     {
         // Verify if the user is authenticated
         _logger.LogInformation("StartGame called for room {RoomId}", roomId);
-        var userEmail = _accountService.GetEmailFromTokenAsync(Context.User);
+        var userEmail = _accountService.GetEmailFromToken(Context.User);
 
         try
         {
@@ -84,7 +83,7 @@ public class GameHub(
             // Send each player the initial game status
             for (int i = 0; i < players.Count; i++)
             {
-                var connectionIds = await GetUserConnectionIds(players[i].UserEmail, roomId);
+                var connectionIds = GetUserConnectionIds(players[i].UserEmail, roomId);
                 foreach (var connectionId in connectionIds)
                 {
                     await Clients.Client(connectionId).SendAsync("RoundStarted", gameStatus[i]);
@@ -112,7 +111,7 @@ public class GameHub(
     {
         _logger.LogInformation("Card requirements requested for card type {CardType}", cardType);
 
-        var userEmail = _accountService.GetEmailFromTokenAsync(Context.User);
+        var userEmail = _accountService.GetEmailFromToken(Context.User);
 
         try
         {
@@ -140,7 +139,7 @@ public class GameHub(
             var players = (await _gameService.GetPlayersAsync(roomId)).Select(p => p.UserEmail).ToList();
             foreach (var playerEmail in players)
             {
-                var connectionIds = await GetUserConnectionIds(playerEmail, roomId);
+                var connectionIds = GetUserConnectionIds(playerEmail, roomId);
                 foreach (var connectionId in connectionIds)
                 {
                     await Clients.Client(connectionId).SendAsync("RoundStarted", newRoundData);
@@ -155,7 +154,7 @@ public class GameHub(
 
     public async Task PlayCard(Guid roomId, CardPlayDto cardPlayDto)
     {
-        var userEmail = _accountService.GetEmailFromTokenAsync(Context.User);
+        var userEmail = _accountService.GetEmailFromToken(Context.User);
         _logger.LogInformation("User {User} is playing card {CardType} in room {RoomId}", userEmail, cardPlayDto.CardType, roomId);
 
         try
@@ -168,7 +167,7 @@ public class GameHub(
 
             if (result.Target != null)
             {
-                var targetConnectionIds = await GetUserConnectionIds(result.Target.UserEmail, roomId);
+                var targetConnectionIds = GetUserConnectionIds(result.Target.UserEmail, roomId);
                 var targetPrivateUpdate = await _gameService.GetPlayerStatusAsync(roomId, result.Target.UserEmail);
 
                 foreach (var connectionId in targetConnectionIds)
@@ -212,7 +211,7 @@ public class GameHub(
 
     public async Task SubmitCardChoice(Guid roomId, CardType keepCardType, List<CardType> returnCardTypes)
     {
-        var userEmail = _accountService.GetEmailFromTokenAsync(Context.User);
+        var userEmail = _accountService.GetEmailFromToken(Context.User);
         _logger.LogInformation("User {User} is submitting card choice in room {RoomId}", userEmail, roomId);
 
         try
@@ -237,10 +236,10 @@ public class GameHub(
         }
     }
 
-    private Task<List<string>> GetUserConnectionIds(string userEmail, Guid roomId)
+    private List<string> GetUserConnectionIds(string userEmail, Guid roomId)
     {
         var connections = _connectionMapping.GetConnections(userEmail).ToList();
-        return Task.FromResult(connections);
+        return connections;
     }
 
     public async Task ReconnectToRoom(Guid roomId)

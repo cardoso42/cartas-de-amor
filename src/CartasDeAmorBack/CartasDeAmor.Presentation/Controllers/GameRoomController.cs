@@ -31,7 +31,7 @@ public class GameRoomController : ControllerBase
     {
         try
         {
-            var userEmail = _accountService.GetEmailFromTokenAsync(User);
+            var userEmail = _accountService.GetEmailFromToken(User);
             var roomId = await _roomService.CreateRoomAsync(request.RoomName, userEmail, request.Password);
             return Ok(roomId);
         }
@@ -50,7 +50,7 @@ public class GameRoomController : ControllerBase
     [HttpDelete("{roomId}")]
     public async Task<IActionResult> DeleteRoom(Guid roomId)
     {
-        var userEmail = _accountService.GetEmailFromTokenAsync(User);
+        var userEmail = _accountService.GetEmailFromToken(User);
 
         try
         {

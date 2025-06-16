@@ -39,5 +39,5 @@ public interface IAccountService
     /// If the user is not authenticated or the email claim is not present, it throws an exception.
     /// </remarks>
     /// <exception cref="InvalidOperationException">Thrown if the email claim is not found in the user's claims.</exception>
-    public string GetEmailFromTokenAsync(ClaimsPrincipal? user);
+    public string GetEmailFromToken(ClaimsPrincipal? user);
 }
