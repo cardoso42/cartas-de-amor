@@ -99,7 +99,7 @@ function switchAuthTab(tab) {
 async function handleLogin(e) {
     e.preventDefault();
     
-    const username = document.getElementById('login-username').value;
+    const email = document.getElementById('login-email').value;
     const password = document.getElementById('login-password').value;
     
     try {
@@ -111,7 +111,7 @@ async function handleLogin(e) {
                 'Content-Type': 'application/json'
             },
             body: JSON.stringify({
-                username: username,
+                email: email,
                 password: password
             })
         });
@@ -121,7 +121,7 @@ async function handleLogin(e) {
 
             accessToken = data.token;
             currentUser = { 
-                username: username,
+                username: data.username,
                 email: data.email || null // Email may not be returned in login response 
             };
             

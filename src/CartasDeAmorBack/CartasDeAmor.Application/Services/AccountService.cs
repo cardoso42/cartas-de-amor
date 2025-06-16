@@ -45,11 +45,10 @@ public class AccountService : IAccountService
         return GenerateJwtToken(newUser);
     }
 
-    public async Task<LoginResultDto> LoginAsync(string username, string password)
+    public async Task<LoginResultDto> LoginAsync(string email, string password)
     {
-        var user = await _userRepository.GetByUsernameAsync(username);
-        if (user == null)
-            throw new UnauthorizedAccessException("Invalid username or password");
+        var user = await _userRepository.GetByEmailAsync(email)
+            ?? throw new UnauthorizedAccessException("Invalid username or password");
 
         if (!BCrypt.Net.BCrypt.Verify(password, user.PasswordHash))
             throw new UnauthorizedAccessException("Invalid username or password");

@@ -55,27 +55,27 @@ public class AccountController : ControllerBase
     [HttpPost("login")]
     public async Task<IActionResult> Login([FromBody] LoginRequestDto loginRequest)
     {
-        _logger.LogInformation("Attempting login for user {Username}", loginRequest.Username);
+        _logger.LogInformation("Attempting login for user {Username}", loginRequest.Email);
 
         try
         {
             var loginResult = await _accountService.LoginAsync(
-                loginRequest.Username,
+                loginRequest.Email,
                 loginRequest.Password
             );
 
-            _logger.LogInformation("Successfully authenticated user {Username}", loginRequest.Username);
+            _logger.LogInformation("Successfully authenticated user {Username}", loginRequest.Email);
 
             return Ok(loginResult);
         }
         catch (UnauthorizedAccessException ex)
         {
-            _logger.LogWarning("Failed login attempt for user {Username}: {Message}", loginRequest.Username, ex.Message);
+            _logger.LogWarning("Failed login attempt for user {Username}: {Message}", loginRequest.Email, ex.Message);
             return Unauthorized(new { Message = ex.Message });
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Unexpected error during login for user {Username}", loginRequest.Username);
+            _logger.LogError(ex, "Unexpected error during login for user {Username}", loginRequest.Email);
             throw;
         }
     }

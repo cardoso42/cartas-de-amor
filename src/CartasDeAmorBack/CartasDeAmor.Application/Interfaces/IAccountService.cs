@@ -17,10 +17,10 @@ public interface IAccountService
     /// <summary>
     /// Authenticates a user and returns a JWT token if successful.
     /// </summary>
-    /// <param name="username">The username of the account.</param>
+    /// <param name="email">The email of the account.</param>
     /// <param name="password">The password to verify.</param>
     /// <returns>A JWT token if authentication is successful, or throws an exception if it fails.</returns>
-    Task<LoginResultDto> LoginAsync(string username, string password);
+    Task<LoginResultDto> LoginAsync(string email, string password);
 
     /// <summary>
     /// Deletes a user account.

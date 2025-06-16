@@ -63,7 +63,7 @@ Base path: `/api/Account`
 - **Request Body**:
   ```json
   {
-    "username": "string",
+    "email": "string",
     "password": "string"
   }
   ```
