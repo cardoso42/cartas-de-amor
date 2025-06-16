@@ -23,8 +23,13 @@ public class Prince : Card
             throw new CardRequirementsNotMetException("Target player is required for Prince card action.");
         }
 
+        if (targetPlayer.CanBeTargeted() == false)
+        {
+            throw new PlayerProtectedException("Target player cannot be targeted by the Prince card.", targetPlayer.UserEmail);
+        }
+
         // Discard the target player's hand
-        var discardedCard = targetPlayer.GetCard();
+            var discardedCard = targetPlayer.GetCard();
         targetPlayer.PlayCard(discardedCard);
 
         if (discardedCard == CardType.Princess)

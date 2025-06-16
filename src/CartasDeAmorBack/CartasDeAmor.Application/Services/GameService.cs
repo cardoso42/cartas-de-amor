@@ -5,6 +5,7 @@ using CartasDeAmor.Application.DTOs;
 using CartasDeAmor.Application.Interfaces;
 using CartasDeAmor.Domain.Entities;
 using Microsoft.Extensions.Logging;
+using CartasDeAmor.Domain.Exceptions;
 
 namespace CartasDeAmor.Application.Services;
 
@@ -201,7 +202,18 @@ public class GameService : IGameService
         var card = CardFactory.Create(cardPlay.CardType);
         var targetPlayer = game.GetPlayerByEmail(cardPlay.TargetPlayerEmail ?? string.Empty);
 
-        var result = card.Play(game, currentPlayer, targetPlayer, cardPlay.TargetCardType);
+        var result = CardActionResults.None;
+        try
+        {
+            result = card.Play(game, currentPlayer, targetPlayer, cardPlay.TargetCardType);
+        }
+        catch (PlayerProtectedException ex)
+        {
+            // Player targeted protected player, player wasted their turn
+            _logger.LogWarning("Player {UserEmail} cannot target player {TargetPlayerEmail} due to protection in room {RoomId}",
+                userEmail, ex.PlayerEmail, roomId);
+        }
+
         currentPlayer.PlayCard(cardPlay.CardType);
 
         await _roomRepository.UpdateAsync(game);

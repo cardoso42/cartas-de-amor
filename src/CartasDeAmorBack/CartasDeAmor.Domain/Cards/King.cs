@@ -21,8 +21,13 @@ public class King : Card
             throw new CardRequirementsNotMetException("Target player must be specified for King card action.");
         }
 
+        if (targetPlayer.CanBeTargeted() == false)
+        {
+            throw new PlayerProtectedException("Target player cannot be targeted by the King card.", targetPlayer.UserEmail);
+        }
+
         // Swap the invoker's hand with the target player's hand
-        var targetPlayerCard = targetPlayer.RemoveCard();
+            var targetPlayerCard = targetPlayer.RemoveCard();
         var invokerPlayerCard = invokerPlayer.RemoveCard();
         invokerPlayer.HandCard(targetPlayerCard);
         targetPlayer.HandCard(invokerPlayerCard);

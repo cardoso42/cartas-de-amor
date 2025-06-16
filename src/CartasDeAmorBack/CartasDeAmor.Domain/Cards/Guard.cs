@@ -28,9 +28,9 @@ public class Guard : Card
             throw new InvalidOperationException("Target player is already eliminated.");
         }
 
-        if (!targetPlayer.CanBeTargeted())
+        if (targetPlayer.CanBeTargeted() == false)
         {
-            throw new InvalidOperationException("Target player cannot be targeted at this time.");
+            throw new PlayerProtectedException("Target player cannot be targeted at this time.", targetPlayer.UserEmail);
         }
 
         if (targetPlayer.HasCard(targetCardType.Value))

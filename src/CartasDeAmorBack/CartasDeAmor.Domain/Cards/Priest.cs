@@ -21,6 +21,11 @@ public class Priest : Card
             throw new CardRequirementsNotMetException("Target player must be specified for Priest card action.");
         }
 
+        if (targetPlayer.CanBeTargeted() == false)
+        {
+            throw new PlayerProtectedException("Target player cannot be targeted by the Priest card.", targetPlayer.UserEmail);
+        }
+
         return CardActionResults.ShowCard;
     }
 

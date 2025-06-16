@@ -24,9 +24,9 @@ public class Baron : Card
             throw new CardRequirementsNotMetException("Target player must be specified for Baron action.");
         }
 
-        if (targetPlayer.IsProtected())
+        if (targetPlayer.CanBeTargeted() == false)
         {
-            throw new InvalidOperationException("Target player is protected and cannot be affected by Baron action.");
+            throw new PlayerProtectedException("Target player cannot be targeted by the Baron action.", targetPlayer.UserEmail);
         }
 
         var invokerCard = invokerPlayer.GetCard();
