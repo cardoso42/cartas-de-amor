@@ -2,7 +2,7 @@
 PLANTUML_JAR = /home/cardoso42/plantuml/plantuml-1.2024.4.jar
 
 # Caminho para a aplicação frontend de testes
-FRONTEND_DIR = src/CartasDeAmorFront
+FRONTEND_DIR = src/CartasDeAmorFrontTest
 
 # Caminhos para os projetos .NET
 BACKEND_DIR = src/CartasDeAmorBack
