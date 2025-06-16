@@ -939,6 +939,75 @@ function hideCardInputModal() {
     modal.style.display = 'none';
 }
 
+// Functions to handle mandatory card play modal
+
+function showMandatoryCardPlayModal(message, requiredCardType) {
+    const modal = document.getElementById('mandatory-card-modal');
+    const messageElement = document.getElementById('mandatory-card-message');
+    const cardElement = document.getElementById('mandatory-card');
+    const playButton = document.getElementById('play-mandatory-card-btn');
+    
+    // Set message and card
+    messageElement.textContent = message || `You must play the ${CARD_TYPES[requiredCardType]} card!`;
+    cardElement.textContent = CARD_TYPES[requiredCardType] || 'Unknown Card';
+    
+    // Highlight the card with a pulsating effect
+    cardElement.classList.add('mandatory-card');
+    
+    // Set up event handlers
+    playButton.onclick = () => handlePlayMandatoryCard(requiredCardType);
+    
+    // Close button handler
+    const closeButton = document.getElementById('mandatory-modal-close-btn');
+    if (closeButton) {
+        closeButton.onclick = () => {
+            hideMandatoryCardPlayModal();
+            // Still show a message to remind the player about the mandatory play
+            showMessage(`Remember: You must play your ${CARD_TYPES[requiredCardType]} card!`, 'warning');
+            // Highlight the required card in the UI
+            highlightRequiredCardInHand(requiredCardType);
+        };
+    }
+    
+    // Show modal
+    modal.style.display = 'flex';
+    
+    // Also highlight the card in the player's hand
+    highlightRequiredCardInHand(requiredCardType);
+}
+
+function hideMandatoryCardPlayModal() {
+    const modal = document.getElementById('mandatory-card-modal');
+    if (modal) {
+        modal.style.display = 'none';
+    }
+}
+
+function handlePlayMandatoryCard(cardType) {
+    hideMandatoryCardPlayModal();
+    playCard(cardType);
+}
+
+function highlightRequiredCardInHand(requiredCardType) {
+    // Find all card buttons in the card-buttons container
+    const cardButtons = document.querySelectorAll('#card-buttons .card-btn');
+    
+    // Remove any previous highlights
+    cardButtons.forEach(button => {
+        button.classList.remove('highlight-required');
+    });
+    
+    // Find the button corresponding to the required card type and highlight it
+    cardButtons.forEach(button => {
+        const cardName = button.textContent;
+        if (cardName === CARD_TYPES[requiredCardType]) {
+            button.classList.add('highlight-required');
+            // Add pulsating animation class
+            button.classList.add('pulse-animation');
+        }
+    });
+}
+
 // SignalR functions
 async function connectToSignalR() {
     if (signalRConnection && signalRConnection.state === signalR.HubConnectionState.Connected) {
@@ -1148,6 +1217,19 @@ function setupSignalRHandlers() {
 
     signalRConnection.on('RoundWinner', (winner) => {
         showMessage(`Round winner: ${winner}`, 'success');
+    });
+
+    // Handler for MandatoryCardPlay message
+    signalRConnection.on('MandatoryCardPlay', (message, requiredCardType) => {
+        console.log('Mandatory card play required:', message, 'Card type:', requiredCardType);
+        
+        // Check if the player has the required card
+        if (playerCards.includes(requiredCardType)) {
+            showMandatoryCardPlayModal(message, requiredCardType);
+        } else {
+            // Player doesn't have the required card (should not happen if server check is working)
+            showMessage(`Error: You need to play ${CARD_TYPES[requiredCardType]} but don't have it in your hand.`, 'error');
+        }
     });
     
     signalRConnection.onclose(() => {
@@ -1359,6 +1441,7 @@ function showChooseCardModal(cards) {
     instructionsDiv.style.backgroundColor = '#f0f4ff';
     instructionsDiv.style.border = '1px solid #ccd5ff';
     instructionsDiv.style.borderRadius = '4px';
+    instructionsDiv.style.fontSize = '0.9rem';
     inputContainer.appendChild(instructionsDiv);
     
     // Create a container for all cards
