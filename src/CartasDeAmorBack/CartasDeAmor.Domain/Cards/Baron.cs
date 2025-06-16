@@ -7,6 +7,7 @@ namespace CartasDeAmor.Domain.Cards;
 public class Baron : Card
 {
     public override CardType CardType => CardType.Baron;
+    public override Func<Game, Player, bool> ConditionForExtraPoint => new((game, player) => false);
 
     public Baron()
     {

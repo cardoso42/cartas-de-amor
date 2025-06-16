@@ -28,4 +28,22 @@ public class Spy : Card
     {
         return false;
     }
+
+    public override Func<Game, Player, bool> ConditionForExtraPoint => new((game, player) =>
+    {
+        if (player.HasPlayedCard(CardType) == false) return false;
+
+        var activeGamePlayers = game.GetActivePlayers().Where(p => p.UserEmail != player.UserEmail).ToList();
+
+        foreach (var activePlayer in activeGamePlayers)
+        {
+            if (activePlayer.HasPlayedCard(CardType))
+            {
+                // If any other player has a Spy card, the player does not get an extra point
+                return false;
+            }
+        }
+
+        return true;
+    });
 }

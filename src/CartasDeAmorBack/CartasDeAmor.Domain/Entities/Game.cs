@@ -16,7 +16,6 @@ public class Game
     public IList<CardType> CardsDeck { get; set; } = [];
     public CardType? ReservedCard { get; set; }
     public int CurrentPlayerIndex { get; set; } = 0;
-    public bool GameStarted { get; set; } = false;
     public GameStateEnum GameState { get; set; } = GameStateEnum.WaitingForPlayers;
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
@@ -93,7 +92,15 @@ public class Game
     /// </summary>
     public bool CanStart(int minPlayers = 2)
     {
-        return !GameStarted && Players.Count >= minPlayers;
+        return GameState == GameStateEnum.WaitingForPlayers && Players.Count >= minPlayers;
+    }
+
+    /// <summary>
+    /// Checks if the game has started (not in WaitingForPlayers state)
+    /// </summary>
+    public bool HasStarted()
+    {
+        return GameState != GameStateEnum.WaitingForPlayers;
     }
 
     /// <summary>
@@ -125,28 +132,33 @@ public class Game
     /// </summary>
     public bool IsRoundOver()
     {
-        return GameStarted && (GetActivePlayerCount() <= 1 || CardsDeck.Count == 0);
+        return GetActivePlayerCount() <= 1 || CardsDeck.Count == 0;
     }
 
     /// <summary>
     /// Gets the winner of the current round
     /// </summary>
-    public Player? GetRoundWinner()
+    public IList<Player> GetRoundWinners()
     {
-        if (!IsRoundOver())
-            return null;
+        if (GameState == GameStateEnum.WaitingForPlayers)
+            throw new GameNotStartedException("Cannot determine round winner before the game has started.");
+
+        if (IsRoundOver() == false)
+            throw new GameException("Cannot determine round winner while the round is still ongoing.");
 
         var activePlayers = GetActivePlayers().ToList();
 
         if (activePlayers.Count == 1)
-            return activePlayers.First();
+            return [activePlayers.First()];
 
         if (activePlayers.Count == 0)
-            return null;
+            throw new GameException("No active players left to determine a winner.");
 
-        // If multiple players remain, highest card wins
-        var maxCardValue = activePlayers.Max(p => (int)p.HoldingCards.Max(c => c));
-        return activePlayers.FirstOrDefault(p => (int)p.HoldingCards.Max(c => c) == maxCardValue);
+        // If multiple players remain, highest card wins (ties are allowed)
+        var playersBiggestCards = activePlayers.Select(p => p.HoldingCards.Max());
+        var gameBiggestCard = playersBiggestCards.Max();
+
+        return activePlayers.Where(p => p.HasCard(gameBiggestCard)).ToList();
     }
 
     /// <summary>
@@ -231,7 +243,7 @@ public class Game
     /// <summary>
     /// Checks if the game is over (a player reached the target score)
     /// </summary>
-    public bool IsGameOver(int targetScore = 4)
+    public bool IsGameOver(int targetScore = 2)
     {
         return Players.Any(p => p.Score >= targetScore);
     }
@@ -239,11 +251,15 @@ public class Game
     /// <summary>
     /// Gets the overall winner of the game
     /// </summary>
-    public Player? GetGameWinner(int targetScore = 4)
+    public IList<Player> GetGameWinner(int targetScore = 2)
     {
-        return Players.FirstOrDefault(p => p.Score >= targetScore);
+        return Players.Where(p => p.Score >= targetScore).ToList();
     }
 
+    /// <summary>
+    /// Hands a card to the specified player
+    /// </summary>
+    /// <exception cref="InvalidOperationException">Thrown if the player is not found in the game</exception>
     public Player HandCardToPlayer(string playerEmail)
     {
         var player = GetPlayerByEmail(playerEmail);
@@ -261,7 +277,15 @@ public class Game
     /// </summary>
     public void StartNewRound()
     {
-        var lastRoundWinner = GetRoundWinner();
+        var lastRoundWinner = new List<Player>();
+        try
+        {
+            lastRoundWinner = GetRoundWinners().ToList();
+        }
+        catch (GameNotStartedException)
+        {
+            lastRoundWinner = [];
+        }
 
         // Clear all players' cards and reset protection
         foreach (var player in Players)
@@ -283,7 +307,10 @@ public class Game
         }
 
         // Reset current player index
-        CurrentPlayerIndex = lastRoundWinner != null ? Players.IndexOf(lastRoundWinner) : 0;
+        var winner = lastRoundWinner.Count > 0 ?
+            lastRoundWinner[new Random().Next(lastRoundWinner.Count)] : null;
+        CurrentPlayerIndex = winner != null ? Players.IndexOf(winner) : 0;
+
         // Set game state to WaitingForDraw at the beginning of a round
         TransitionToState(GameStateEnum.WaitingForDraw);
         UpdatedAt = DateTime.UtcNow;
@@ -294,9 +321,7 @@ public class Game
     /// </summary>
     public void TransitionToState(GameStateEnum newState)
     {
-        bool isValid = CanTransitionToState(newState);
-
-        if (!isValid)
+        if (CanTransitionToState(newState) == false)
         {
             throw new InvalidOperationException($"Invalid state transition from {GameState} to {newState}");
         }
@@ -322,6 +347,9 @@ public class Game
         };
     }
 
+    /// <summary>
+    /// Returns a card to the deck
+    /// </summary>
     public bool ReturnCardToDeck(CardType cardType)
     {
         CardsDeck = CardsDeck.Append(cardType).ToList();

@@ -1215,7 +1215,7 @@ function setupSignalRHandlers() {
         handleLogout();
     });
 
-    signalRConnection.on('RoundWinner', (winner) => {
+    signalRConnection.on('RoundWinners', (winner) => {
         showMessage(`Round winner: ${winner}`, 'success');
     });
 

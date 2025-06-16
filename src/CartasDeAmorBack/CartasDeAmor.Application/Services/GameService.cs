@@ -52,7 +52,8 @@ public class GameService : IGameService
     public async Task<IList<InitialGameStatusDto>> StartGameAsync(Guid roomId, string hostEmail)
     {
         // Get the game room
-        var game = await _roomRepository.GetByIdAsync(roomId) ?? throw new InvalidOperationException("Room not found");
+        var game = await _roomRepository.GetByIdAsync(roomId)
+            ?? throw new InvalidOperationException("Room not found");
 
         // Verify the user is the host
         if (game.HostEmail != hostEmail)
@@ -67,7 +68,7 @@ public class GameService : IGameService
         }
 
         game.StartNewRound();
-        game.GameStarted = true;
+        game.TransitionToState(GameStateEnum.WaitingForDraw);
 
         await _roomRepository.UpdateAsync(game);
 
@@ -97,10 +98,10 @@ public class GameService : IGameService
     public async Task<bool> IsPlayerTurnAsync(Guid roomId, string userEmail)
     {
         var game = await _roomRepository.GetByIdAsync(roomId) ?? throw new InvalidOperationException("Room not found");
-        if (!game.GameStarted)
+        if (game.HasStarted() == false)
         {
             _logger.LogWarning("Game has not started yet for room {RoomId}", roomId);
-            return false;
+            throw new GameNotStartedException("Game has not started yet");
         }
 
         var players = game.Players.ToList();
@@ -118,7 +119,7 @@ public class GameService : IGameService
     {
         var game = await _roomRepository.GetByIdAsync(roomId) ?? throw new InvalidOperationException("Room not found");
 
-        if (!game.GameStarted)
+        if (game.HasStarted() == false)
         {
             throw new InvalidOperationException("Game has not started yet");
         }
@@ -150,7 +151,7 @@ public class GameService : IGameService
     {
         var game = await _roomRepository.GetByIdAsync(roomId) ?? throw new InvalidOperationException("Room not found");
 
-        if (!game.GameStarted)
+        if (game.HasStarted() == false)
         {
             throw new InvalidOperationException("Game has not started yet");
         }
@@ -169,7 +170,7 @@ public class GameService : IGameService
     public async Task<CardActionResultDto> PlayCardAsync(Guid roomId, string userEmail, CardPlayDto cardPlay)
     {
         var game = await _roomRepository.GetByIdAsync(roomId) ?? throw new InvalidOperationException("Room not found");
-        if (!game.GameStarted)
+        if (game.HasStarted() == false)
         {
             _logger.LogWarning("Game has not started yet for room {RoomId}", roomId);
             throw new InvalidOperationException("Game has not started yet");
@@ -292,23 +293,88 @@ public class GameService : IGameService
         return requirementsDto;
     }
 
-    public async Task<string?> GetRoundWinnerAsync(Guid roomId)
+    public async Task<bool> IsRoundOverAsync(Guid roomId)
     {
-        var game = await _roomRepository.GetByIdAsync(roomId) ?? throw new InvalidOperationException("Room not found");
-        return game.GetRoundWinner()?.UserEmail;
+        var game = await _roomRepository.GetByIdAsync(roomId)
+            ?? throw new InvalidOperationException("Room not found");
+
+        return game.IsRoundOver();
     }
 
-    public async Task<string?> GetGameWinnerAsync(Guid roomdId)
+    public async Task<bool> IsGameOverAsync(Guid roomId)
     {
-        var game = await _roomRepository.GetByIdAsync(roomdId) ?? throw new InvalidOperationException("Room not found");
-        return game.GetGameWinner()?.UserEmail;
+        var game = await _roomRepository.GetByIdAsync(roomId)
+            ?? throw new InvalidOperationException("Room not found");
+
+        return game.IsGameOver();
+    }
+
+    public async Task<IList<string>> FinishRoundAsync(Guid roomId)
+    {
+        var game = await _roomRepository.GetByIdAsync(roomId)
+            ?? throw new InvalidOperationException("Room not found");
+
+        if (!game.IsRoundOver())
+        {
+            throw new InvalidOperationException("Cannot finish round while it is still ongoing");
+        }
+
+        var winners = game.GetRoundWinners();
+        foreach (var winner in winners)
+        {
+            winner.AddScore(1);
+        }
+
+        await _roomRepository.UpdateAsync(game);
+
+        return winners.Select(w => w.UserEmail).ToList();
+    }
+
+    public async Task<IList<string>> AddBonusPointsAsync(Guid roomId)
+    {
+        var game = await _roomRepository.GetByIdAsync(roomId)
+            ?? throw new InvalidOperationException("Room not found");
+
+        var bonusReceivers = new List<string>();
+
+        foreach (var cardType in Enum.GetValues<CardType>())
+        {
+            var card = CardFactory.Create(cardType);
+            if (card.ConditionForExtraPoint != null)
+            {
+                foreach (var player in game.Players)
+                {
+                    if (card.ConditionForExtraPoint(game, player))
+                    {
+                        player.AddScore(1);
+                        bonusReceivers.Add(player.UserEmail);
+                    }
+                }
+            }
+        }
+
+        await _roomRepository.UpdateAsync(game);
+
+        return bonusReceivers;
+    }
+
+    public async Task<IList<string>> FinishGameAsync(Guid roomdId)
+    {
+        var game = await _roomRepository.GetByIdAsync(roomdId)
+            ?? throw new InvalidOperationException("Room not found");
+
+        game.TransitionToState(GameStateEnum.Finished);
+        await _roomRepository.UpdateAsync(game);
+
+        return game.GetGameWinner().Select(p => p.UserEmail).ToList();
     }
 
     public async Task<IList<InitialGameStatusDto>> StartNewRoundAsync(Guid roomId)
     {
-        var game = await _roomRepository.GetByIdAsync(roomId) ?? throw new InvalidOperationException("Room not found");
+        var game = await _roomRepository.GetByIdAsync(roomId)
+            ?? throw new InvalidOperationException("Room not found");
 
-        if (!game.GameStarted)
+        if (game.HasStarted() == false)
         {
             throw new InvalidOperationException("Game has not started yet");
         }
@@ -328,7 +394,7 @@ public class GameService : IGameService
     {
         var game = _roomRepository.GetByIdAsync(roomId).Result ?? throw new InvalidOperationException("Room not found");
 
-        if (!game.GameStarted)
+        if (game.HasStarted() == false)
         {
             throw new InvalidOperationException("Game has not started yet");
         }

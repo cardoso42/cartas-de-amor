@@ -17,6 +17,9 @@ public interface IGameService
     Task<bool> IsPlayerTurnAsync(Guid roomId, string userEmail);
     Task<string> NextPlayerAsync(Guid roomId);
     Task<PrivatePlayerUpdateDto> GetPlayerStatusAsync(Guid roomId, string userEmail);
-    Task<string?> GetRoundWinnerAsync(Guid roomId);
-    Task<string?> GetGameWinnerAsync(Guid roomdId);
+    Task<bool> IsRoundOverAsync(Guid roomId);
+    Task<bool> IsGameOverAsync(Guid roomId);
+    Task<IList<string>> FinishRoundAsync(Guid roomId);
+    Task<IList<string>> AddBonusPointsAsync(Guid roomId);
+    Task<IList<string>> FinishGameAsync(Guid roomdId);
 }

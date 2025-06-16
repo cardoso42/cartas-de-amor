@@ -127,14 +127,27 @@ public class GameHub(
 
     private async Task AdvanceGame(Guid roomId)
     {
-        var roundWinner = await _gameService.GetRoundWinnerAsync(roomId);
-        if (roundWinner != null)
+        if (await _gameService.IsRoundOverAsync(roomId))
         {
-            _logger.LogInformation("Round winner in room {RoomId} is {Winner}", roomId, roundWinner);
+            var roundWinners = await _gameService.FinishRoundAsync(roomId);
+            _logger.LogInformation("Round winner in room {RoomId} is {Winner}", roomId, roundWinners);
+            await Clients.Group(roomId.ToString()).SendAsync("RoundWinners", roundWinners);
+
+            var bonusPointsReceivers = await _gameService.AddBonusPointsAsync(roomId);
+            _logger.LogInformation("Bonus points awarded to players in room {RoomId}: {Receivers}", roomId, bonusPointsReceivers);
+            await Clients.Group(roomId.ToString()).SendAsync("BonusPoints", bonusPointsReceivers);
+
+            if (await _gameService.IsGameOverAsync(roomId))
+            {
+                var gameWinners = await _gameService.FinishGameAsync(roomId);
+
+                _logger.LogInformation("Game winner in room {RoomId} is {Winner}", roomId, gameWinners);
+                await Clients.Group(roomId.ToString()).SendAsync("GameOver", gameWinners);
+
+                return; // No need to start a new round if the game is over
+            }
 
             var newRoundData = await _gameService.StartNewRoundAsync(roomId);
-
-            await Clients.Group(roomId.ToString()).SendAsync("RoundWinner", roundWinner);
 
             var players = (await _gameService.GetPlayersAsync(roomId)).Select(p => p.UserEmail).ToList();
             foreach (var playerEmail in players)

@@ -212,6 +212,9 @@ The Game Hub provides real-time communication for the Love Letter game. Connect 
   - `PrivatePlayerUpdate`: Sent to the target player (if any) with their updated status
   - `ChooseCard`: Sent to the player when they need to choose a card after playing
   - `NextTurn`: Sent to all players with the email of the next player (if game advances)
+  - `RoundWinners`: Sent to all players with a list of emails of the round winners (when a round ends)
+  - `BonusPoints`: Sent to all players with a list of emails of the bonus points receivers (when a round ends)
+  - `GameOver`: Sent to all players with a list of emails of the game winners (when a game ends)
   - Various error events: `MandatoryCardPlay`, `CardRequirements`, `PlayCardError`
 - **Notes**:
   - Resolves the effects of playing a card

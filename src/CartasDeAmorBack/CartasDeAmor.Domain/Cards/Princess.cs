@@ -13,6 +13,8 @@ public class Princess : Card
 
     public override CardType CardType => CardType.Princess;
 
+    public override Func<Game, Player, bool> ConditionForExtraPoint => new((game, player) => false);
+
     public override CardActionResults Play(Game game, Player invokerPlayer, Player? targetPlayer, CardType? targetCardType)
     {
         // Player loses round
