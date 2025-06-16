@@ -83,6 +83,14 @@ public class Player
         HoldingCards.Add(cardType);
     }
 
+    public void HandCards(IList<CardType> cardTypes)
+    {
+        foreach (var cardType in cardTypes)
+        {
+            HoldingCards.Add(cardType);
+        }
+    }
+
     /// <summary>
     /// Plays a card (removes from hand and adds to played cards)
     /// </summary>
@@ -91,6 +99,17 @@ public class Player
         if (RemoveCard(cardType))
         {
             PlayedCards.Add(cardType);
+            return true;
+        }
+        return false;
+    }
+
+    public bool RevertPlayCard(CardType cardType)
+    {
+        if (PlayedCards.Contains(cardType))
+        {
+            PlayedCards.Remove(cardType);
+            HoldingCards.Add(cardType);
             return true;
         }
         return false;
@@ -175,6 +194,13 @@ public class Player
     public bool CanBeTargeted()
     {
         return !IsProtected() && !IsEliminated();
+    }
+
+    public IList<CardType> TakeHoldingCards()
+    {
+        var holdingCardsCopy = GetHandCopy();
+        HoldingCards.Clear();
+        return holdingCardsCopy;
     }
 
     /// <summary>

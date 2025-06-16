@@ -220,6 +220,7 @@ public class GameService : IGameService
         var result = CardActionResults.None;
         try
         {
+            currentPlayer.PlayCard(cardPlay.CardType);
             result = card.Play(game, currentPlayer, targetPlayer, cardPlay.TargetCardType);
         }
         catch (PlayerProtectedException ex)
@@ -228,8 +229,12 @@ public class GameService : IGameService
             _logger.LogWarning("Player {UserEmail} cannot target player {TargetPlayerEmail} due to protection in room {RoomId}",
                 userEmail, ex.PlayerEmail, roomId);
         }
-
-        currentPlayer.PlayCard(cardPlay.CardType);
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error playing card {CardType} for player {UserEmail} in room {RoomId}", cardPlay.CardType, userEmail, roomId);
+            currentPlayer.RevertPlayCard(cardPlay.CardType);
+            throw;
+        }
 
         await _roomRepository.UpdateAsync(game);
 

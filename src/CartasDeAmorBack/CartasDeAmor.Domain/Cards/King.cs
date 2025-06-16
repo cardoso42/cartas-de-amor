@@ -27,10 +27,10 @@ public class King : Card
         }
 
         // Swap the invoker's hand with the target player's hand
-            var targetPlayerCard = targetPlayer.RemoveCard();
-        var invokerPlayerCard = invokerPlayer.RemoveCard();
-        invokerPlayer.HandCard(targetPlayerCard);
-        targetPlayer.HandCard(invokerPlayerCard);
+        var targetPlayerCard = targetPlayer.TakeHoldingCards();
+        var invokerPlayerCard = invokerPlayer.TakeHoldingCards();
+        invokerPlayer.HandCards(targetPlayerCard);
+        targetPlayer.HandCards(invokerPlayerCard);
 
         return CardActionResults.SwitchCards;
     }
