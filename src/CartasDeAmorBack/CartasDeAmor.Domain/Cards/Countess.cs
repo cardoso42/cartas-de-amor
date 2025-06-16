@@ -23,4 +23,9 @@ public class Countess : Card
     {
         return null;
     }
+
+    public override bool MustBePlayed(Player invokerPlayer)
+    {
+        return invokerPlayer.HasCard(CardType.King) || invokerPlayer.HasCard(CardType.Prince);
+    }
 }

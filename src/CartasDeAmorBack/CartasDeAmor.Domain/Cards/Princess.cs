@@ -24,4 +24,9 @@ public class Princess : Card
     {
         return null;
     }
+
+    public override bool MustBePlayed(Player invokerPlayer)
+    {
+        return false;
+    }
 }

@@ -187,6 +187,11 @@ public class GameHub(
 
             await AdvanceGame(roomId);
         }
+        catch (MandatoryCardPlayViolationException ex)
+        {
+            _logger.LogWarning(ex, "Mandatory card play violation for user {User} in room {RoomId}", userEmail, roomId);
+            await Clients.Caller.SendAsync("MandatoryCardPlay", ex.Message, ex.RequiredCardType);
+        }
         catch (CardRequirementsNotMetException ex)
         {
             _logger.LogWarning(ex, "Card requirements not met for user {User} in room {RoomId}. Resending them", userEmail, roomId);

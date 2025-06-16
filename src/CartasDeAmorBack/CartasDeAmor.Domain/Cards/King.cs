@@ -45,4 +45,9 @@ public class King : Card
             IsCardTypeRequired = false
         };
     }
+
+    public override bool MustBePlayed(Player invokerPlayer)
+    {
+        return false;
+    }
 }

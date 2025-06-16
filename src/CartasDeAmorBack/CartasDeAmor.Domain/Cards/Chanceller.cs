@@ -40,4 +40,9 @@ public class Chanceller : Card
     {
         return null;
     }
+
+    public override bool MustBePlayed(Player invokerPlayer)
+    {
+        return false;
+    }
 }

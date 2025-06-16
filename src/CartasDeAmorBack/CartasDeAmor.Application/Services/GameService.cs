@@ -196,8 +196,23 @@ public class GameService : IGameService
             throw new InvalidOperationException("You do not have this card in your hand");
         }
 
+        // Check if another card should be played instead
+        var playerCards = currentPlayer.GetHandCopy();
+        foreach (var playerCard in playerCards)
+        {
+            if (playerCard == cardPlay.CardType) continue;
+
+            var cardInstance = CardFactory.Create(playerCard);
+            if (cardInstance.MustBePlayed(currentPlayer))
+            {
+                _logger.LogWarning("Player {UserEmail} must play card {CardType} instead of {PlayedCardType} in room {RoomId}",
+                    userEmail, playerCard, cardPlay.CardType, roomId);
+                throw new MandatoryCardPlayViolationException($"You must play card {playerCard} instead", cardPlay.CardType, playerCard);
+            }
+        }
+
         // Play the card
-        _logger.LogInformation("Player {UserEmail} is playing card {CardType} in room {RoomId}", userEmail, cardPlay.CardType, roomId);
+            _logger.LogInformation("Player {UserEmail} is playing card {CardType} in room {RoomId}", userEmail, cardPlay.CardType, roomId);
 
         var card = CardFactory.Create(cardPlay.CardType);
         var targetPlayer = game.GetPlayerByEmail(cardPlay.TargetPlayerEmail ?? string.Empty);

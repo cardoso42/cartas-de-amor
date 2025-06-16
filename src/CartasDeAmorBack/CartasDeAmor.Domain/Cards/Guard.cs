@@ -55,4 +55,9 @@ public class Guard : Card
             CanChooseEqualCardType = false,
         };
     }
+
+    public override bool MustBePlayed(Player invokerPlayer)
+    {
+        return false;
+    }
 }

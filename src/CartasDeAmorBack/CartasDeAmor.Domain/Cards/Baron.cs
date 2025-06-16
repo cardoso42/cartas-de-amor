@@ -56,4 +56,9 @@ public class Baron : Card
             IsCardTypeRequired = false
         };
     }
+
+    public override bool MustBePlayed(Player invokerPlayer)
+    {
+        return false;
+    }
 }
