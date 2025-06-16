@@ -117,8 +117,8 @@ public class Player
     /// </summary>
     public void SetProtection(bool isProtected)
     {
-        if (Status != PlayerStatus.Active)
-            throw new InvalidOperationException("Cannot change protection status of an eliminated or protected player.");
+        if (Status != PlayerStatus.Active && Status != PlayerStatus.Protected)
+            throw new InvalidOperationException("Cannot change protection status of an eliminated or disconnected player.");
         
         Status = isProtected ? PlayerStatus.Protected : PlayerStatus.Active;
     }
