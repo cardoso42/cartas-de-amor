@@ -1,0 +1,23 @@
+@startuml Delete Account
+
+actor "Player" as Player
+participant "Frontend" as FE
+participant "Backend" as API
+database "Database" as DB
+
+Player -> FE: Request account deletion
+activate FE
+FE -> FE: Confirm deletion intent
+FE -> API: DELETE /accounts
+activate API
+API -> DB: Delete account data
+activate DB
+DB --> API: Deletion status
+deactivate DB
+API --> FE: 200 OK
+FE -> FE: Clear auth token
+FE --> Player: Account deleted
+deactivate API
+deactivate FE
+
+@enduml

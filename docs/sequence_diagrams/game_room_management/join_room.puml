@@ -1,0 +1,32 @@
+@startuml Join Room
+
+actor "Player" as Player
+participant "Frontend" as FE
+participant "Backend" as API
+database "Database" as DB
+
+Player -> FE: Join room (roomId, password?)
+activate FE
+FE -> API: SignalR: JoinRoom(roomId, password?)
+activate API
+API -> DB: Verify room exists
+activate DB
+DB --> API: Room details
+deactivate DB
+alt Error joining room
+    API --> FE: HubException
+    FE --> Player: Room not found
+else Can join
+    API -> DB: Add player to room
+    activate DB
+    DB --> API: Player added
+    deactivate DB
+    
+    API -> API: Add to room group
+    API -> FE: SignalR: Player joined notification
+    FE --> Player: Joined room successfully
+end
+deactivate API
+deactivate FE
+
+@endmul

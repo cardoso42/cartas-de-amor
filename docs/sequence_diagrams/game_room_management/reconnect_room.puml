@@ -1,0 +1,27 @@
+@startuml Reconnect to Room
+
+actor "Player" as Player
+participant "Frontend" as FE
+participant "Backend" as API
+database "Database" as DB
+
+Player -> FE: Reconnect request
+activate FE
+FE -> API: SignalR: ReconnectToRoom(roomId)
+activate API
+API -> DB: Check player was in room
+activate DB
+DB --> API: Player status
+deactivate DB
+alt Player was not in room or not authenticated
+    API --> FE: HubException
+    FE --> Player: Cannot reconnect
+else Player was in room
+    API -> API: Add to room group
+    API -> FE: SignalR: Player reconnected notification
+    FE --> Player: Reconnected successfully
+end
+deactivate API
+deactivate FE
+
+@enduml

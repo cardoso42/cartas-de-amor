@@ -1,0 +1,23 @@
+@startuml Create Room
+
+actor "Player" as Player
+participant "Frontend" as FE
+participant "Backend" as API
+database "Database" as DB
+
+Player -> FE: Create new room
+activate FE
+FE -> API: POST /api/GameRoom\n(roomName, password?)
+activate API
+API -> DB: Create new room
+activate DB
+DB --> API: Room created with ID
+deactivate DB
+API --> FE: 201 Created (roomId)
+FE -> API: Connect to SignalR API
+API --> FE: Connection confirmed
+deactivate API
+FE --> Player: Room created successfully
+deactivate FE
+
+@enduml
