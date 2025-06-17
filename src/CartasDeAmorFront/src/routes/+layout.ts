@@ -11,8 +11,8 @@ export const load = (({ url }) => {
   });
   unsubscribe();
 
-  // If not authenticated and not on the login page, redirect to login
-  if (!isAuthenticated && url.pathname !== '/login') {
+  // If not authenticated and not on the login page or home page, redirect to login
+  if (!isAuthenticated && url.pathname !== '/login' && url.pathname !== '/') {
     throw redirect(302, '/login');
   }
 
