@@ -2,8 +2,6 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Authorization;
 using CartasDeAmor.Domain.Services;
 using CartasDeAmor.Application.DTOs;
-using System.Security.Claims;
-using CartasDeAmor.Application.Services;
 
 namespace CartasDeAmor.Presentation.Controllers;
 
@@ -47,6 +45,21 @@ public class GameRoomController : ControllerBase
         }
     }
 
+    [HttpGet]
+    public async Task<ActionResult<IEnumerable<GameRoomDto>>> GetAllRooms()
+    {
+        try
+        {
+            var rooms = await _roomService.GetAllRoomsAsync();
+            return Ok(rooms);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error retrieving rooms");
+            return StatusCode(500, "An error occurred while retrieving the rooms");
+        }
+    }
+
     [HttpDelete("{roomId}")]
     public async Task<IActionResult> DeleteRoom(Guid roomId)
     {
@@ -68,50 +81,4 @@ public class GameRoomController : ControllerBase
             return StatusCode(500, "An error occurred while deleting the room");
         }
     }
-
-    // [HttpPost("{roomId}/users")]
-    // public async Task<IActionResult> AddUserToRoom(Guid roomId)
-    // {
-    //     var userEmail = GetUserEmail();
-
-    //     try
-    //     {
-    //         await _roomService.AddUserToRoomAsync(roomId, userEmail);
-    //         await _notificationService.NotifyUserJoinedRoom(roomId, userEmail);
-    //         return Ok();
-    //     }
-    //     catch (InvalidOperationException ex)
-    //     {
-    //         _logger.LogWarning(ex, "Error adding user to room: {RoomId}, {UserEmail}", roomId, userEmail);
-    //         return BadRequest(ex.Message);
-    //     }
-    //     catch (Exception ex)
-    //     {
-    //         _logger.LogError(ex, "Error adding user to room: {RoomId}, {UserEmail}", roomId, userEmail);
-    //         return StatusCode(500, "An error occurred while adding user to the room");
-    //     }
-    // }
-
-    // [HttpDelete("{roomId}/users")]
-    // public async Task<IActionResult> RemoveUserFromRoom(Guid roomId)
-    // {
-    //     var userEmail = GetUserEmail();
-
-    //     try
-    //     {
-    //         await _roomService.RemoveUserFromRoomAsync(roomId, userEmail);
-    //         await _notificationService.NotifyUserLeftRoom(roomId, userEmail);
-    //         return Ok();
-    //     }
-    //     catch (InvalidOperationException ex)
-    //     {
-    //         _logger.LogWarning(ex, "Error removing user from room: {RoomId}, {UserEmail}", roomId, userEmail);
-    //         return BadRequest(ex.Message);
-    //     }
-    //     catch (Exception ex)
-    //     {
-    //         _logger.LogError(ex, "Error removing user from room: {RoomId}, {UserEmail}", roomId, userEmail);
-    //         return StatusCode(500, "An error occurred while removing user from the room");
-    //     }
-    // }
 }

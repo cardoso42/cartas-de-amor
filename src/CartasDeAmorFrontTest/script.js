@@ -69,6 +69,7 @@ function setupEventListeners() {
     document.getElementById('leave-room-btn').addEventListener('click', handleLeaveRoom);
     document.getElementById('delete-room-btn').addEventListener('click', handleDeleteRoom);
     document.getElementById('copy-room-id-btn').addEventListener('click', handleCopyRoomId);
+    document.getElementById('refresh-rooms-btn').addEventListener('click', handleRefreshRooms);
     
     // Game controls
     document.getElementById('start-game-btn').addEventListener('click', handleStartGame);
@@ -274,7 +275,11 @@ async function handleJoinRoom(e) {
     const roomId = document.getElementById('join-room-id').value;
     
     try {
-        showLoading(e.target);
+        // Only try to show loading if e.target exists (when called from the form submit event)
+        const loadingElement = e.target && e.target.tagName ? e.target : null;
+        if (loadingElement) {
+            showLoading(loadingElement);
+        }
         
         // For now, we'll just connect to SignalR and join the room
         // In a real implementation, you might want to validate the room exists first
@@ -296,7 +301,10 @@ async function handleJoinRoom(e) {
         console.error('Join room error:', error);
         showMessage('Failed to join room', 'error');
     } finally {
-        hideLoading(e.target);
+        // Only try to hide loading if e.target exists
+        if (e.target && e.target.tagName) {
+            hideLoading(e.target);
+        }
     }
 }
 
@@ -375,6 +383,97 @@ async function handleCopyRoomId() {
         }
         document.body.removeChild(textArea);
     }
+}
+
+// API functions
+async function getAllRooms() {
+    try {
+        const response = await fetch(`${API_BASE_URL}/GameRoom`, {
+            method: 'GET',
+            headers: {
+                'Authorization': `Bearer ${accessToken}`,
+                'Content-Type': 'application/json'
+            }
+        });
+
+        if (!response.ok) {
+            throw new Error(`Error: ${response.status}`);
+        }
+
+        return await response.json();
+    } catch (error) {
+        console.error('Failed to fetch rooms:', error);
+        showMessage('Failed to get available rooms', 'error');
+        return [];
+    }
+}
+
+async function handleRefreshRooms() {
+    await fetchAndDisplayRooms();
+}
+
+async function fetchAndDisplayRooms() {
+    const roomsList = document.getElementById('available-rooms-list');
+    roomsList.innerHTML = '<p class="loading-message">Loading available rooms...</p>';
+
+    try {
+        const rooms = await getAllRooms();
+        
+        if (!rooms || rooms.length === 0) {
+            roomsList.innerHTML = '<p class="no-rooms-message">No available rooms found</p>';
+            return;
+        }
+        
+        displayRooms(rooms);
+    } catch (error) {
+        roomsList.innerHTML = '<p class="no-rooms-message">Error loading rooms</p>';
+        console.error('Error displaying rooms:', error);
+    }
+}
+
+function displayRooms(rooms) {
+    console.log(rooms)
+    const roomsList = document.getElementById('available-rooms-list');
+    roomsList.innerHTML = '';
+    
+    rooms.forEach(room => {
+        const roomItem = document.createElement('div');
+        roomItem.className = 'room-item';
+        roomItem.dataset.roomId = room.id;
+        
+        const roomInfo = document.createElement('div');
+        roomInfo.className = 'room-item-info';
+        
+        const roomName = document.createElement('span');
+        roomName.className = 'room-item-name';
+        roomName.textContent = room.roomName;
+        
+        if (room.hasPassword) {
+            const lockedIcon = document.createElement('span');
+            lockedIcon.className = 'room-item-locked';
+            lockedIcon.textContent = '🔒';
+            roomName.appendChild(lockedIcon);
+        }
+        
+        const roomPlayers = document.createElement('span');
+        roomPlayers.className = 'room-item-players';
+        roomPlayers.textContent = `Players: ${room.currentPlayers}`;
+        
+        roomInfo.appendChild(roomName);
+        roomInfo.appendChild(roomPlayers);
+        
+        const joinButton = document.createElement('button');
+        joinButton.className = 'btn btn-primary btn-sm';
+        joinButton.textContent = 'Join';
+        joinButton.addEventListener('click', () => {
+            document.getElementById('join-room-id').value = room.id;
+            handleJoinRoom({ preventDefault: () => {} });
+        });
+        
+        roomItem.appendChild(roomInfo);
+        roomItem.appendChild(joinButton);
+        roomsList.appendChild(roomItem);
+    });
 }
 
 // Game functions
@@ -1239,6 +1338,11 @@ function setupSignalRHandlers() {
 }
 
 async function joinSignalRRoom(roomId) {
+    if (!signalRConnection || signalRConnection.state !== signalR.HubConnectionState.Connected) {
+        console.log('SignalR not connected, attempting to connect...');
+        await connectToSignalR();
+    }
+    
     if (signalRConnection && signalRConnection.state === signalR.HubConnectionState.Connected) {
         try {
             await signalRConnection.invoke('JoinRoom', roomId);
@@ -1247,6 +1351,10 @@ async function joinSignalRRoom(roomId) {
             console.error('Error joining room:', error);
             throw error;
         }
+    } else {
+        const error = new Error('Could not establish SignalR connection to join room');
+        console.error(error);
+        throw error;
     }
 }
 
@@ -1269,6 +1377,9 @@ async function showLobby() {
     }
     
     updateRoomDisplay();
+    
+    // Fetch and display available rooms
+    await fetchAndDisplayRooms();
     
     // Establish SignalR connection when entering lobby
     try {
@@ -1388,11 +1499,15 @@ function showMessage(message, type = 'info') {
 }
 
 function showLoading(element) {
-    element.classList.add('loading');
+    if (element && element.classList) {
+        element.classList.add('loading');
+    }
 }
 
 function hideLoading(element) {
-    element.classList.remove('loading');
+    if (element && element.classList) {
+        element.classList.remove('loading');
+    }
 }
 
 // Utility functions

@@ -1,7 +1,15 @@
+using CartasDeAmor.Application.DTOs;
+
 namespace CartasDeAmor.Domain.Services;
 
 public interface IGameRoomService
 {
+    /// <summary>
+    /// Retrieves all game rooms.
+    /// </summary>
+    /// <returns>A task representing the asynchronous operation, containing a collection of game room DTOs</returns>
+    Task<IEnumerable<GameRoomDto>> GetAllRoomsAsync();
+
     /// <summary>
     /// Creates a new room with the specified name and adds the creator as the first player.
     /// </summary>

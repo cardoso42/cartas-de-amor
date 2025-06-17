@@ -1,5 +1,6 @@
 using CartasDeAmor.Domain.Repositories;
 using CartasDeAmor.Domain.Entities;
+using CartasDeAmor.Application.DTOs;
 
 namespace CartasDeAmor.Domain.Services;
 
@@ -100,5 +101,11 @@ public class GameRoomService : IGameRoomService
         game.Players.Remove(player);
         await _roomRepository.UpdateAsync(game);
         await _playerRepository.DeleteAsync(roomId, userEmail);
+    }
+
+    public async Task<IEnumerable<GameRoomDto>> GetAllRoomsAsync()
+    {
+        var rooms = await _roomRepository.GetAllAsync();
+        return rooms.Select(room => new GameRoomDto(room));
     }
 }

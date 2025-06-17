@@ -12,6 +12,7 @@ This document provides comprehensive documentation for the public interfaces of 
       - [Delete Account](#delete-account)
     - [Game Room Controller](#game-room-controller)
       - [Create Room](#create-room)
+      - [Get All Rooms](#get-all-rooms)
       - [Delete Room](#delete-room)
   - [SignalR Game Hub](#signalr-game-hub)
     - [Game Room Management](#game-room-management)
@@ -115,6 +116,25 @@ Base path: `/api/GameRoom`
 - **Response**:
   - 200 OK: Room ID (GUID)
   - 400 Bad Request: Invalid input
+  - 500 Server Error: Unexpected error
+
+#### Get All Rooms
+- **Endpoint**: `GET /api/GameRoom`
+- **Authorization**: Bearer token
+- **Response**:
+  - 200 OK: Array of game rooms
+    ```json
+    [
+      {
+        "id": "guid",
+        "roomName": "string",
+        "ownerEmail": "string",
+        "hasPassword": "boolean",
+        "currentPlayers": "integer",
+        "createdAt": "dateTime"
+      }
+    ]
+    ```
   - 500 Server Error: Unexpected error
 
 #### Delete Room
@@ -253,6 +273,7 @@ The application uses several DTOs for transferring data between the client and s
 - **LoginRequestDto**: Username and password for login
 - **LoginResultDto**: Authentication result with token and expiration
 - **GameRoomCreationRequestDto**: Name and optional password for a new game room
+- **GameRoomDto**: Information about a game room (id, room name, owner email, password status, player count, creation time)
 - **CardPlayDto**: Information about a card being played
 - **CardActionResultDto**: Result of playing a card
 - **CardRequirementsDto**: Requirements for playing a specific card
