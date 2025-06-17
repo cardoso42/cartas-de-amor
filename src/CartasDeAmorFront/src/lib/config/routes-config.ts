@@ -4,7 +4,11 @@
 export const PUBLIC_ROUTES = [
   '/login',
   '/',
-  '/welcome'
+  '/welcome',
+  '/rules',
+  '/register',
+  '/forgot-password',
+  '/reset-password'
 ];
 
 // Routes that should redirect to dashboard if already logged in

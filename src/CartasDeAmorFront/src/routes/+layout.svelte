@@ -1,9 +1,12 @@
 <script lang="ts">
-  import { auth } from '$lib/stores/authStore';
+  import Navbar from '$lib/components/Navbar.svelte';
 </script>
 
 <div class="app">
-  <slot />
+  <Navbar />
+  <main class="content">
+    <slot />
+  </main>
 </div>
 
 <style>
@@ -25,5 +28,13 @@
     min-height: 100vh;
     display: flex;
     flex-direction: column;
+  }
+  
+  .content {
+    flex: 1;
+    padding: 1rem;
+    max-width: 1200px;
+    width: 100%;
+    margin: 0 auto;
   }
 </style>
