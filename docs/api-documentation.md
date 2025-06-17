@@ -25,6 +25,29 @@ This document provides comprehensive documentation for the public interfaces of 
       - [Get Card Requirements](#get-card-requirements)
       - [Play Card](#play-card)
       - [Submit Card Choice](#submit-card-choice)
+    - [Card Result Events](#card-result-events)
+      - [CardResult-ShowCard](#cardresult-showcard)
+      - [CardResult-PlayerEliminated](#cardresult-playereliminated)
+      - [CardResult-SwitchCards](#cardresult-switchcards)
+      - [CardResult-DiscardAndDrawCard](#cardresult-discardanddrawcard)
+      - [CardResult-ProtectionGranted](#cardresult-protectiongranted)
+      - [CardResult-ChooseCard](#cardresult-choosecard)
+    - [Game State Events](#game-state-events)
+      - [RoundStarted](#roundstarted)
+      - [RoundWinners](#roundwinners)
+      - [BonusPoints](#bonuspoints)
+      - [GameOver](#gameover)
+      - [NextTurn](#nextturn)
+      - [PlayerDrewCard](#playerdrewcard)
+      - [PrivatePlayerUpdate](#privateplayerupdate)
+      - [CardChoiceSubmitted](#cardchoicesubmitted)
+    - [Error Events](#error-events)
+      - [DrawCardError](#drawcarderror)
+      - [GameStartError](#gamestarterror)
+      - [PlayCardError](#playcarderror)
+      - [CardChoiceError](#cardchoiceerror)
+      - [MandatoryCardPlay](#mandatorycardplay)
+      - [UserNotAuthenticated](#usernotauthenticated)
     - [Connection Management](#connection-management)
       - [OnDisconnectedAsync](#ondisconnectedasync)
   - [Data Transfer Objects (DTOs)](#data-transfer-objects-dtos)
@@ -228,7 +251,7 @@ The Game Hub provides real-time communication for the Love Letter game. Connect 
     - `targetPlayerEmail`: The email of the target player (if required)
     - `targetCardType`: The card type being guessed or targeted (if required)
 - **Server Events**:
-  - `CardResult-{result}`: Sent to all players with the result of the card play
+  - `CardResult-{result}`: Sent to all players with the result of the card play (see Card Result Events section below)
   - `PrivatePlayerUpdate`: Sent to the player who played the card with their updated status
   - `PrivatePlayerUpdate`: Sent to the target player (if any) with their updated status
   - `ChooseCard`: Sent to the player when they need to choose a card after playing
@@ -255,6 +278,118 @@ The Game Hub provides real-time communication for the Love Letter game. Connect 
 - **Notes**:
   - Used after certain card effects that require the player to choose between multiple cards
   - Advances the game to the next player's turn
+
+### Card Result Events
+
+When a card is played using the `PlayCard` method, one of the following events will be emitted based on the result of the card action. All these events send a `CardActionResultDto` object containing information about the action result.
+
+#### CardResult-ShowCard
+- **Event**: `CardResult-ShowCard` 
+- **Description**: Sent when one player shows a card to another player
+- **Data**: CardActionResultDto with invoker and target player information
+
+#### CardResult-PlayerEliminated
+- **Event**: `CardResult-PlayerEliminated`
+- **Description**: Sent when a player is eliminated from the round
+- **Data**: CardActionResultDto with invoker and target player information (target has status=2 if they were eliminated)
+
+#### CardResult-SwitchCards
+- **Event**: `CardResult-SwitchCards`
+- **Description**: Sent when two players switch cards
+- **Data**: CardActionResultDto with invoker and target player information
+
+#### CardResult-DiscardAndDrawCard
+- **Event**: `CardResult-DiscardAndDrawCard`
+- **Description**: Sent when a player discards and draws a new card
+- **Data**: CardActionResultDto with invoker information including played cards
+
+#### CardResult-ProtectionGranted
+- **Event**: `CardResult-ProtectionGranted`
+- **Description**: Sent when a player gains protection for a turn
+- **Data**: CardActionResultDto with invoker information
+
+#### CardResult-ChooseCard
+- **Event**: `CardResult-ChooseCard`
+- **Description**: Sent when a player needs to choose a card (triggers the `ChooseCard` event to the player)
+- **Data**: CardActionResultDto with invoker information and card type
+
+### Game State Events
+
+These events inform players about changes in the game state.
+
+#### RoundStarted
+- **Event**: `RoundStarted`
+- **Description**: Sent to players when a new round begins
+- **Data**: InitialGameStatusDto containing the initial game state for that specific player
+
+#### RoundWinners
+- **Event**: `RoundWinners`
+- **Description**: Sent to all players when a round ends
+- **Data**: List of player emails who won the round
+
+#### BonusPoints
+- **Event**: `BonusPoints`
+- **Description**: Sent to all players when bonus points are awarded
+- **Data**: List of player emails who received bonus points
+
+#### GameOver
+- **Event**: `GameOver`
+- **Description**: Sent to all players when the game ends
+- **Data**: List of player emails who won the game
+
+#### NextTurn
+- **Event**: `NextTurn`
+- **Description**: Sent to all players when it's the next player's turn
+- **Data**: Email of the player whose turn is next
+
+#### PlayerDrewCard
+- **Event**: `PlayerDrewCard`
+- **Description**: Sent to all players when a player draws a card
+- **Data**: Email of the player who drew a card
+
+#### PrivatePlayerUpdate
+- **Event**: `PrivatePlayerUpdate`
+- **Description**: Sent to a specific player with their private game state
+- **Data**: PrivatePlayerUpdateDto with player's cards and status
+
+#### CardChoiceSubmitted
+- **Event**: `CardChoiceSubmitted`
+- **Description**: Sent to all players when a player submits their card choice
+- **Data**: PublicPlayerUpdateDto with the player's public game state
+
+### Error Events
+
+These events are sent when errors occur during game actions.
+
+#### DrawCardError
+- **Event**: `DrawCardError`
+- **Description**: Sent when there's an error drawing a card
+- **Data**: Error message string
+
+#### GameStartError
+- **Event**: `GameStartError`
+- **Description**: Sent when there's an error starting the game
+- **Data**: Error message string
+
+#### PlayCardError
+- **Event**: `PlayCardError`
+- **Description**: Sent when there's an error playing a card
+- **Data**: Error message string
+
+#### CardChoiceError
+- **Event**: `CardChoiceError`
+- **Description**: Sent when there's an error submitting a card choice
+- **Data**: Error message string
+
+#### MandatoryCardPlay
+- **Event**: `MandatoryCardPlay`
+- **Description**: Sent when a player must play a specific card
+- **Data**: Error message string and the required card type
+
+#### UserNotAuthenticated
+- **Event**: `UserNotAuthenticated`
+- **Description**: Sent when the user is not properly authenticated
+- **Data**: None
 
 ### Connection Management
 
