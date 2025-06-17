@@ -1,0 +1,21 @@
+@startuml List All Available Rooms
+
+actor "Player" as Player
+participant "Frontend" as FE
+participant "Backend" as API
+database "Database" as DB
+
+Player -> FE: Request available rooms
+activate FE
+FE -> API: GET /api/GameRoom
+activate API
+API -> DB: Get all available rooms
+activate DB
+DB --> API: Room list
+deactivate DB
+API --> FE: 200 OK (rooms list)
+FE --> Player: Display available rooms
+deactivate API
+deactivate FE
+
+@enduml

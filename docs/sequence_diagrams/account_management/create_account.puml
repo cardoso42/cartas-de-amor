@@ -1,0 +1,33 @@
+@startuml Create Account
+
+actor "Player" as Player
+participant "Frontend" as FE
+participant "Backend" as API
+database "Database" as DB
+
+Player -> FE: Enter account details
+activate FE
+FE -> API: POST /accounts\n(username, email, password)
+activate API
+API -> DB: Check if email exists
+activate DB
+DB --> API: Email exists status
+deactivate DB
+alt Email already exists
+    API --> FE: 409 Conflict
+    FE --> Player: Account already exists error
+else Email is unique
+    API -> API: Hash password
+    API -> DB: Create new user
+    activate DB
+    DB --> API: User created
+    deactivate DB
+    API -> API: Generate auth token
+    API --> FE: 201 Created (token)
+    FE -> FE: Store token
+    FE --> Player: Account created successfully
+end
+deactivate API
+deactivate FE
+
+@enduml

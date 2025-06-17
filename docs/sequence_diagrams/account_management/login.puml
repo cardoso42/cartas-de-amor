@@ -1,0 +1,28 @@
+@startuml Login
+
+actor "Player" as Player
+participant "Frontend" as FE
+participant "Backend" as API
+database "Database" as DB
+
+Player -> FE: Enter login credentials
+activate FE
+FE -> API: POST /login\n(email, password)
+activate API
+API -> DB: Validate credentials
+activate DB
+DB --> API: Validation result
+deactivate DB
+alt Invalid credentials
+    API --> FE: 401 Unauthorized
+    FE --> Player: Login failed
+else Valid credentials
+    API -> API: Generate auth token
+    API --> FE: 200 OK (token)
+    FE -> FE: Store token
+    FE --> Player: Login successful
+end
+deactivate API
+deactivate FE
+
+@endmul

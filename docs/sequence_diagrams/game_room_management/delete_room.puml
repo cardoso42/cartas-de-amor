@@ -1,0 +1,30 @@
+@startuml Delete Room
+
+actor "Player" as Player
+participant "Frontend" as FE
+participant "Backend" as API
+database "Database" as DB
+
+Player -> FE: Delete room
+activate FE
+FE -> API: DELETE /api/GameRoom/{roomId}
+activate API
+API -> DB: Check if user is Player
+activate DB
+DB --> API: Verification result
+deactivate DB
+alt Not the Player
+    API --> FE: 403 Forbidden
+    FE --> Player: Not authorized
+else Is Player
+    API -> DB: Delete room
+    activate DB
+    DB --> API: Room deleted
+    deactivate DB
+    API --> FE: 204 No Content
+    FE --> Player: Room deleted successfully
+end
+deactivate API
+deactivate FE
+
+@enduml

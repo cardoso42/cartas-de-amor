@@ -1,0 +1,22 @@
+@startuml Leave Room
+
+actor "Player" as Player
+participant "Frontend" as FE
+participant "Backend" as API
+database "Database" as DB
+
+Player -> FE: Leave room
+activate FE
+FE -> API: SignalR: LeaveRoom(roomId)
+activate API
+API -> DB: Remove player from room
+activate DB
+DB --> API: Player removed
+deactivate DB
+API -> API: Remove from room group
+API -> FE: SignalR: Player left notification
+FE --> Player: Left room
+deactivate API
+deactivate FE
+
+@enduml

@@ -1,0 +1,36 @@
+@startuml Start Game
+
+actor "Host Player" as Host
+participant "Frontend" as FE
+participant "Backend" as API
+database "Database" as DB
+
+Host -> FE: Start game
+activate FE
+FE -> API: SignalR: StartGame(roomId)
+activate API
+API -> DB: Get room details
+activate DB
+DB --> API: Room details
+deactivate DB
+alt Not enough players
+    API --> FE: SignalR: GameStartError event
+    FE --> Host: Not enough players
+else Not host
+    API --> FE: SignalR: GameStartError event
+    FE --> Host: Not authorized
+else Can start
+    API -> API: Initialize game\n(shuffle deck, deal cards)
+    API -> DB: Store initial game state
+    activate DB
+    DB --> API: Game initialized
+    deactivate DB
+    
+    API --> FE: SignalR: RoundStarted event
+    API --> FE: SignalR: NextTurn event
+    FE --> Host: Game started successfully
+end
+deactivate API
+deactivate FE
+
+@enduml
