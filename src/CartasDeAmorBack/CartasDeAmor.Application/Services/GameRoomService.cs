@@ -1,6 +1,7 @@
 using CartasDeAmor.Domain.Repositories;
 using CartasDeAmor.Domain.Entities;
 using CartasDeAmor.Application.DTOs;
+using CartasDeAmor.Domain.Configuration;
 
 namespace CartasDeAmor.Domain.Services;
 
@@ -10,7 +11,10 @@ public class GameRoomService : IGameRoomService
     private readonly IPlayerRepository _playerRepository;
     private readonly IUserRepository _userRepository;
 
-    public GameRoomService(IGameRoomRepository roomRepository, IPlayerRepository playerRepository, IUserRepository userRepository)
+    public GameRoomService(
+        IGameRoomRepository roomRepository, 
+        IPlayerRepository playerRepository, 
+        IUserRepository userRepository)
     {
         _roomRepository = roomRepository;
         _playerRepository = playerRepository;
@@ -65,7 +69,7 @@ public class GameRoomService : IGameRoomService
         await _roomRepository.DeleteAsync(roomId);
     }
 
-    public async Task AddUserToRoomAsync(Guid roomId, string userEmail)
+    public async Task AddUserToRoomAsync(Guid roomId, string userEmail, string? password)
     {
         var game = await _roomRepository.GetByIdAsync(roomId) ?? throw new InvalidOperationException("Room not found");
         if (game.Players.Any(p => p.UserEmail == userEmail))
@@ -73,9 +77,14 @@ public class GameRoomService : IGameRoomService
             throw new InvalidOperationException("User is already in the room");
         }
 
-        if (game.Players.Count >= 4)
+        if (game.Players.Count >= GameSettings.MaxPlayers)
         {
             throw new InvalidOperationException("Room is full");
+        }
+
+        if (game.Password != null && game.Password != password)
+        {
+            throw new InvalidOperationException("Incorrect password for the room");
         }
 
         var player = await CreatePlayer(game, userEmail);

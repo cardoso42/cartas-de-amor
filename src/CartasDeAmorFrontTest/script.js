@@ -253,7 +253,7 @@ async function handleCreateRoom(e) {
             showMessage('Room created successfully!', 'success');
             updateRoomDisplay();
             await connectToSignalR();
-            await joinSignalRRoom(roomId);
+            await joinSignalRRoom(roomId, password || null);
             
             // Clear form
             document.getElementById('create-room-form').reset();
@@ -273,6 +273,7 @@ async function handleJoinRoom(e) {
     e.preventDefault();
     
     const roomId = document.getElementById('join-room-id').value;
+    const password = document.getElementById('join-room-password').value;
     
     try {
         // Only try to show loading if e.target exists (when called from the form submit event)
@@ -290,7 +291,7 @@ async function handleJoinRoom(e) {
         };
         
         await connectToSignalR();
-        await joinSignalRRoom(roomId);
+        await joinSignalRRoom(roomId, password || null);
         
         showMessage('Joined room successfully!', 'success');
         updateRoomDisplay();
@@ -464,9 +465,28 @@ function displayRooms(rooms) {
         
         const joinButton = document.createElement('button');
         joinButton.className = 'btn btn-primary btn-sm';
-        joinButton.textContent = 'Join';
+        joinButton.textContent = room.hasPassword ? 'Join (🔒)' : 'Join';
         joinButton.addEventListener('click', () => {
+            // Set the room ID in the form
             document.getElementById('join-room-id').value = room.id;
+            
+            // If room has password, prompt the user to enter the password
+            if (room.hasPassword) {
+                const passwordInput = document.getElementById('join-room-password');
+                passwordInput.setAttribute('required', 'required');
+                passwordInput.focus();
+                showMessage('This room requires a password', 'warning');
+                
+                // Scroll to the join form if it's not visible
+                document.querySelector('.quick-join').scrollIntoView({ behavior: 'smooth' });
+                return;
+            } else {
+                // Clear any previous password and remove required attribute
+                const passwordInput = document.getElementById('join-room-password');
+                passwordInput.value = '';
+                passwordInput.removeAttribute('required');
+            }
+            
             handleJoinRoom({ preventDefault: () => {} });
         });
         
@@ -1337,7 +1357,7 @@ function setupSignalRHandlers() {
     });
 }
 
-async function joinSignalRRoom(roomId) {
+async function joinSignalRRoom(roomId, password = null) {
     if (!signalRConnection || signalRConnection.state !== signalR.HubConnectionState.Connected) {
         console.log('SignalR not connected, attempting to connect...');
         await connectToSignalR();
@@ -1345,7 +1365,7 @@ async function joinSignalRRoom(roomId) {
     
     if (signalRConnection && signalRConnection.state === signalR.HubConnectionState.Connected) {
         try {
-            await signalRConnection.invoke('JoinRoom', roomId);
+            await signalRConnection.invoke('JoinRoom', roomId, password);
             console.log(`Joined room: ${roomId}`);
         } catch (error) {
             console.error('Error joining room:', error);

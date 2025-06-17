@@ -19,13 +19,13 @@ public class GameHub(
     private readonly IAccountService _accountService = accountService;
     private readonly IConnectionMappingService _connectionMapping = connectionMapping;
 
-    public async Task JoinRoom(Guid roomId)
+    public async Task JoinRoom(Guid roomId, string? password)
     {
         var userEmail = _accountService.GetEmailFromToken(Context.User);
         _connectionMapping.AddConnection(userEmail, Context.ConnectionId);
 
         await Groups.AddToGroupAsync(Context.ConnectionId, roomId.ToString());
-        await _gameRoomService.AddUserToRoomAsync(roomId, userEmail);
+        await _gameRoomService.AddUserToRoomAsync(roomId, userEmail, password);
         
         _logger.LogInformation("User {User} joined room {RoomId}", userEmail, roomId);
     }

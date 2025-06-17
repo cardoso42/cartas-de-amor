@@ -52,6 +52,9 @@ builder.Services.AddScoped<IGameRoomService, GameRoomService>();
 builder.Services.AddScoped<IGameService, GameService>();
 builder.Services.AddSingleton<IConnectionMappingService, ConnectionMappingService>();
 
+// Initialize static game settings
+CartasDeAmor.Domain.Configuration.GameSettingsProvider.Initialize(builder.Configuration);
+
 // Add JWT Authentication
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>

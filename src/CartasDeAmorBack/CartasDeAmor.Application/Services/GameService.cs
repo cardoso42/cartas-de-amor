@@ -6,6 +6,7 @@ using CartasDeAmor.Application.Interfaces;
 using CartasDeAmor.Domain.Entities;
 using Microsoft.Extensions.Logging;
 using CartasDeAmor.Domain.Exceptions;
+using CartasDeAmor.Domain.Configuration;
 
 namespace CartasDeAmor.Application.Services;
 
@@ -14,7 +15,9 @@ public class GameService : IGameService
     private readonly IGameRoomRepository _roomRepository;
     private readonly ILogger<GameService> _logger;
 
-    public GameService(IGameRoomRepository roomRepository, ILogger<GameService> logger)
+    public GameService(
+        IGameRoomRepository roomRepository, 
+        ILogger<GameService> logger)
     {
         _roomRepository = roomRepository;
         _logger = logger;
@@ -61,10 +64,15 @@ public class GameService : IGameService
             throw new InvalidOperationException("Only the host can start the game");
         }
 
-        // Check if we have enough players (Love Letter requires 2-4 players)
+        // Check if we have enough players and not too many
         if (game.Players.Count < 2)
         {
             throw new InvalidOperationException("At least 2 players are required to start the game");
+        }
+        
+        if (game.Players.Count > GameSettings.MaxPlayers)
+        {
+            throw new InvalidOperationException($"A maximum of {GameSettings.MaxPlayers} players are allowed in a game");
         }
 
         game.ConfigureGame();

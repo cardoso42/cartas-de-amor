@@ -32,8 +32,9 @@ public interface IGameRoomService
     /// </summary>
     /// <param name="roomId">The ID of the room to which the user will be added.</param>
     /// <param name="userEmail">The ID of the user to add to the room.</param>
+    /// <param name="password">An optional password for the room. If provided, the user must enter the correct password to join.</param>
     /// <returns>A task representing the asynchronous operation.</returns>
-    Task AddUserToRoomAsync(Guid roomId, string userEmail);
+    Task AddUserToRoomAsync(Guid roomId, string userEmail, string? password);
 
     /// <summary>
     /// Removes a user from a room.

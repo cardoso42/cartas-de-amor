@@ -157,6 +157,7 @@ The Game Hub provides real-time communication for the Love Letter game. Connect 
 - **Method**: `JoinRoom`
 - **Parameters**:
   - `roomId` (Guid): The ID of the room to join
+  - `password` (string, optional): The password for the room if it is password-protected
 - **Server Events**:
   - None directly from this method
 - **Notes**:
