@@ -2,7 +2,8 @@
 PLANTUML_JAR = /home/cardoso42/plantuml/plantuml-1.2024.4.jar
 
 # Caminho para a aplicação frontend de testes
-FRONTEND_DIR = src/CartasDeAmorFrontTest
+FRONTEND_DIR = src/CartasDeAmorFront
+FRONTEND_DIR_TEST = src/CartasDeAmorFrontTest
 
 # Caminhos para os projetos .NET
 BACKEND_DIR = src/CartasDeAmorBack
@@ -42,7 +43,10 @@ database-update:
 	dotnet ef database update --project $(INFRAESTRUCTURE_PROJ) --startup-project $(PRESENTATION_PROJ)
 
 front:
-	cd $(FRONTEND_DIR) && python3 -m http.server 8080
+	cd $(FRONTEND_DIR) && pnpm dev
+
+front-test:
+	cd $(FRONTEND_DIR_TEST) && python3 -m http.server 8080
 
 back:
 	dotnet watch run --project $(PRESENTATION_PROJ) --startup-project $(PRESENTATION_PROJ)
