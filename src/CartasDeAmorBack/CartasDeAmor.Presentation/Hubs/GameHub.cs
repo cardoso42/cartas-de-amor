@@ -24,8 +24,12 @@ public class GameHub(
         var userEmail = _accountService.GetEmailFromToken(Context.User);
         _connectionMapping.AddConnection(userEmail, Context.ConnectionId);
 
+        var joinRoomResult = await _gameRoomService.AddUserToRoomAsync(roomId, userEmail, password);
+
+        await Clients.Group(roomId.ToString()).SendAsync("UserJoined", userEmail);
+        await Clients.Client(Context.ConnectionId).SendAsync("JoinedRoom", joinRoomResult);
+
         await Groups.AddToGroupAsync(Context.ConnectionId, roomId.ToString());
-        await _gameRoomService.AddUserToRoomAsync(roomId, userEmail, password);
         
         _logger.LogInformation("User {User} joined room {RoomId}", userEmail, roomId);
     }
