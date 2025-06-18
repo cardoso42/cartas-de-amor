@@ -1,9 +1,8 @@
 import auth from '$lib/stores/authStore';
 import { redirect } from '@sveltejs/kit';
 import type { PageLoad } from './$types';
-import { getGameRooms } from '$lib/services/gameRoomService';
 
-export const load = (async () => {
+export const load = (async ({ params }) => {
   // Check authentication status
   let isAuthenticated = false;
 
@@ -18,16 +17,10 @@ export const load = (async () => {
     throw redirect(302, '/login');
   }
 
-  // Fetch initial list of game rooms (will be refreshed client-side)
-  // This helps with SEO and initial loading state
-  try {
-    const rooms = await getGameRooms();
-    return { rooms };
-  } catch (error) {
-    console.error('Failed to load game rooms:', error);
-    return { 
-      rooms: [],
-      error: 'Failed to load game rooms. Please try again.'
-    };
-  }
+  // Get the roomId from the URL params
+  const { roomId } = params;
+
+  return {
+    roomId
+  };
 }) satisfies PageLoad;

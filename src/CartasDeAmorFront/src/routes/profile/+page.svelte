@@ -174,8 +174,8 @@
             </div>
             
             <div class="form-actions">
-              <button class="cancel-btn" on:click={toggleEdit}>Cancel</button>
-              <button class="save-btn" on:click={saveProfile}>Save Changes</button>
+              <button class="secondary" on:click={toggleEdit}>Cancel</button>
+              <button on:click={saveProfile}>Save Changes</button>
             </div>
           </div>
         {:else}
@@ -193,7 +193,7 @@
               <span class="info-value">{new Date(userData.joinedDate).toLocaleDateString()}</span>
             </div>
             
-            <button class="edit-btn" on:click={toggleEdit}>Edit Profile</button>
+            <button on:click={toggleEdit}>Edit Profile</button>
           </div>
         {/if}
       </div>
@@ -345,29 +345,5 @@
     margin-top: 2rem;
   }
   
-  button {
-    padding: 0.75rem 1.5rem;
-    border-radius: 4px;
-    font-weight: 500;
-    cursor: pointer;
-    border: none;
-  }
-  
-  .edit-btn, .save-btn {
-    background-color: #9c27b0;
-    color: white;
-  }
-  
-  .edit-btn:hover, .save-btn:hover {
-    background-color: #7b1fa2;
-  }
-  
-  .cancel-btn {
-    background-color: #f5f5f5;
-    color: #333;
-  }
-  
-  .cancel-btn:hover {
-    background-color: #e0e0e0;
-  }
+  /* Button styles now come from global styles */
 </style>

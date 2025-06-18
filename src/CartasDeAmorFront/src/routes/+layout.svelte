@@ -1,5 +1,6 @@
 <script lang="ts">
   import Navbar from '$lib/components/Navbar.svelte';
+  import '$lib/styles/buttons.css';
 </script>
 
 <div class="app">

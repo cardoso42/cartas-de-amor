@@ -32,7 +32,7 @@
         <a href="/rooms" class:active={$page.url.pathname === '/rooms'}>Game Lobby</a>
         <a href="/profile" class:active={$page.url.pathname === '/profile'}>My Profile</a>
         <a href="/rules" class:active={$page.url.pathname === '/rules'}>Game Rules</a>
-        <button class="logout-button" on:click={handleLogout}>Logout</button>
+        <button class="navbar-button" on:click={handleLogout}>Logout</button>
       {:else}
         <!-- Links for non-authenticated users -->
         <a href="/welcome" class:active={$page.url.pathname === '/welcome'}>Home</a>
@@ -88,19 +88,13 @@
     color: white;
   }
 
-  .logout-button {
-    background-color: rgba(255, 255, 255, 0.2);
-    color: white;
-    border: none;
-    border-radius: 4px;
-    padding: 0.5rem 1rem;
-    cursor: pointer;
-    font-weight: 500;
-    transition: background-color 0.3s;
+  .navbar-button {
+    background-color: rgba(255, 255, 255, 0.2) !important;
+    padding: 0.5rem 1rem !important;
   }
 
-  .logout-button:hover {
-    background-color: rgba(255, 255, 255, 0.3);
+  .navbar-button:hover {
+    background-color: rgba(255, 255, 255, 0.3) !important;
   }
 
   /* Responsive adjustments */

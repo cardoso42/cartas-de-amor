@@ -20,28 +20,28 @@
         <div class="card-icon">🎮</div>
         <h2>Play Game</h2>
         <p>Join a game room or create a new one to play with friends.</p>
-        <a href="/rooms" class="dashboard-button">Game Lobby</a>
+        <a href="/rooms" class="button">Game Lobby</a>
       </div>
       
       <div class="dashboard-card">
         <div class="card-icon">👤</div>
         <h2>My Profile</h2>
         <p>View and edit your profile information and game statistics.</p>
-        <a href="/profile" class="dashboard-button">View Profile</a>
+        <a href="/profile" class="button">View Profile</a>
       </div>
       
       <div class="dashboard-card">
         <div class="card-icon">📜</div>
         <h2>Game Rules</h2>
         <p>Review the rules and learn how to play Love Letter.</p>
-        <a href="/rules" class="dashboard-button">Read Rules</a>
+        <a href="/rules" class="button">Read Rules</a>
       </div>
       
       <div class="dashboard-card">
         <div class="card-icon">🏆</div>
         <h2>Leaderboard</h2>
         <p>Check the top players and see where you stand.</p>
-        <a href="/leaderboard" class="dashboard-button disabled">Coming Soon</a>
+        <a href="/leaderboard" class="button disabled">Coming Soon</a>
       </div>
     </div>
   </div>
@@ -95,24 +95,5 @@
     margin-bottom: 1.5rem;
   }
   
-  .dashboard-button {
-    display: inline-block;
-    background-color: #9c27b0;
-    color: white;
-    text-decoration: none;
-    padding: 0.75rem 1.5rem;
-    border-radius: 4px;
-    font-weight: 500;
-    transition: background-color 0.3s;
-  }
-  
-  .dashboard-button:hover {
-    background-color: #7b1fa2;
-  }
-  
-  .dashboard-button.disabled {
-    background-color: #e0e0e0;
-    color: #9e9e9e;
-    cursor: not-allowed;
-  }
+  /* Button styles now come from global button.css */
 </style>

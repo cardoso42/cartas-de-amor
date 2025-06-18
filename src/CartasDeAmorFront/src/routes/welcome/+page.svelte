@@ -15,7 +15,7 @@
   <div class="container">
   <div class="home-content">
     <h1 class="title">Cartas de Amor</h1>
-    <button class="login-button" on:click={handleLogin}>Login</button>
+    <button class="success" on:click={handleLogin}>Login</button>
   </div>
 </div>
 </AuthGuard>
@@ -41,23 +41,5 @@
     color: #9c27b0; /* Purple color theme for "Love Letter" */
     text-align: center;
   }
-  
-  .login-button {
-    background-color: #4CAF50;
-    color: white;
-    border: none;
-    padding: 0.8rem 2rem;
-    border-radius: 4px;
-    cursor: pointer;
-    font-size: 1.1rem;
-    font-weight: 600;
-    transition: background-color 0.3s;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.2);
-  }
-  
-  .login-button:hover {
-    background-color: #388e3c;
-    transform: translateY(-2px);
-    box-shadow: 0 4px 8px rgba(0,0,0,0.2);
-  }
+
 </style>

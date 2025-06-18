@@ -10,15 +10,20 @@ const API_CONFIG = {
   // Auth endpoints
   auth: {
     login: `${PUBLIC_API_BASE_URL}/Account/Login`,
-    register: `${PUBLIC_API_BASE_URL}/Account/Register`,
+    register: `${PUBLIC_API_BASE_URL}/Account/Create`,
     logout: `${PUBLIC_API_BASE_URL}/Account/Logout`
   },
   
   // Game endpoints
   game: {
-    rooms: `${PUBLIC_API_BASE_URL}/GameRoom/GetAvailableRooms`,
-    create: `${PUBLIC_API_BASE_URL}/GameRoom/Create`,
-    join: `${PUBLIC_API_BASE_URL}/GameRoom/Join`,
+    rooms: `${PUBLIC_API_BASE_URL}/GameRoom`,
+    create: `${PUBLIC_API_BASE_URL}/GameRoom`,
+    delete: (roomId: string) => `${PUBLIC_API_BASE_URL}/GameRoom/${roomId}`,
+  },
+  
+  // SignalR hub - Use relative path to work with Vite proxy
+  signalR: {
+    gameHub: `/gamehub`,
   }
   
   // Add more endpoint configurations as needed

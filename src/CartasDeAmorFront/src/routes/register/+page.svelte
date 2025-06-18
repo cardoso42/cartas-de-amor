@@ -128,7 +128,7 @@
           />
         </div>
         
-        <button type="submit" class="register-button" disabled={isLoading}>
+        <button type="submit" disabled={isLoading}>
           {isLoading ? 'Creating Account...' : 'Register'}
         </button>
       </form>
@@ -224,28 +224,6 @@
     color: #666;
     margin-top: 0.25rem;
     font-size: 0.85rem;
-  }
-  
-  .register-button {
-    background-color: #9c27b0;
-    color: white;
-    border: none;
-    border-radius: 4px;
-    padding: 0.75rem;
-    font-size: 1rem;
-    font-weight: 500;
-    cursor: pointer;
-    margin-top: 1rem;
-    transition: background-color 0.3s;
-  }
-  
-  .register-button:hover {
-    background-color: #7b1fa2;
-  }
-  
-  .register-button:disabled {
-    background-color: #e1bee7;
-    cursor: not-allowed;
   }
   
   .login-link {
