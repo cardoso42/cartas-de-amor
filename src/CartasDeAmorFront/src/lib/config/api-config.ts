@@ -11,7 +11,8 @@ const API_CONFIG = {
   auth: {
     login: `${PUBLIC_API_BASE_URL}/Account/Login`,
     register: `${PUBLIC_API_BASE_URL}/Account/Create`,
-    logout: `${PUBLIC_API_BASE_URL}/Account/Logout`
+    logout: `${PUBLIC_API_BASE_URL}/Account/Logout`,
+    deleteAccount: (email: string) => `${PUBLIC_API_BASE_URL}/Account/${email}`
   },
   
   // Game endpoints

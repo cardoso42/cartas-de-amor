@@ -1,80 +1,63 @@
 <script lang="ts">
   import AuthGuard from '$lib/components/AuthGuard.svelte';
   import { onMount } from 'svelte';
+  import { 
+    getCurrentUserProfile, 
+    deleteAccount, 
+    type UserData 
+  } from '$lib/services/userService';
+  import { goto } from '$app/navigation';
+  import auth from '$lib/stores/authStore';
   
-  // Sample user data (would be fetched from an API in a real implementation)
-  let userData = {
-    username: 'Player1',
-    email: 'player1@example.com',
-    joinedDate: '2025-03-15',
-    totalGames: 24,
-    wins: 10,
-    avatar: null
+  // User data state
+  let userData: UserData = {
+    username: '',
+    email: '',
+    joinedDate: '',
   };
   
-  // Form data for profile updates
-  let formData = {
-    username: userData.username,
-    email: userData.email,
-    currentPassword: '',
-    newPassword: '',
-    confirmPassword: ''
-  };
-  
-  let isEditing = false;
   let message = '';
   let messageType = '';
+  let showDeleteConfirm = false;
   
-  function toggleEdit() {
-    isEditing = !isEditing;
-    
-    if (!isEditing) {
-      // Reset form if cancelling
-      formData.username = userData.username;
-      formData.email = userData.email;
-      formData.currentPassword = '';
-      formData.newPassword = '';
-      formData.confirmPassword = '';
+  async function confirmDeleteAccount() {
+    if (userData.email) {
+      const result = await deleteAccount(userData.email);
+      
+      if (result.success) {
+        // Logout the user
+        auth.logout();
+        
+        // Redirect to home page
+        goto('/');
+      } else {
+        message = result.message;
+        messageType = 'error';
+        showDeleteConfirm = false;
+      }
     }
   }
   
-  function saveProfile() {
-    // Password change validation
-    if (formData.newPassword) {
-      if (formData.newPassword !== formData.confirmPassword) {
-        message = 'New passwords do not match';
-        messageType = 'error';
-        return;
-      }
-      
-      if (!formData.currentPassword) {
-        message = 'Current password is required to set a new password';
-        messageType = 'error';
-        return;
-      }
-    }
-    
-    // In a real implementation, this would call an API to update the profile
-    userData = {
-      ...userData,
-      username: formData.username,
-      email: formData.email
-    };
-    
-    message = 'Profile updated successfully';
-    messageType = 'success';
-    isEditing = false;
-    
-    // Clear message after 3 seconds
-    setTimeout(() => {
-      message = '';
-      messageType = '';
-    }, 3000);
+  function toggleDeleteConfirm() {
+    showDeleteConfirm = !showDeleteConfirm;
+  }
+  
+  function logout() {
+    auth.logout();
+    goto('/login');
   }
   
   onMount(() => {
-    // In a real implementation, this would fetch user data from the server
-    console.log('Fetching user profile data...');
+    // Fetch the user profile data
+    const profile = getCurrentUserProfile();
+    
+    if (profile) {
+      userData = profile;
+    } else {
+      // If profile couldn't be loaded, show error
+      message = 'Could not load profile data. Please try again later.';
+      messageType = 'error';
+    }
   });
 </script>
 
@@ -99,86 +82,10 @@
           <div class="avatar">
             {userData.username.charAt(0).toUpperCase()}
           </div>
-          
-          {#if isEditing}
-            <button class="avatar-upload-btn" title="Upload avatar (not implemented)">
-              Change
-            </button>
-          {/if}
-        </div>
-        
-        <div class="stats">
-          <div class="stat">
-            <span class="stat-value">{userData.totalGames}</span>
-            <span class="stat-label">Games</span>
-          </div>
-          <div class="stat">
-            <span class="stat-value">{userData.wins}</span>
-            <span class="stat-label">Wins</span>
-          </div>
-          <div class="stat">
-            <span class="stat-value">{Math.round((userData.wins / userData.totalGames) * 100)}%</span>
-            <span class="stat-label">Win Rate</span>
-          </div>
         </div>
       </div>
       
       <div class="profile-content">
-        {#if isEditing}
-          <div class="form">
-            <div class="form-group">
-              <label for="username">Username</label>
-              <input 
-                type="text" 
-                id="username" 
-                bind:value={formData.username} 
-                required
-              />
-            </div>
-            
-            <div class="form-group">
-              <label for="email">Email</label>
-              <input 
-                type="email" 
-                id="email" 
-                bind:value={formData.email} 
-                required
-              />
-            </div>
-            
-            <div class="form-group">
-              <label for="currentPassword">Current Password</label>
-              <input 
-                type="password" 
-                id="currentPassword" 
-                bind:value={formData.currentPassword} 
-              />
-            </div>
-            
-            <div class="form-group">
-              <label for="newPassword">New Password</label>
-              <input 
-                type="password" 
-                id="newPassword" 
-                bind:value={formData.newPassword} 
-              />
-            </div>
-            
-            <div class="form-group">
-              <label for="confirmPassword">Confirm New Password</label>
-              <input 
-                type="password" 
-                id="confirmPassword" 
-                bind:value={formData.confirmPassword} 
-              />
-            </div>
-            
-            <div class="form-actions">
-              <button class="secondary" on:click={toggleEdit}>Cancel</button>
-              <button on:click={saveProfile}>Save Changes</button>
-            </div>
-          </div>
-        {:else}
           <div class="profile-info">
             <div class="info-row">
               <span class="info-label">Username</span>
@@ -190,12 +97,23 @@
             </div>
             <div class="info-row">
               <span class="info-label">Member Since</span>
-              <span class="info-value">{new Date(userData.joinedDate).toLocaleDateString()}</span>
+              <span class="info-value">{userData.joinedDate ? new Date(userData.joinedDate).toLocaleDateString() : 'N/A'}</span>
             </div>
             
-            <button on:click={toggleEdit}>Edit Profile</button>
+            <div class="button-group">
+              <button class="danger" on:click={toggleDeleteConfirm}>Delete Account</button>
+            </div>
+            
+            {#if showDeleteConfirm}
+              <div class="delete-confirmation">
+                <p>Are you sure you want to delete your account? This action cannot be undone.</p>
+                <div class="button-group">
+                  <button class="secondary" on:click={toggleDeleteConfirm}>Cancel</button>
+                  <button class="danger" on:click={confirmDeleteAccount}>Confirm Delete</button>
+                </div>
+              </div>
+            {/if}
           </div>
-        {/if}
       </div>
     </div>
   </div>
@@ -323,21 +241,6 @@
     margin-bottom: 1.5rem;
   }
   
-  label {
-    display: block;
-    margin-bottom: 0.5rem;
-    color: #555;
-    font-weight: 500;
-  }
-  
-  input {
-    width: 100%;
-    padding: 0.75rem;
-    border: 1px solid #ddd;
-    border-radius: 4px;
-    font-size: 1rem;
-  }
-  
   .form-actions {
     display: flex;
     gap: 1rem;
@@ -345,5 +248,27 @@
     margin-top: 2rem;
   }
   
-  /* Button styles now come from global styles */
+  .button-group {
+    display: flex;
+    gap: 1rem;
+    margin-top: 1.5rem;
+  }
+  
+  .delete-confirmation {
+    margin-top: 1.5rem;
+    padding: 1rem;
+    border: 1px solid #ffcdd2;
+    background-color: #ffebee;
+    border-radius: 4px;
+    color: #c62828;
+  }
+  
+  .danger {
+    background-color: #f44336;
+    color: white;
+  }
+  
+  .danger:hover {
+    background-color: #d32f2f;
+  }
 </style>
