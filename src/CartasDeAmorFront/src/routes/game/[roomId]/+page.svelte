@@ -4,18 +4,42 @@
   import { page } from '$app/stores';
   import { signalR } from '$lib/services/signalRService';
   import { goto } from '$app/navigation';
+  import { get } from 'svelte/store';
+  import { user } from '$lib/stores/userStore';
+  import { gameStore } from '$lib/stores/gameStore';
   import type { InitialGameStatusDto } from '$lib/types/game-types';
 
   // Get room ID from URL params
   const roomId = $page.data.roomId;
   
+  // Get the current user's email for ownership check
+  let userEmail = '';
+  const unsubscribeUser = user.subscribe(state => {
+    userEmail = state.email || '';
+    console.log('User email from userStore:', userEmail);
+  });
+  
   // Game state
   let gameStatus: InitialGameStatusDto | null = null;
   let isConnected = false;
   let connectionError = '';
+  let roomName = '';
+  let isRoomOwner = false;
+  let players: string[] = [];
+  let isGameStarting = false;
+
+  // Get initial game data from gameStore
+  import { get as getStore } from 'svelte/store';
+  const initialGameData = getStore(gameStore);
+  if (initialGameData && initialGameData.roomId === roomId) {
+    roomName = initialGameData.roomName || '';
+    players = initialGameData.players || [];
+    isRoomOwner = initialGameData.isRoomOwner;
+  }
   
   // Handle connection events
-  const unsubscribeSignalR = signalR.subscribe(state => {
+  let unsubscribeSignalR = () => {};
+  unsubscribeSignalR = signalR.subscribe(state => {
     isConnected = state.status === 'connected';
     if (state.error) {
       connectionError = state.error;
@@ -32,6 +56,21 @@
       goto('/rooms');
     }
   }
+  
+  async function startGame() {
+    if (!isRoomOwner) {
+      return; // Only room owner can start the game
+    }
+    
+    try {
+      isGameStarting = true;
+      await signalR.startGame(roomId);
+      // No need to do anything here, the RoundStarted event will update the UI
+    } catch (err) {
+      console.error('Error starting game:', err);
+      isGameStarting = false;
+    }
+  }
 
   // Initialize SignalR and join room on mount
   onMount(async () => {
@@ -40,32 +79,43 @@
       if (!isConnected) {
         await signalR.initialize();
       }
-      
-      // Check if we are already in this room
-      // If not, this will throw an error and we'll redirect back to rooms
-      // This happens if user directly navigates to /game/[roomId]
-      const state = await new Promise<any>((resolve) => {
-        const unsub = signalR.subscribe(s => {
+
+      // Get the current state synchronously
+      const state = get(signalR);
+
+      // Now check if we are already in this room (async logic after handlers)
+      await new Promise<any>((resolve) => {
+        let unsub = () => {};
+        unsub = signalR.subscribe(s => {
           resolve(s);
           unsub();
         });
       });
-      
-      if (state.connection) {
-        // Set up event handlers for game events
-        state.connection.on('RoundStarted', (initialGameStatus: InitialGameStatusDto) => {
+
+      signalR.registerHandlers({
+        onUserJoined: (playerEmail: string) => {
+          console.log('Player joined:', playerEmail);
+          if (!players.includes(playerEmail)) {
+            players = [...players, playerEmail];
+          }
+        },
+        onRoundStarted: (initialGameStatus: InitialGameStatusDto) => {
           console.log('Game started:', initialGameStatus);
           gameStatus = initialGameStatus;
-        });
-        
-        state.connection.on('NextTurn', (playerEmail: string) => {
+          isGameStarting = false;
+        },
+        onNextTurn: (playerEmail: string) => {
           console.log('Next turn:', playerEmail);
-        });
-        
-        state.connection.on('PlayerDrewCard', (playerEmail: string) => {
+        },
+        onPlayerDrewCard: (playerEmail: string) => {
           console.log('Player drew card:', playerEmail);
-        });
-      }
+        },
+        onGameStartError: (error: string) => {
+          console.error('Game start error:', error);
+          isGameStarting = false;
+          alert(`Failed to start game: ${error}`);
+        }
+      });
     } catch (err) {
       console.error('Error connecting to game room:', err);
       // If we can't connect, go back to rooms
@@ -76,14 +126,20 @@
   onDestroy(() => {
     // Clean up subscriptions
     unsubscribeSignalR();
+    unsubscribeUser();
   });
 </script>
 
 <AuthGuard requireAuth={true} redirectTo="/login">
   <div class="game-container">
     <header class="game-header">
-      <h1>Game Room: {roomId}</h1>
+      <h1>Game Room: {roomName}</h1>
       <div class="game-actions">
+        {#if isRoomOwner && !gameStatus}
+          <button on:click={startGame} disabled={isGameStarting || players.length < 2 || !isConnected} class="primary">
+            {#if isGameStarting}Starting...{:else}Start Game{/if}
+          </button>
+        {/if}
         <button on:click={leaveRoom} class="danger small">Leave Room</button>
       </div>
     </header>
@@ -101,25 +157,47 @@
       {/if}
     </div>
 
-    <div class="game-content">
-      <p>
-        This is a placeholder for the game interface. When a game is started, 
-        the interface will be populated with game elements.
-      </p>
-      
-      <div class="info-box">
-        <h3>How to play:</h3>
-        <ol>
-          <li>Wait for all players to join the room</li>
-          <li>The room creator can start the game when ready</li>
-          <li>Follow the prompts and take your turn when it's your move</li>
-        </ol>
+    {#if !gameStatus}
+      <!-- Pre-game lobby content -->
+      <div class="game-content">
+        <div class="lobby">
+          <h2>Players in Room</h2>
+          {#if players.length > 0}
+            <ul class="player-list">
+              {#each players as player}
+                <li>{player} {player === userEmail ? '(You)' : ''}</li>
+              {/each}
+            </ul>
+          {:else}
+            <p>Loading players...</p>
+          {/if}
+          
+          {#if isRoomOwner}
+            <div class="owner-notice">
+              <i class="icon-crown"></i> You are the room owner and can start the game
+            </div>
+            
+            {#if players.length < 2}
+              <div class="warning-message">
+                At least 2 players are required to start the game
+              </div>
+            {/if}
+          {/if}
+          
+          <div class="waiting-message">
+            Waiting for game to start...
+          </div>
+        </div>
       </div>
-      
-      <div class="waiting-message">
-        Waiting for game to start...
+    {:else}
+      <!-- Game started content will be rendered here -->
+      <div class="game-content">
+        <p>
+          This is a placeholder for the game interface. When a game is started, 
+          the interface will be populated with game elements.
+        </p>
       </div>
-    </div>
+    {/if}
   </div>
 </AuthGuard>
 
@@ -142,6 +220,12 @@
   h1 {
     color: #9c27b0;
     margin: 0;
+  }
+  
+  h2 {
+    color: #7b1fa2;
+    margin-top: 0;
+    font-size: 1.5rem;
   }
   
   .game-actions {
@@ -184,18 +268,6 @@
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
   }
   
-  .info-box {
-    background-color: #f3e5f5;
-    border-radius: 4px;
-    padding: 1rem;
-    margin: 2rem 0;
-  }
-  
-  .info-box h3 {
-    color: #7b1fa2;
-    margin-top: 0;
-  }
-  
   .waiting-message {
     text-align: center;
     font-size: 1.2rem;
@@ -204,5 +276,62 @@
     border: 2px dashed #e1bee7;
     border-radius: 8px;
     margin-top: 2rem;
+  }
+  
+  .lobby {
+    padding: 1rem;
+  }
+  
+  .player-list {
+    list-style-type: none;
+    padding: 0;
+    margin: 1rem 0;
+  }
+  
+  .player-list li {
+    padding: 0.5rem 1rem;
+    margin-bottom: 0.5rem;
+    background-color: #f5f5f5;
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+  }
+  
+  .owner-notice {
+    background-color: #fff9c4;
+    color: #f57f17;
+    padding: 0.75rem;
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin: 1rem 0;
+  }
+  
+  .warning-message {
+    background-color: #ffebee;
+    color: #c62828;
+    padding: 0.75rem;
+    border-radius: 4px;
+    margin: 1rem 0;
+  }
+  
+  button.primary {
+    background-color: #9c27b0;
+    color: white;
+    border: none;
+    padding: 0.5rem 1rem;
+    border-radius: 4px;
+    font-weight: bold;
+    cursor: pointer;
+  }
+  
+  button.primary:hover {
+    background-color: #7b1fa2;
+  }
+  
+  button.primary:disabled {
+    background-color: #e1bee7;
+    cursor: not-allowed;
   }
 </style>

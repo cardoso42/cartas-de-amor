@@ -27,9 +27,36 @@ const initialState: SignalRState = {
 // Create the writable store
 const signalRStore = writable<SignalRState>(initialState);
 
+// Handler registration API
+let registeredHandlers = {
+  onJoinedRoom: null,
+  onUserJoined: null,
+  onRoundStarted: null,
+  onNextTurn: null,
+  onPlayerDrewCard: null,
+  onGameStartError: null
+};
+
+function attachEventHandlers(connection) {
+  connection.on('JoinedRoom', (...args) => registeredHandlers.onJoinedRoom?.(...args));
+  connection.on('UserJoined', (...args) => registeredHandlers.onUserJoined?.(...args));
+  connection.on('RoundStarted', (...args) => registeredHandlers.onRoundStarted?.(...args));
+  connection.on('NextTurn', (...args) => registeredHandlers.onNextTurn?.(...args));
+  connection.on('PlayerDrewCard', (...args) => registeredHandlers.onPlayerDrewCard?.(...args));
+  connection.on('GameStartError', (...args) => registeredHandlers.onGameStartError?.(...args));
+}
+
 // Create exported object with methods
 export const signalR = {
   subscribe: signalRStore.subscribe,
+  registerHandlers(handlers) {
+    registeredHandlers = { ...registeredHandlers, ...handlers };
+    // Attach to current connection if available
+    const state = get(signalRStore);
+    if (state.connection) {
+      attachEventHandlers(state.connection);
+    }
+  },
   
   async initialize() {
     if (!browser) return null;
@@ -60,6 +87,9 @@ export const signalR = {
           error: error ? `Connection closed: ${error.message}` : 'Connection closed'
         }));
       });
+
+      // Attach event handlers
+      attachEventHandlers(connection);
 
       try {
         await connection.start();
@@ -134,6 +164,44 @@ export const signalR = {
       } catch (error) {
         console.error('Error leaving room:', error);
         return false;
+      }
+    }
+    
+    return false;
+  },
+  
+  async reconnectToRoom(roomId: string) {
+    const state = get(signalRStore);
+    let connection = state.connection;
+    
+    if (!connection) {
+      connection = await this.initialize();
+    }
+    
+    if (connection) {
+      try {
+        await connection.invoke('ReconnectToRoom', roomId);
+        signalRStore.update(s => ({ ...s, currentRoomId: roomId }));
+        return true;
+      } catch (error) {
+        console.error('Error reconnecting to room:', error);
+        throw error;
+      }
+    }
+    
+    return false;
+  },
+  
+  async startGame(roomId: string) {
+    const state = get(signalRStore);
+    
+    if (state.connection) {
+      try {
+        await state.connection.invoke('StartGame', roomId);
+        return true;
+      } catch (error) {
+        console.error('Error starting game:', error);
+        throw error;
       }
     }
     

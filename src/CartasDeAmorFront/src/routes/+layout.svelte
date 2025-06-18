@@ -1,6 +1,16 @@
 <script lang="ts">
+  import { onMount } from 'svelte';
   import Navbar from '$lib/components/Navbar.svelte';
+  import auth from '$lib/stores/authStore';
+  import { user } from '$lib/stores/userStore';
   import '$lib/styles/buttons.css';
+
+  // Initialize stores on app start
+  onMount(() => {
+    // Synchronize both stores from localStorage
+    auth.synchronize();
+    user.synchronize();
+  });
 </script>
 
 <div class="app">

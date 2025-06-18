@@ -59,3 +59,14 @@ export interface PublicPlayerUpdateDto {
   isEliminated: boolean;
   score: number;
 }
+
+/**
+ * Game status DTO interface
+ */
+export interface JoinRoomResultDto {
+  roomId: string;
+  roomName: string;
+  playerId: number;
+  hostEmail: string;
+  players: string[];
+}

@@ -1,4 +1,5 @@
 import auth from '$lib/stores/authStore';
+import { user } from '$lib/stores/userStore';
 import API_CONFIG from '$lib/config/api-config';
 import { apiPost } from '$lib/utils/apiUtils';
 
@@ -35,6 +36,14 @@ export async function login(email: string, password: string): Promise<LoginRespo
     if (data.token) {
       // Store the token in the auth store
       auth.login(data.token);
+      
+      // Populate user store with user data from the response
+      user.setUser({
+        id: data.email, // Using email as ID since we don't have a separate ID field
+        email: data.email,
+        username: data.username
+      });
+      
       return { 
         token: data.token, 
         success: true 
@@ -67,6 +76,13 @@ export async function register(username: string, email: string, password: string
     if (data.accessToken) {
       // Store the access token in auth store
       auth.login(data.accessToken);
+      
+      // Populate user store with user data from the registration parameters
+      user.setUser({
+        id: email, // Using email as ID since we don't have a separate ID field
+        email: email,
+        username: username
+      });
     }
     
     return {
@@ -86,4 +102,5 @@ export async function register(username: string, email: string, password: string
 
 export function logout() {
   auth.logout();
+  user.clearUser();
 }

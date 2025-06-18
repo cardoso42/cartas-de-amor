@@ -5,6 +5,9 @@
   import { signalR } from '$lib/services/signalRService';
   import { page } from '$app/stores';
   import { goto } from '$app/navigation';
+  import { gameStore } from '$lib/stores/gameStore';
+	import type { JoinRoomResultDto } from '$lib/types/game-types';
+	import auth from '$lib/stores/authStore';
   
   // Import new components
   import ConnectionStatus from '$lib/components/rooms/ConnectionStatus.svelte';
@@ -12,6 +15,8 @@
   import ErrorDisplay from '$lib/components/rooms/ErrorDisplay.svelte';
   import PasswordModal from '$lib/components/rooms/PasswordModal.svelte';
   import RoomsList from '$lib/components/rooms/RoomsList.svelte';
+	import { get } from 'svelte/store';
+	import user from '$lib/stores/userStore';
   
   // Access the rooms from server-side load
   let gameRooms: GameRoom[] = $page.data.rooms || [];
@@ -31,6 +36,13 @@
   // Subscribe to SignalR status
   const unsubscribeSignalR = signalR.subscribe(state => {
     signalRStatus = state.status;
+  });
+
+  // Get the current user's email for ownership check
+  let userEmail = '';
+  const unsubscribeUser = user.subscribe(state => {
+    userEmail = state.email || '';
+    console.log('User email from userStore:', userEmail);
   });
 
   // Function to refresh room list
@@ -56,10 +68,8 @@
       
       // Create the room via API
       const roomId = await createGameRoom(roomName, roomPassword);
-      
-      // Navigate to game page with room ID
-      goto(`/game/${roomId}`);
-      
+      joinRoomWithPassword(roomId, roomPassword);
+
     } catch (err) {
       console.error('Error creating room:', err);
       error = err instanceof Error ? err.message : 'Failed to create room. Please try again.';
@@ -97,9 +107,6 @@
       // Join the room via SignalR
       await signalR.joinRoom(roomId, password);
       
-      // Navigate to game page with room ID
-      goto(`/game/${roomId}`);
-      
     } catch (err) {
       console.error('Error joining room:', err);
       error = err instanceof Error ? err.message : 'Failed to join room. Please try again.';
@@ -129,6 +136,35 @@
     } catch (err) {
       console.error('Error connecting to game server:', err);
     }
+
+    // Get the current state synchronously
+    const state = get(signalR);
+
+    // Now check if we are already in this room (async logic after handlers)
+    await new Promise<any>((resolve) => {
+      let unsub = () => {};
+      unsub = signalR.subscribe(s => {
+        resolve(s);
+        unsub();
+      });
+    });
+
+    signalR.registerHandlers({
+      onJoinedRoom: (joinRoomResult: JoinRoomResultDto) => {
+        console.log('Joined room:', joinRoomResult);
+
+        // Set game state in store before navigating
+        gameStore.set({
+          roomId: joinRoomResult.roomId,
+          roomName: joinRoomResult.roomName,
+          players: joinRoomResult.players,
+          isRoomOwner: joinRoomResult.hostEmail === userEmail,
+          hostEmail: joinRoomResult.hostEmail
+        });
+
+        goto(`/game/${joinRoomResult.roomId}`);
+      },
+    });
     
     // Refresh rooms immediately (in case server data is stale)
     await refreshRooms();
