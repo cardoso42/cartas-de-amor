@@ -46,9 +46,6 @@ public class GameRoomService : IGameRoomService
             HostEmail = creatorEmail,
         };
 
-        var host = await CreatePlayer(game, creatorEmail);
-        game.Players.Add(host);
-
         await _roomRepository.CreateAsync(game);
         return game.Id;
     }
