@@ -14,25 +14,7 @@
       <h2>Overview</h2>
       <p>
         In the game Love Letter, players take on the role of potential suitors seeking to deliver 
-        their love letter to Princess Annette. The player whose letter reaches the princess wins her heart and the game.
-      </p>
-    </section>
-    
-    <section>
-      <h2>Components</h2>
-      <ul>
-        <li>16 Game cards</li>
-        <li>4 Reference cards</li>
-        <li>Tokens of affection</li>
-      </ul>
-    </section>
-    
-    <section>
-      <h2>Setup</h2>
-      <p>
-        1. Shuffle the 16 game cards to form a face-down deck.<br>
-        2. Remove the top card from the deck and set it aside face-down. This card will not be used in the round.<br>
-        3. Each player draws one card from the deck as their starting hand.
+        their love letter to the Princess. The player whose letter reaches the princess wins her heart and the game.
       </p>
     </section>
     
@@ -51,16 +33,20 @@
       <h2>Card Types</h2>
       <div class="cards-grid">
         <div class="card">
-          <h3>8 - Princess</h3>
+          <h3>9 - Princess</h3>
           <p>If you discard this card, you are out of the round.</p>
         </div>
         <div class="card">
-          <h3>7 - Countess</h3>
+          <h3>8 - Countess</h3>
           <p>If you have this card and the King or Prince in your hand, you must discard this card.</p>
         </div>
         <div class="card">
-          <h3>6 - King</h3>
+          <h3>7 - King</h3>
           <p>Trade hands with another player of your choice.</p>
+        </div>
+        <div class="card">
+          <h3>6 - Chancellor</h3>
+          <p>Draw two additional cards from the deck, choose one of them to keep and return the other two to the bottom of the deck.</p>
         </div>
         <div class="card">
           <h3>5 - Prince</h3>
@@ -81,6 +67,10 @@
         <div class="card">
           <h3>1 - Guard</h3>
           <p>Name a card (except Guard). If another player has that card, they are out of the round.</p>
+        </div>
+        <div class="card">
+          <h3>0 - Spy</h3>
+          <p>If you are the only non-eliminated player at the end of the round who played it, you get an extra point (even if you didn't win the round).</p>
         </div>
       </div>
     </section>
