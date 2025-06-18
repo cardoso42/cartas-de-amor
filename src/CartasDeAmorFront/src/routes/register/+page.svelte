@@ -2,6 +2,7 @@
   import { onMount } from 'svelte';
   import AuthGuard from '$lib/components/AuthGuard.svelte';
   import { goto } from '$app/navigation';
+  import { register } from '$lib/services/authService';
 
   let formData = {
     username: '',
@@ -25,25 +26,39 @@
       return;
     }
     
+    // Email validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(formData.email)) {
+      errorMessage = 'Please enter a valid email address';
+      return;
+    }
+    
     if (formData.password !== formData.confirmPassword) {
       errorMessage = 'Passwords do not match';
+      return;
+    }
+    
+    if (formData.password.length < 8) {
+      errorMessage = 'Password must be at least 8 characters';
       return;
     }
     
     isLoading = true;
     
     try {
-      // In a real implementation, this would call an API to register the user
-      // For now, we're just simulating a successful registration
-      await new Promise(resolve => setTimeout(resolve, 1000)); // Simulate API call
+      // Call the register function from authService
+      const result = await register(formData.username, formData.email, formData.password);
       
-      successMessage = 'Registration successful! Redirecting to login...';
-      
-      // Redirect to login page after 2 seconds
-      setTimeout(() => {
-        goto('/login');
-      }, 2000);
-      
+      if (result.success) {
+        successMessage = result.message || 'Registration successful! Redirecting to dashboard...';
+        
+        // Redirect to dashboard after 1 second since we're already authenticated
+        setTimeout(() => {
+          goto('/dashboard');
+        }, 1000);
+      } else {
+        errorMessage = result.message || 'Registration failed. Please try again.';
+      }
     } catch (error) {
       errorMessage = 'An error occurred during registration. Please try again.';
       console.error('Registration error:', error);
