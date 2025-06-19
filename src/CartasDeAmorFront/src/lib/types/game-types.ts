@@ -18,6 +18,26 @@ export enum CardType {
 }
 
 /**
+ * Card action requirements enum matching the backend enum
+ */
+export enum CardActionRequirements {
+  None = 0,
+  SelectPlayer = 1,
+  SelectCardType = 2
+}
+
+/**
+ * Card requirements DTO interface
+ */
+export interface CardRequirementsDto {
+  cardType: CardType;
+  requirements: CardActionRequirements[];
+  possibleTargets: string[];
+  possibleCardTypes: CardType[];
+  message?: string;
+}
+
+/**
  * Player status DTO interface
  */
 export interface PlayerStatusDto {

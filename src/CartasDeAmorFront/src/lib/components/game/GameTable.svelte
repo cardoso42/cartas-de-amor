@@ -1,8 +1,10 @@
 <script lang="ts">
-  import { CardType, type InitialGameStatusDto } from '$lib/types/game-types';
+  import { CardType, type InitialGameStatusDto, type CardRequirementsDto, CardActionRequirements } from '$lib/types/game-types';
   import { user } from '$lib/stores/userStore';
   import { signalR } from '$lib/services/signalRService';
   import { page } from '$app/stores';
+  import { onMount } from 'svelte';
+  import CardRequirementsModal from './CardRequirementsModal.svelte';
   
   // Props from parent component
   export let gameStatus: InitialGameStatusDto;
@@ -18,6 +20,20 @@
     localPlayerName = state.username || currentUserEmail.split('@')[0];
   });
   
+  // Track card being played and its requirements
+  let selectedCard: CardType | null = null;
+  let cardRequirements: CardRequirementsDto | null = null;
+  let showRequirementsModal = false;
+  
+  // Track requirement fulfillment state
+  let selectedTargetEmail: string | null = null;
+  let selectedCardType: CardType | null = null;
+  
+  // Game flow states
+  let gameFlowState: 'idle' | 'showing_rules' | 'selecting_player' | 'selecting_card_type' = 'idle';
+  let currentStep = 0;
+  let totalSteps = 0;
+  
   // Process the game data into display format
   $: players = gameStatus ? processGameData(gameStatus, currentUserEmail) : [];
   $: totalPlayers = players.length;
@@ -26,6 +42,183 @@
   $: currentTurnPlayer = getCurrentTurnPlayer(gameStatus, currentTurnPlayerEmail);
   $: isMyTurn = currentTurnPlayer === currentUserEmail;
   
+  // Set up SignalR handlers
+  onMount(() => {
+    signalR.registerHandlers({
+      onCardRequirements: handleCardRequirements
+    });
+  });
+  
+  // Handle card requirements response from server
+  function handleCardRequirements(requirements: any) {
+    console.log('Received card requirements:', requirements);
+    cardRequirements = requirements as CardRequirementsDto;
+    
+    // Reset requirement state
+    selectedTargetEmail = null;
+    selectedCardType = null;
+    currentStep = 0;
+    
+    // Check if the card has requirements
+    if (cardRequirements.requirements && cardRequirements.requirements.length > 0 && 
+        cardRequirements.requirements[0] !== CardActionRequirements.None) {
+      
+      console.log(`Card ${getCardName(cardRequirements.cardType)} has requirements:`, 
+        cardRequirements.requirements.map(req => getRequirementName(req)).join(', '));
+      
+      // Calculate steps needed
+      const needsPlayer = cardRequirements.requirements.includes(CardActionRequirements.SelectPlayer);
+      const needsCardType = cardRequirements.requirements.includes(CardActionRequirements.SelectCardType);
+      
+      totalSteps = (needsPlayer ? 1 : 0) + (needsCardType ? 1 : 0);
+      
+      // Show modal with rules first
+      gameFlowState = 'showing_rules';
+      showRequirementsModal = true;
+      
+      console.log(`Starting ${totalSteps}-step card playing process`);
+    } else {
+      console.log(`Card ${getCardName(cardRequirements.cardType)} has no special requirements - can be played immediately`);
+      // For cards with no requirements, we can play them directly
+      playCard(cardRequirements.cardType, null, null);
+    }
+  }
+  
+  function getRequirementName(requirement: CardActionRequirements): string {
+    switch (requirement) {
+      case CardActionRequirements.None: return 'None';
+      case CardActionRequirements.SelectPlayer: return 'Select Player';
+      case CardActionRequirements.SelectCardType: return 'Select Card Type';
+      default: return 'Unknown';
+    }
+  }
+  
+  // Handle modal events
+  function handleModalClose() {
+    console.log('Modal closed - starting card playing flow');
+    showRequirementsModal = false;
+    startNextStep();
+  }
+  
+  // Start the next step in the card playing process
+  function startNextStep() {
+    if (!cardRequirements) return;
+    
+    const needsPlayer = cardRequirements.requirements.includes(CardActionRequirements.SelectPlayer);
+    const needsCardType = cardRequirements.requirements.includes(CardActionRequirements.SelectCardType);
+    
+    // Always do player selection first, then card type selection
+    if (currentStep === 0 && needsPlayer) {
+      gameFlowState = 'selecting_player';
+      console.log('Step 1: Select a target player');
+      console.log('Possible targets:', cardRequirements.possibleTargets.map(email => getPlayerDisplayName(email)));
+    } else if ((currentStep === 0 && !needsPlayer && needsCardType) || 
+               (currentStep === 1 && needsCardType)) {
+      gameFlowState = 'selecting_card_type';
+      console.log('Step 2: Select a card type');
+      console.log('Possible card types:', cardRequirements.possibleCardTypes.map(ct => getCardName(ct)));
+    } else {
+      // All steps completed
+      console.log('All requirements fulfilled, playing card');
+      playCard(cardRequirements.cardType, selectedTargetEmail, selectedCardType);
+      resetCardPlayingState();
+    }
+  }
+  
+  // Handle clicking on players for targeting
+  function handlePlayerClick(playerEmail: string) {
+    if (gameFlowState !== 'selecting_player' || !cardRequirements) {
+      return; // Not in player selection mode
+    }
+    
+    // Check if this player is a valid target
+    if (!cardRequirements.possibleTargets.includes(playerEmail)) {
+      console.log('Invalid target player selected');
+      return;
+    }
+    
+    selectedTargetEmail = playerEmail;
+    currentStep++;
+    console.log('✅ Selected target player:', getPlayerDisplayName(playerEmail));
+    
+    // Move to next step
+    startNextStep();
+  }
+  
+  // Handle clicking on card types for selection
+  function handleCardTypeClick(cardType: CardType) {
+    if (gameFlowState !== 'selecting_card_type' || !cardRequirements) {
+      return; // Not in card type selection mode
+    }
+    
+    // Check if this card type is valid
+    if (!cardRequirements.possibleCardTypes.includes(cardType)) {
+      console.log('Invalid card type selected');
+      return;
+    }
+    
+    selectedCardType = cardType;
+    currentStep++;
+    console.log('✅ Selected card type:', getCardName(cardType));
+    
+    // Move to next step
+    startNextStep();
+  }
+  
+  function resetCardPlayingState() {
+    showRequirementsModal = false;
+    selectedCard = null;
+    cardRequirements = null;
+    selectedTargetEmail = null;
+    selectedCardType = null;
+    gameFlowState = 'idle';
+    currentStep = 0;
+    totalSteps = 0;
+  }
+  
+  // Placeholder function for actually playing a card
+  function playCard(cardType: CardType, targetPlayerEmail: string | null, targetCardType: CardType | null) {
+    console.log('🎮 Playing card:', {
+      card: getCardName(cardType),
+      target: targetPlayerEmail ? getPlayerDisplayName(targetPlayerEmail) : 'none',
+      guessedCard: targetCardType ? getCardName(targetCardType) : 'none'
+    });
+    
+    // TODO: Implement actual card playing logic here
+    // This would typically involve calling a SignalR method like:
+    // await signalR.playCard(roomId, cardType, targetPlayerEmail, targetCardType);
+  }
+  
+  function getPlayerDisplayName(email: string): string {
+    const player = players.find(p => p.email === email);
+    return player?.name || email.split('@')[0];
+  }
+  
+  // Handle clicking on a player's card
+  async function handleCardClick(cardType: CardType) {
+    if (!isMyTurn) {
+      console.log('Not your turn - cannot play cards');
+      return;
+    }
+    
+    // Check if the local player actually has this card
+    const localPlayer = players.find(p => p.isLocalPlayer);
+    if (!localPlayer || !localPlayer.cards.includes(cardType)) {
+      console.log('You do not have this card');
+      return;
+    }
+    
+    console.log(`Attempting to play card: ${getCardName(cardType)}`);
+    selectedCard = cardType;
+    
+    try {
+      // Get card requirements from server
+      await signalR.getCardRequirements(roomId, cardType);
+    } catch (error) {
+      console.error('Error checking card requirements:', error);
+    }
+  }
+
   // Handle drawing a card by clicking on the deck
   async function handleDrawCard() {
     if (!isMyTurn) {
@@ -155,20 +348,39 @@
         {@const position = getPlayerPosition(index, totalPlayers)}
         {@const x = Math.cos((position.angle - 90) * Math.PI / 180) * position.distance}
         {@const y = Math.sin((position.angle - 90) * Math.PI / 180) * position.distance}
+        {@const isValidTarget = gameFlowState === 'selecting_player' && cardRequirements && cardRequirements.possibleTargets.includes(player.email)}
+        {@const isSelectedTarget = selectedTargetEmail === player.email}
         <div 
           class="player-area"
           class:local-player={player.isLocalPlayer}
+          class:clickable-target={isValidTarget}
+          class:invalid-target={gameFlowState === 'selecting_player' && cardRequirements && !cardRequirements.possibleTargets.includes(player.email)}
+          class:selected-target={isSelectedTarget}
           style="
             left: 50%;
             top: 50%;
             transform: translate(calc(-50% + {x}px), calc(-50% + {y}px));
           "
+          on:click={() => handlePlayerClick(player.email)}
+          on:keydown={(e) => e.key === 'Enter' && handlePlayerClick(player.email)}
+          role={isValidTarget ? 'button' : undefined}
+          tabindex={isValidTarget ? 0 : -1}
+          title={gameFlowState === 'selecting_player' 
+            ? (isValidTarget ? `Click to target ${player.name}` : `Cannot target ${player.name}`)
+            : undefined}
         >
           <!-- Player name -->
           <div class="player-name" class:protected={player.isProtected} class:current-turn={player.isCurrentTurn}>
             {player.name}
             {#if player.isProtected}
               <span class="protection-icon">🛡️</span>
+            {/if}
+            {#if gameFlowState === 'selecting_player'}
+              {#if isValidTarget}
+                <span class="target-icon">🎯</span>
+              {:else}
+                <span class="no-target-icon">❌</span>
+              {/if}
             {/if}
           </div>
           
@@ -184,7 +396,16 @@
             {#if player.isLocalPlayer}
               <!-- Local player sees their cards face up -->
               {#each player.cards as card}
-                <div class="card player-card face-up">
+                <div 
+                  class="card player-card face-up" 
+                  class:clickable={isMyTurn}
+                  class:selected={selectedCard === card}
+                  on:click={() => handleCardClick(card)}
+                  on:keydown={(e) => e.key === 'Enter' && handleCardClick(card)}
+                  role="button"
+                  tabindex={isMyTurn ? 0 : -1}
+                  title={isMyTurn ? `Click to play ${getCardName(card)}` : getCardName(card)}
+                >
                   <div class="card-content">
                     <div class="card-number">{card}</div>
                     <div class="card-name">{getCardName(card)}</div>
@@ -200,6 +421,50 @@
           </div>
         </div>
       {/each}
+      
+      <!-- Card Type Selection Area (appears in center when needed) -->
+      {#if gameFlowState === 'selecting_card_type' && cardRequirements}
+        <div class="card-type-selection-area">
+          <div class="card-type-title">
+            <h3>Choose a card type:</h3>
+            <p>Click on one of the cards below</p>
+          </div>
+          <div class="card-type-display">
+            {#each cardRequirements.possibleCardTypes as cardType}
+              {@const isSelected = selectedCardType === cardType}
+              <div 
+                class="card-type-card" 
+                class:selected={isSelected}
+                on:click={() => handleCardTypeClick(cardType)}
+                on:keydown={(e) => e.key === 'Enter' && handleCardTypeClick(cardType)}
+                role="button"
+                tabindex="0"
+                title="Click to select {getCardName(cardType)}"
+              >
+                <div class="card-content">
+                  <div class="card-number">{cardType}</div>
+                  <div class="card-name">{getCardName(cardType)}</div>
+                </div>
+              </div>
+            {/each}
+          </div>
+        </div>
+      {/if}
+      
+      <!-- Game Flow Instructions -->
+      {#if gameFlowState !== 'idle'}
+        <div class="flow-instructions">
+          {#if gameFlowState === 'selecting_player'}
+            <div class="instruction-bubble">
+              <strong>Step {currentStep + 1} of {totalSteps}:</strong> Click on a player to target them
+            </div>
+          {:else if gameFlowState === 'selecting_card_type'}
+            <div class="instruction-bubble">
+              <strong>Step {currentStep + 1} of {totalSteps}:</strong> Click on a card type to select it
+            </div>
+          {/if}
+        </div>
+      {/if}
       
       <!-- Played cards positioned on the table surface in front of each player -->
       <!-- TODO: Add played cards when implementing card playing functionality -->
@@ -227,6 +492,15 @@
     </div>
   </div>
 </div>
+
+<!-- Card Requirements Modal -->
+<CardRequirementsModal
+  bind:isOpen={showRequirementsModal}
+  requirements={cardRequirements}
+  players={players}
+  currentUserEmail={currentUserEmail}
+  on:close={handleModalClose}
+/>
 
 <style>
   .game-container {
@@ -365,6 +639,32 @@
     align-items: center;
     gap: 0.5rem;
     pointer-events: auto;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+  }
+  
+  /* Player targeting states */
+  .player-area.clickable-target {
+    cursor: pointer;
+  }
+  
+  .player-area.clickable-target:hover {
+    transform: scale(1.05);
+    box-shadow: 0 0 15px rgba(0, 255, 0, 0.6);
+  }
+  
+  .player-area.selected-target {
+    transform: scale(1.1);
+    box-shadow: 0 0 20px rgba(255, 215, 0, 0.8);
+  }
+  
+  .player-area.invalid-target {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+  
+  .player-area.clickable-target:focus {
+    outline: 2px solid #00ff00;
+    outline-offset: 4px;
   }
   
   .player-name {
@@ -399,6 +699,23 @@
   .protection-icon {
     margin-left: 0.25rem;
     font-size: 0.8rem;
+  }
+  
+  .target-icon {
+    margin-left: 0.25rem;
+    font-size: 0.8rem;
+    animation: targetPulse 1.5s ease-in-out infinite;
+  }
+  
+  .no-target-icon {
+    margin-left: 0.25rem;
+    font-size: 0.8rem;
+    opacity: 0.7;
+  }
+  
+  @keyframes targetPulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.5; }
   }
   
   .player-name.current-turn {
@@ -458,12 +775,36 @@
     transition: transform 0.2s ease;
   }
   
+  .card.clickable {
+    cursor: pointer;
+  }
+  
+  .card.clickable:hover {
+    transform: scale(1.15);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+  }
+  
+  .card.clickable:focus {
+    outline: 2px solid #ffd700;
+    outline-offset: 2px;
+  }
+  
+  .card.selected {
+    border-color: #ffd700;
+    box-shadow: 0 0 10px rgba(255, 215, 0, 0.8);
+  }
+  
   .player-card {
     transform: scale(1.1);
   }
   
   .player-card:hover {
     transform: scale(1.2);
+    z-index: 5;
+  }
+  
+  .player-card.clickable:hover {
+    transform: scale(1.25);
     z-index: 5;
   }
   
@@ -544,6 +885,123 @@
   
   .played-card .card-name {
     font-size: 0.4rem;
+  }
+  
+  /* Card Type Selection Area */
+  .card-type-selection-area {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    z-index: 15;
+    background: rgba(0, 0, 0, 0.9);
+    border: 3px solid #ffd700;
+    border-radius: 16px;
+    padding: 1.5rem;
+    max-width: 400px;
+    width: 90%;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.8);
+  }
+  
+  .card-type-title {
+    text-align: center;
+    margin-bottom: 1rem;
+    color: white;
+  }
+  
+  .card-type-title h3 {
+    margin: 0 0 0.5rem 0;
+    color: #ffd700;
+    font-size: 1.2rem;
+  }
+  
+  .card-type-title p {
+    margin: 0;
+    color: #ccc;
+    font-size: 0.9rem;
+  }
+  
+  .card-type-display {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(80px, 1fr));
+    gap: 0.75rem;
+    justify-items: center;
+  }
+  
+  .card-type-card {
+    width: 70px;
+    height: 98px;
+    background: linear-gradient(135deg, #fafafa 0%, #e0e0e0 100%);
+    border: 2px solid #333;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    padding: 0.5rem;
+  }
+  
+  .card-type-card:hover {
+    transform: scale(1.1);
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.4);
+    border-color: #ffd700;
+  }
+  
+  .card-type-card.selected {
+    border-color: #ffd700;
+    box-shadow: 0 0 15px rgba(255, 215, 0, 0.8);
+    background: linear-gradient(135deg, #fff8dc 0%, #f0e68c 100%);
+  }
+  
+  .card-type-card:focus {
+    outline: 2px solid #ffd700;
+    outline-offset: 2px;
+  }
+  
+  .card-type-card .card-number {
+    font-size: 1.2rem;
+    font-weight: bold;
+    color: #9c27b0;
+    text-align: center;
+  }
+  
+  .card-type-card .card-name {
+    font-size: 0.7rem;
+    font-weight: bold;
+    color: #333;
+    text-align: center;
+    line-height: 1;
+  }
+  
+  /* Flow Instructions */
+  .flow-instructions {
+    position: absolute;
+    top: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 20;
+  }
+  
+  .instruction-bubble {
+    background: rgba(0, 0, 0, 0.9);
+    color: white;
+    padding: 0.75rem 1.5rem;
+    border-radius: 20px;
+    border: 2px solid #ffd700;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5);
+    text-align: center;
+    font-size: 0.9rem;
+    animation: instructionPulse 2s ease-in-out infinite;
+  }
+  
+  @keyframes instructionPulse {
+    0%, 100% { 
+      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5);
+    }
+    50% { 
+      box-shadow: 0 4px 20px rgba(255, 215, 0, 0.3);
+    }
   }
   
   /* Responsive design for smaller screens */

@@ -37,6 +37,7 @@ interface SignalRHandlers {
   onGameStartError?: (error: string) => void;
   onPrivatePlayerUpdate?: (playerUpdate: unknown) => void;
   onDrawCardError?: (error: string) => void;
+  onCardRequirements?: (requirements: unknown) => void;
 }
 
 // Handler registration API
@@ -48,7 +49,8 @@ let registeredHandlers: SignalRHandlers = {
   onPlayerDrewCard: undefined,
   onGameStartError: undefined,
   onPrivatePlayerUpdate: undefined,
-  onDrawCardError: undefined
+  onDrawCardError: undefined,
+  onCardRequirements: undefined
 };
 
 function attachEventHandlers(connection: SignalR.HubConnection) {
@@ -61,6 +63,7 @@ function attachEventHandlers(connection: SignalR.HubConnection) {
   connection.off('GameStartError');
   connection.off('PrivatePlayerUpdate');
   connection.off('DrawCardError');
+  connection.off('CardRequirements');
   
   // Add new handlers
   connection.on('JoinedRoom', (joinRoomResult: unknown) => registeredHandlers.onJoinedRoom?.(joinRoomResult));
@@ -71,6 +74,7 @@ function attachEventHandlers(connection: SignalR.HubConnection) {
   connection.on('GameStartError', (error: string) => registeredHandlers.onGameStartError?.(error));
   connection.on('PrivatePlayerUpdate', (playerUpdate: unknown) => registeredHandlers.onPrivatePlayerUpdate?.(playerUpdate));
   connection.on('DrawCardError', (error: string) => registeredHandlers.onDrawCardError?.(error));
+  connection.on('CardRequirements', (requirements: unknown) => registeredHandlers.onCardRequirements?.(requirements));
 }
 
 // Create exported object with methods
@@ -244,6 +248,22 @@ export const signalR = {
         return true;
       } catch (error) {
         console.error('Error drawing card:', error);
+        throw error;
+      }
+    }
+    
+    return false;
+  },
+
+  async getCardRequirements(roomId: string, cardType: number) {
+    const state = get(signalRStore);
+    
+    if (state.connection) {
+      try {
+        await state.connection.invoke('GetCardRequirements', roomId, cardType);
+        return true;
+      } catch (error) {
+        console.error('Error getting card requirements:', error);
         throw error;
       }
     }
