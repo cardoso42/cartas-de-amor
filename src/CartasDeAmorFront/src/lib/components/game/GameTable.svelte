@@ -1,11 +1,16 @@
 <script lang="ts">
   import { CardType, type InitialGameStatusDto } from '$lib/types/game-types';
   import { user } from '$lib/stores/userStore';
+  import { signalR } from '$lib/services/signalRService';
+  import { page } from '$app/stores';
   
   // Props from parent component
   export let gameStatus: InitialGameStatusDto;
   export let currentUserEmail: string;
   export let currentTurnPlayerEmail: string = '';
+  
+  // Get room ID from URL params
+  const roomId = $page.params.roomId;
   
   // Get local player data (the player at this client)
   let localPlayerName = '';
@@ -19,7 +24,22 @@
   
   // Determine whose turn it is
   $: currentTurnPlayer = getCurrentTurnPlayer(gameStatus, currentTurnPlayerEmail);
+  $: isMyTurn = currentTurnPlayer === currentUserEmail;
   
+  // Handle drawing a card by clicking on the deck
+  async function handleDrawCard() {
+    if (!isMyTurn) {
+      return; // Ignore clicks when it's not the player's turn
+    }
+    
+    try {
+      await signalR.drawCard(roomId);
+      console.log('Draw card request sent');
+    } catch (error) {
+      console.error('Error drawing card:', error);
+    }
+  }
+
   function getCurrentTurnPlayer(status: InitialGameStatusDto | null, turnPlayerEmail: string): string {
     if (!status) return '';
     
@@ -108,14 +128,25 @@
     <div class="table">
       <!-- Card deck in the center -->
       <div class="deck-area">
-        <div class="card-deck">
+        <div 
+          class="card-deck" 
+          class:clickable={isMyTurn}
+          class:disabled={!isMyTurn}
+          on:click={handleDrawCard}
+          on:keydown={(e) => e.key === 'Enter' && handleDrawCard()}
+          role="button"
+          tabindex={isMyTurn ? 0 : -1}
+          title={isMyTurn ? 'Click to draw a card' : 'Wait for your turn to draw a card'}
+        >
           <div class="deck-cards">
             <!-- Deck cards stack -->
             <div class="deck-card"></div>
             <div class="deck-card"></div>
             <div class="deck-card"></div>
           </div>
-          <div class="deck-label">Deck</div>
+          <div class="deck-label">
+            {isMyTurn ? 'Draw Card' : 'Deck'}
+          </div>
         </div>
       </div>
       
@@ -259,6 +290,30 @@
     flex-direction: column;
     align-items: center;
     gap: 0.5rem;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+  }
+  
+  .card-deck.clickable {
+    cursor: pointer;
+  }
+  
+  .card-deck.clickable:hover {
+    transform: scale(1.05);
+    box-shadow: 0 0 15px rgba(255, 215, 0, 0.8);
+  }
+  
+  .card-deck.clickable:hover .deck-cards {
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+  }
+  
+  .card-deck.disabled {
+    cursor: not-allowed;
+    opacity: 0.7;
+  }
+  
+  .card-deck:focus {
+    outline: 2px solid #ffd700;
+    outline-offset: 2px;
   }
   
   .deck-cards {

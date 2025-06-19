@@ -29,6 +29,11 @@
   let players: string[] = [];
   let isGameStarting = false;
   let currentTurnPlayerEmail = '';
+  let errorMessage = '';
+  let errorTimeout: ReturnType<typeof setTimeout> | undefined;
+  
+  // Track recent draw events to prevent duplicate processing
+  let recentDrawEvents = new Set<string>();
 
   // Get initial game data from gameStore
   import { get as getStore } from 'svelte/store';
@@ -58,6 +63,25 @@
       // If error, go back to rooms anyway
       goto('/rooms');
     }
+  }
+  
+  // Function to show error messages with auto-dismiss
+  function showError(message: string, duration = 5000) {
+    if (errorTimeout) {
+      clearTimeout(errorTimeout);
+    }
+    errorMessage = message;
+    errorTimeout = setTimeout(() => {
+      errorMessage = '';
+    }, duration);
+  }
+  
+  // Function to dismiss error manually
+  function dismissError() {
+    if (errorTimeout) {
+      clearTimeout(errorTimeout);
+    }
+    errorMessage = '';
   }
   
   async function startGame() {
@@ -102,14 +126,15 @@
             players = [...players, playerEmail];
           }
         },
-        onRoundStarted: (initialGameStatus: InitialGameStatusDto) => {
+        onRoundStarted: (initialGameStatus: unknown) => {
           console.log('Round started:', initialGameStatus);
-          gameStatus = initialGameStatus;
+          gameStatus = initialGameStatus as InitialGameStatusDto;
           isGameStarting = false;
           
           // Set initial turn player from game status
-          if (initialGameStatus.allPlayersInOrder && initialGameStatus.firstPlayerIndex >= 0 && initialGameStatus.firstPlayerIndex < initialGameStatus.allPlayersInOrder.length) {
-            currentTurnPlayerEmail = initialGameStatus.allPlayersInOrder[initialGameStatus.firstPlayerIndex];
+          const status = initialGameStatus as InitialGameStatusDto;
+          if (status.allPlayersInOrder && status.firstPlayerIndex >= 0 && status.firstPlayerIndex < status.allPlayersInOrder.length) {
+            currentTurnPlayerEmail = status.allPlayersInOrder[status.firstPlayerIndex];
             console.log('Initial turn player:', currentTurnPlayerEmail);
           }
         },
@@ -119,11 +144,38 @@
         },
         onPlayerDrewCard: (playerEmail: string) => {
           console.log('Player drew card:', playerEmail);
+                    
+          // Update the visual representation to show the player now has an additional card
+          if (gameStatus && playerEmail !== userEmail) {
+            // Find the player in otherPlayersPublicData and increment their cardsInHand
+            const otherPlayers = gameStatus.otherPlayersPublicData || [];
+            const playerToUpdate = otherPlayers.find(p => p.userEmail === playerEmail);
+            
+            if (playerToUpdate) {
+              playerToUpdate.cardsInHand = (playerToUpdate.cardsInHand || 1) + 1;
+              // Trigger reactivity by creating a new gameStatus object
+              gameStatus = { ...gameStatus, otherPlayersPublicData: [...otherPlayers] };
+              console.log(`Updated ${playerEmail} cards in hand to ${playerToUpdate.cardsInHand}`);
+            }
+          }
+        },
+        onPrivatePlayerUpdate: (playerUpdate: unknown) => {
+          console.log('Private player update:', playerUpdate);
+          // Update the game status with the player's new cards
+          const update = playerUpdate as { holdingCards?: number[] };
+          if (gameStatus && update.holdingCards) {
+            gameStatus.yourCards = update.holdingCards;
+            gameStatus = { ...gameStatus }; // Trigger reactivity
+          }
+        },
+        onDrawCardError: (error: string) => {
+          console.error('Draw card error:', error);
+          showError(`Failed to draw card: ${error}`);
         },
         onGameStartError: (error: string) => {
           console.error('Game start error:', error);
           isGameStarting = false;
-          alert(`Failed to start game: ${error}`);
+          showError(`Failed to start game: ${error}`);
         }
       });
     } catch (err) {
@@ -134,9 +186,12 @@
   });
   
   onDestroy(() => {
-    // Clean up subscriptions
+    // Clean up subscriptions and timeouts
     unsubscribeSignalR();
     unsubscribeUser();
+    if (errorTimeout) {
+      clearTimeout(errorTimeout);
+    }
   });
 </script>
 
@@ -166,6 +221,14 @@
         {/if}
       {/if}
     </div>
+
+    <!-- Error message display -->
+    {#if errorMessage}
+      <div class="error-message">
+        <span class="error-text">{errorMessage}</span>
+        <button class="error-dismiss" on:click={dismissError} title="Dismiss error">×</button>
+      </div>
+    {/if}
 
     {#if !gameStatus}
       <GameLobby {players} {userEmail} />
@@ -227,6 +290,57 @@
   
   .connection-status.connected .status-indicator {
     background-color: #2e7d32;
+  }
+  
+  .error-message {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.75rem 1rem;
+    background-color: #ffebee;
+    color: #c62828;
+    border: 1px solid #ffcdd2;
+    border-radius: 4px;
+    margin-bottom: 1rem;
+    animation: slideIn 0.3s ease-out;
+  }
+  
+  .error-text {
+    flex: 1;
+    font-weight: 500;
+  }
+  
+  .error-dismiss {
+    background: none;
+    border: none;
+    color: #c62828;
+    font-size: 1.2rem;
+    font-weight: bold;
+    cursor: pointer;
+    margin-left: 1rem;
+    padding: 0;
+    width: 20px;
+    height: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    transition: background-color 0.2s ease;
+  }
+  
+  .error-dismiss:hover {
+    background-color: rgba(198, 40, 40, 0.1);
+  }
+  
+  @keyframes slideIn {
+    from {
+      opacity: 0;
+      transform: translateY(-10px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
   }
   
   button.primary {

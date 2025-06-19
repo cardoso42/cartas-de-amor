@@ -27,29 +27,56 @@ const initialState: SignalRState = {
 // Create the writable store
 const signalRStore = writable<SignalRState>(initialState);
 
+// Define handler types
+interface SignalRHandlers {
+  onJoinedRoom?: (joinRoomResult: unknown) => void;
+  onUserJoined?: (playerEmail: string) => void;
+  onRoundStarted?: (initialGameStatus: unknown) => void;
+  onNextTurn?: (playerEmail: string) => void;
+  onPlayerDrewCard?: (playerEmail: string) => void;
+  onGameStartError?: (error: string) => void;
+  onPrivatePlayerUpdate?: (playerUpdate: unknown) => void;
+  onDrawCardError?: (error: string) => void;
+}
+
 // Handler registration API
-let registeredHandlers = {
-  onJoinedRoom: null,
-  onUserJoined: null,
-  onRoundStarted: null,
-  onNextTurn: null,
-  onPlayerDrewCard: null,
-  onGameStartError: null
+let registeredHandlers: SignalRHandlers = {
+  onJoinedRoom: undefined,
+  onUserJoined: undefined,
+  onRoundStarted: undefined,
+  onNextTurn: undefined,
+  onPlayerDrewCard: undefined,
+  onGameStartError: undefined,
+  onPrivatePlayerUpdate: undefined,
+  onDrawCardError: undefined
 };
 
-function attachEventHandlers(connection) {
-  connection.on('JoinedRoom', (...args) => registeredHandlers.onJoinedRoom?.(...args));
-  connection.on('UserJoined', (...args) => registeredHandlers.onUserJoined?.(...args));
-  connection.on('RoundStarted', (...args) => registeredHandlers.onRoundStarted?.(...args));
-  connection.on('NextTurn', (...args) => registeredHandlers.onNextTurn?.(...args));
-  connection.on('PlayerDrewCard', (...args) => registeredHandlers.onPlayerDrewCard?.(...args));
-  connection.on('GameStartError', (...args) => registeredHandlers.onGameStartError?.(...args));
+function attachEventHandlers(connection: SignalR.HubConnection) {
+  // Remove existing handlers to prevent duplicates
+  connection.off('JoinedRoom');
+  connection.off('UserJoined');
+  connection.off('RoundStarted');
+  connection.off('NextTurn');
+  connection.off('PlayerDrewCard');
+  connection.off('GameStartError');
+  connection.off('PrivatePlayerUpdate');
+  connection.off('DrawCardError');
+  
+  // Add new handlers
+  connection.on('JoinedRoom', (joinRoomResult: unknown) => registeredHandlers.onJoinedRoom?.(joinRoomResult));
+  connection.on('UserJoined', (playerEmail: string) => registeredHandlers.onUserJoined?.(playerEmail));
+  connection.on('RoundStarted', (initialGameStatus: unknown) => registeredHandlers.onRoundStarted?.(initialGameStatus));
+  connection.on('NextTurn', (playerEmail: string) => registeredHandlers.onNextTurn?.(playerEmail));
+  connection.on('PlayerDrewCard', (playerEmail: string) => registeredHandlers.onPlayerDrewCard?.(playerEmail));
+  connection.on('GameStartError', (error: string) => registeredHandlers.onGameStartError?.(error));
+  connection.on('PrivatePlayerUpdate', (playerUpdate: unknown) => registeredHandlers.onPrivatePlayerUpdate?.(playerUpdate));
+  connection.on('DrawCardError', (error: string) => registeredHandlers.onDrawCardError?.(error));
 }
 
 // Create exported object with methods
 export const signalR = {
   subscribe: signalRStore.subscribe,
-  registerHandlers(handlers) {
+  registerHandlers(handlers: SignalRHandlers) {
     registeredHandlers = { ...registeredHandlers, ...handlers };
     // Attach to current connection if available
     const state = get(signalRStore);
@@ -201,6 +228,22 @@ export const signalR = {
         return true;
       } catch (error) {
         console.error('Error starting game:', error);
+        throw error;
+      }
+    }
+    
+    return false;
+  },
+
+  async drawCard(roomId: string) {
+    const state = get(signalRStore);
+    
+    if (state.connection) {
+      try {
+        await state.connection.invoke('DrawCard', roomId);
+        return true;
+      } catch (error) {
+        console.error('Error drawing card:', error);
         throw error;
       }
     }
