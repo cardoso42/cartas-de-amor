@@ -5,14 +5,16 @@
  * Card types enum matching the backend CardType enum
  */
 export enum CardType {
-  Guard = 0,
-  Priest = 1,
-  Baron = 2,
-  Handmaid = 3,
-  Prince = 4,
-  King = 5,
-  Countess = 6,
-  Princess = 7
+  Spy = 0,
+  Guard = 1,
+  Priest = 2,
+  Baron = 3,
+  Handmaid = 4,
+  Prince = 5,
+  Chanceller = 6,
+  King = 7,
+  Countess = 8,
+  Princess = 9
 }
 
 /**
@@ -21,10 +23,10 @@ export enum CardType {
 export interface PlayerStatusDto {
   userEmail: string;
   username: string;
+  status: number; // PlayerStatus enum
   isProtected: boolean;
   score: number;
-  playedCards: CardType[];
-  isEliminated: boolean;
+  cardsInHand: number;
 }
 
 /**

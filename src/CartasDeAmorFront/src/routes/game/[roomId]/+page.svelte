@@ -31,6 +31,7 @@
 
   // Get initial game data from gameStore
   import { get as getStore } from 'svelte/store';
+	import GameTable from '$lib/components/game/GameTable.svelte';
   const initialGameData = getStore(gameStore);
   if (initialGameData && initialGameData.roomId === roomId) {
     roomName = initialGameData.roomName || '';
@@ -101,7 +102,7 @@
           }
         },
         onRoundStarted: (initialGameStatus: InitialGameStatusDto) => {
-          console.log('Game started:', initialGameStatus);
+          console.log('Round started:', initialGameStatus);
           gameStatus = initialGameStatus;
           isGameStarting = false;
         },
@@ -161,12 +162,7 @@
     {#if !gameStatus}
       <GameLobby {players} {userEmail} />
     {:else}
-      <div class="game-content">
-        <p>
-          This is a placeholder for the game interface. When a game is started, 
-          the interface will be populated with game elements.
-        </p>
-      </div>
+      <GameTable gameStatus={gameStatus} currentUserEmail={userEmail} />
     {/if}
   </div>
 </AuthGuard>
@@ -223,13 +219,6 @@
   
   .connection-status.connected .status-indicator {
     background-color: #2e7d32;
-  }
-  
-  .game-content {
-    background-color: white;
-    border-radius: 8px;
-    padding: 2rem;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
   }
   
   button.primary {
