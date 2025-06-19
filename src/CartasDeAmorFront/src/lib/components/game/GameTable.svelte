@@ -5,6 +5,7 @@
   // Props from parent component
   export let gameStatus: InitialGameStatusDto;
   export let currentUserEmail: string;
+  export let currentTurnPlayerEmail: string = '';
   
   // Get local player data (the player at this client)
   let localPlayerName = '';
@@ -15,7 +16,23 @@
   // Process the game data into display format
   $: players = gameStatus ? processGameData(gameStatus, currentUserEmail) : [];
   $: totalPlayers = players.length;
-  $: anglePerPlayer = totalPlayers > 1 ? 360 / totalPlayers : 0;
+  
+  // Determine whose turn it is
+  $: currentTurnPlayer = getCurrentTurnPlayer(gameStatus, currentTurnPlayerEmail);
+  
+  function getCurrentTurnPlayer(status: InitialGameStatusDto | null, turnPlayerEmail: string): string {
+    if (!status) return '';
+    
+    // If we have a turn player email from SignalR, use that
+    if (turnPlayerEmail) return turnPlayerEmail;
+    
+    // Otherwise, use the FirstPlayerIndex from the game status
+    if (status.allPlayersInOrder && status.firstPlayerIndex >= 0 && status.firstPlayerIndex < status.allPlayersInOrder.length) {
+      return status.allPlayersInOrder[status.firstPlayerIndex];
+    }
+    
+    return '';
+  }
   
   function processGameData(status: InitialGameStatusDto, userEmail: string) {
     const processedPlayers = [];
@@ -30,7 +47,8 @@
       tokens: status.score || 0,
       cards: status.yourCards || [],
       cardsInHand: (status.yourCards || []).length,
-      isProtected: status.isProtected || false
+      isProtected: status.isProtected || false,
+      isCurrentTurn: userEmail === currentTurnPlayer
     });
     
     // Add other players in order around the table
@@ -44,7 +62,8 @@
         tokens: player.score || 0,
         cards: [], // Other players' cards are hidden
         cardsInHand: player.cardsInHand || 1,
-        isProtected: player.isProtected || false
+        isProtected: player.isProtected || false,
+        isCurrentTurn: player.userEmail === currentTurnPlayer
       });
     });
     
@@ -115,7 +134,7 @@
           "
         >
           <!-- Player name -->
-          <div class="player-name" class:protected={player.isProtected}>
+          <div class="player-name" class:protected={player.isProtected} class:current-turn={player.isCurrentTurn}>
             {player.name}
             {#if player.isProtected}
               <span class="protection-icon">🛡️</span>
@@ -325,6 +344,28 @@
   .protection-icon {
     margin-left: 0.25rem;
     font-size: 0.8rem;
+  }
+  
+  .player-name.current-turn {
+    border: 2px solid #ffd700;
+    box-shadow: 0 0 8px rgba(255, 215, 0, 0.6);
+    background: rgba(0, 0, 0, 0.4);
+  }
+  
+  .local-player .player-name.current-turn {
+    border: 2px solid #ffd700;
+    box-shadow: 0 0 8px rgba(255, 215, 0, 0.6);
+    background: rgba(156, 39, 176, 0.8);
+    animation: turnPulse 2s ease-in-out infinite;
+  }
+  
+  @keyframes turnPulse {
+    0%, 100% {
+      box-shadow: 0 0 8px rgba(255, 215, 0, 0.6);
+    }
+    50% {
+      box-shadow: 0 0 15px rgba(255, 215, 0, 0.8);
+    }
   }
   
   .player-tokens {

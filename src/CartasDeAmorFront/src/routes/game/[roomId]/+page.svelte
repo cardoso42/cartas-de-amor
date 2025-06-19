@@ -28,6 +28,7 @@
   let isRoomOwner = false;
   let players: string[] = [];
   let isGameStarting = false;
+  let currentTurnPlayerEmail = '';
 
   // Get initial game data from gameStore
   import { get as getStore } from 'svelte/store';
@@ -105,9 +106,16 @@
           console.log('Round started:', initialGameStatus);
           gameStatus = initialGameStatus;
           isGameStarting = false;
+          
+          // Set initial turn player from game status
+          if (initialGameStatus.allPlayersInOrder && initialGameStatus.firstPlayerIndex >= 0 && initialGameStatus.firstPlayerIndex < initialGameStatus.allPlayersInOrder.length) {
+            currentTurnPlayerEmail = initialGameStatus.allPlayersInOrder[initialGameStatus.firstPlayerIndex];
+            console.log('Initial turn player:', currentTurnPlayerEmail);
+          }
         },
         onNextTurn: (playerEmail: string) => {
           console.log('Next turn:', playerEmail);
+          currentTurnPlayerEmail = playerEmail;
         },
         onPlayerDrewCard: (playerEmail: string) => {
           console.log('Player drew card:', playerEmail);
@@ -162,7 +170,7 @@
     {#if !gameStatus}
       <GameLobby {players} {userEmail} />
     {:else}
-      <GameTable gameStatus={gameStatus} currentUserEmail={userEmail} />
+      <GameTable gameStatus={gameStatus} currentUserEmail={userEmail} currentTurnPlayerEmail={currentTurnPlayerEmail} />
     {/if}
   </div>
 </AuthGuard>
