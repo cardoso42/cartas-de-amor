@@ -2,10 +2,15 @@
   import { CardType, CardActionRequirements, type CardRequirementsDto } from '$lib/types/game-types';
   import { createEventDispatcher } from 'svelte';
   
+  // Simple interface for player display context
+  interface PlayerDisplayInfo {
+    email: string;
+    name?: string;
+  }
+  
   export let isOpen = false;
   export let requirements: CardRequirementsDto | null = null;
-  export let players: any[] = []; // For context only
-  export let currentUserEmail = ''; // For context only
+  export let players: PlayerDisplayInfo[] = []; // For context only
   
   const dispatch = createEventDispatcher();
   
@@ -44,7 +49,7 @@
 
 {#if isOpen && requirements}
   <div class="modal-backdrop" on:click={close} on:keydown={handleKeydown} role="presentation">
-    <div class="modal-content" on:click|stopPropagation on:keydown|stopPropagation role="dialog" aria-modal="true" aria-labelledby="modal-title">
+    <div class="modal-content" on:click|stopPropagation on:keydown|stopPropagation role="dialog" aria-modal="true" aria-labelledby="modal-title" tabindex="-1">
       <!-- Modal Header -->
       <div class="modal-header">
         <h2 id="modal-title">Playing {getCardName(requirements.cardType)}</h2>
@@ -256,24 +261,7 @@
     border: 1px solid #00ff00;
     font-size: 0.9rem;
   }
-  
-  .progress-indicator {
-    margin-bottom: 2rem;
-  }
-  
-  .progress-steps {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-  }
-  
-  .progress-step {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 0.5rem;
-  }
-  
+    
   .step-number {
     width: 32px;
     height: 32px;
@@ -287,178 +275,6 @@
     transition: all 0.3s ease;
   }
   
-  .progress-step.active .step-number {
-    background: #ffd700;
-    color: #2c1810;
-  }
-  
-  .progress-step.completed .step-number {
-    background: #4caf50;
-    color: white;
-  }
-  
-  .step-label {
-    font-size: 0.8rem;
-    color: rgba(255, 255, 255, 0.7);
-    text-align: center;
-  }
-  
-  .progress-step.active .step-label {
-    color: #ffd700;
-    font-weight: bold;
-  }
-  
-  .progress-line {
-    width: 40px;
-    height: 2px;
-    background: rgba(255, 255, 255, 0.1);
-    margin: 0 1rem;
-    transition: background-color 0.3s ease;
-  }
-  
-  .progress-line.completed {
-    background: #4caf50;
-  }
-  
-  .step-content {
-    margin-bottom: 2rem;
-  }
-  
-  .player-selection h3,
-  .card-type-selection h3 {
-    margin-bottom: 1rem;
-    color: #ffd700;
-  }
-  
-  .player-options {
-    display: flex;
-    flex-direction: column;
-    gap: 0.5rem;
-    margin-bottom: 1rem;
-  }
-  
-  .player-option {
-    background: rgba(255, 255, 255, 0.05);
-    border: 2px solid transparent;
-    border-radius: 8px;
-    padding: 1rem;
-    cursor: pointer;
-    transition: all 0.2s ease;
-    color: white;
-    text-align: left;
-  }
-  
-  .player-option.valid {
-    border-color: rgba(255, 255, 255, 0.2);
-  }
-  
-  .player-option.valid:hover {
-    background: rgba(255, 255, 255, 0.1);
-    border-color: #ffd700;
-  }
-  
-  .player-option.selected {
-    background: rgba(255, 215, 0, 0.2);
-    border-color: #ffd700;
-  }
-  
-  .player-option.invalid {
-    opacity: 0.5;
-    cursor: not-allowed;
-    border-color: rgba(244, 67, 54, 0.3);
-  }
-  
-  .player-info {
-    display: flex;
-    flex-direction: column;
-    gap: 0.25rem;
-  }
-  
-  .player-name {
-    font-weight: bold;
-    font-size: 1rem;
-  }
-  
-  .player-status {
-    font-size: 0.8rem;
-    opacity: 0.8;
-  }
-  
-  .player-status.protected {
-    color: #ffc107;
-  }
-  
-  .player-status.invalid {
-    color: #f44336;
-  }
-  
-  .card-type-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
-    gap: 0.75rem;
-    margin-bottom: 1rem;
-  }
-  
-  .card-type-option {
-    background: rgba(255, 255, 255, 0.05);
-    border: 2px solid transparent;
-    border-radius: 8px;
-    padding: 1rem;
-    cursor: pointer;
-    transition: all 0.2s ease;
-    color: white;
-    aspect-ratio: 1;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-  }
-  
-  .card-type-option.valid {
-    border-color: rgba(255, 255, 255, 0.2);
-  }
-  
-  .card-type-option.valid:hover {
-    background: rgba(255, 255, 255, 0.1);
-    border-color: #ffd700;
-    transform: scale(1.05);
-  }
-  
-  .card-type-option.selected {
-    background: rgba(255, 215, 0, 0.2);
-    border-color: #ffd700;
-    transform: scale(1.05);
-  }
-  
-  .card-type-option.invalid {
-    opacity: 0.3;
-    cursor: not-allowed;
-    border-color: rgba(244, 67, 54, 0.3);
-  }
-  
-  .card-info {
-    text-align: center;
-  }
-  
-  .card-number {
-    font-size: 1.5rem;
-    font-weight: bold;
-    color: #9c27b0;
-    margin-bottom: 0.25rem;
-  }
-  
-  .card-name {
-    font-size: 0.8rem;
-    opacity: 0.9;
-  }
-  
-  .selection-summary {
-    padding: 0.75rem;
-    background: rgba(76, 175, 80, 0.2);
-    border-left: 4px solid #4caf50;
-    border-radius: 4px;
-    margin-top: 1rem;
-  }
-  
   .modal-actions {
     display: flex;
     gap: 1rem;
@@ -467,8 +283,7 @@
     padding-top: 1rem;
   }
   
-  .primary-button,
-  .secondary-button {
+  .primary-button {
     padding: 0.75rem 1.5rem;
     border: none;
     border-radius: 6px;
@@ -493,40 +308,11 @@
     cursor: not-allowed;
   }
   
-  .secondary-button {
-    background: rgba(255, 255, 255, 0.1);
-    color: white;
-    border: 2px solid rgba(255, 255, 255, 0.2);
-  }
-  
-  .secondary-button:hover {
-    background: rgba(255, 255, 255, 0.2);
-    border-color: rgba(255, 255, 255, 0.4);
-  }
-  
   /* Mobile responsiveness */
   @media (max-width: 768px) {
     .modal-content {
       margin: 1rem;
       padding: 1.5rem;
-    }
-    
-    .card-type-grid {
-      grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
-    }
-    
-    .modal-actions {
-      flex-direction: column;
-    }
-    
-    .progress-steps {
-      flex-direction: column;
-    }
-    
-    .progress-line {
-      width: 2px;
-      height: 20px;
-      margin: 0.5rem 0;
     }
   }
 </style>

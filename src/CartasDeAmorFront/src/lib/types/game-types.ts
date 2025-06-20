@@ -67,8 +67,10 @@ export interface InitialGameStatusDto {
  * Private player update DTO interface
  */
 export interface PrivatePlayerUpdateDto {
+  userEmail: string;
+  status: number; // PlayerStatus enum
   holdingCards: CardType[];
-  isProtected: boolean;
+  playedCards: CardType[];
   score: number;
 }
 
@@ -77,9 +79,9 @@ export interface PrivatePlayerUpdateDto {
  */
 export interface PublicPlayerUpdateDto {
   userEmail: string;
-  isProtected: boolean;
+  status: number; // PlayerStatus enum
   playedCards: CardType[];
-  isEliminated: boolean;
+  holdingCardsCount: number;
   score: number;
 }
 
@@ -101,4 +103,14 @@ export interface CardPlayDto {
   cardType: CardType;
   targetPlayerEmail?: string | null;
   targetCardType?: CardType | null;
+}
+
+/**
+ * Card action result DTO interface
+ */
+export interface CardActionResultDto {
+  result: number; // CardActionResults enum
+  cardType: CardType;
+  invoker?: PublicPlayerUpdateDto;
+  target?: PublicPlayerUpdateDto;
 }

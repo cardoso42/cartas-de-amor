@@ -8,7 +8,12 @@
   import { get } from 'svelte/store';
   import { user } from '$lib/stores/userStore';
   import { gameStore } from '$lib/stores/gameStore';
-  import type { InitialGameStatusDto } from '$lib/types/game-types';
+  import type { 
+    InitialGameStatusDto, 
+    PrivatePlayerUpdateDto, 
+    CardActionResultDto,
+    PublicPlayerUpdateDto 
+  } from '$lib/types/game-types';
 
   // Get room ID from URL params
   const roomId = $page.data.roomId;
@@ -125,7 +130,7 @@
   }
   
   // Update player data when a card is played based on CardResult events
-  function updatePlayerDataFromCardResult(cardResult: any) {
+  function updatePlayerDataFromCardResult(cardResult: CardActionResultDto) {
     if (!gameStatus || !cardResult?.invoker) {
       return;
     }
@@ -211,14 +216,14 @@
             players = [...players, playerEmail];
           }
         },
-        onRoundStarted: (initialGameStatus: unknown) => {
+        onRoundStarted: (initialGameStatus: InitialGameStatusDto) => {
           console.log('Round started:', initialGameStatus);
-          gameStatus = initialGameStatus as InitialGameStatusDto;
+          gameStatus = initialGameStatus;
           localPlayerPlayedCards = []; // Reset played cards for new round
           isGameStarting = false;
           
           // Set initial turn player from game status
-          const status = initialGameStatus as InitialGameStatusDto;
+          const status = initialGameStatus;
           if (status.allPlayersInOrder && status.firstPlayerIndex >= 0 && status.firstPlayerIndex < status.allPlayersInOrder.length) {
             currentTurnPlayerEmail = status.allPlayersInOrder[status.firstPlayerIndex];
             console.log('Initial turn player:', currentTurnPlayerEmail);
@@ -245,12 +250,11 @@
             }
           }
         },
-        onPrivatePlayerUpdate: (playerUpdate: unknown) => {
+        onPrivatePlayerUpdate: (playerUpdate: PrivatePlayerUpdateDto) => {
           console.log('Private player update:', playerUpdate);
           // Update the game status with the player's new cards
-          const update = playerUpdate as { holdingCards?: number[] };
-          if (gameStatus && update.holdingCards) {
-            gameStatus.yourCards = update.holdingCards;
+          if (gameStatus && playerUpdate.holdingCards) {
+            gameStatus.yourCards = playerUpdate.holdingCards;
             gameStatus = { ...gameStatus }; // Trigger reactivity
           }
         },
@@ -264,44 +268,58 @@
           showError(`Failed to start game: ${error}`);
         },
         // Card result events
-        onCardResultNone: (cardResult: any) => {
+        onCardResultNone: (cardResult: CardActionResultDto) => {
           console.log('Card had no effect:', cardResult);
           updatePlayerDataFromCardResult(cardResult);
-          showNotification(`${getPlayerDisplayName(cardResult.invoker.userEmail)} played ${getCardName(cardResult.cardType)} - no effect`, 'info');
-        },
-        onCardResultShowCard: (cardResult: any) => {
-          console.log('Card result - show card:', cardResult);
-          updatePlayerDataFromCardResult(cardResult);
-          showNotification(`${getPlayerDisplayName(cardResult.invoker.userEmail)} looked at ${getPlayerDisplayName(cardResult.target.userEmail)}'s card`, 'info');
-        },
-        onCardResultPlayerEliminated: (cardResult: any) => {
-          console.log('Card result - player eliminated:', cardResult);
-          updatePlayerDataFromCardResult(cardResult);
-          if (cardResult.target.status === 2) {
-            showNotification(`${getPlayerDisplayName(cardResult.invoker.userEmail)} eliminated ${getPlayerDisplayName(cardResult.target.userEmail)}!`, 'warning');
-          } else {
-            showNotification(`${getPlayerDisplayName(cardResult.target.userEmail)} was eliminated!`, 'warning');
+          if (cardResult.invoker) {
+            showNotification(`${getPlayerDisplayName(cardResult.invoker.userEmail)} played ${getCardName(cardResult.cardType)} - no effect`, 'info');
           }
         },
-        onCardResultSwitchCards: (cardResult: any) => {
+        onCardResultShowCard: (cardResult: CardActionResultDto) => {
+          console.log('Card result - show card:', cardResult);
+          updatePlayerDataFromCardResult(cardResult);
+          if (cardResult.invoker && cardResult.target) {
+            showNotification(`${getPlayerDisplayName(cardResult.invoker.userEmail)} looked at ${getPlayerDisplayName(cardResult.target.userEmail)}'s card`, 'info');
+          }
+        },
+        onCardResultPlayerEliminated: (cardResult: CardActionResultDto) => {
+          console.log('Card result - player eliminated:', cardResult);
+          updatePlayerDataFromCardResult(cardResult);
+          if (cardResult.invoker && cardResult.target) {
+            if (cardResult.target.status === 2) {
+              showNotification(`${getPlayerDisplayName(cardResult.invoker.userEmail)} eliminated ${getPlayerDisplayName(cardResult.target.userEmail)}!`, 'warning');
+            } else {
+              showNotification(`${getPlayerDisplayName(cardResult.target.userEmail)} was eliminated!`, 'warning');
+            }
+          }
+        },
+        onCardResultSwitchCards: (cardResult: CardActionResultDto) => {
           console.log('Card result - switch cards:', cardResult);
           updatePlayerDataFromCardResult(cardResult);
-          showNotification(`${getPlayerDisplayName(cardResult.invoker.userEmail)} switched cards with ${getPlayerDisplayName(cardResult.target.userEmail)}`, 'info');
+          if (cardResult.invoker && cardResult.target) {
+            showNotification(`${getPlayerDisplayName(cardResult.invoker.userEmail)} switched cards with ${getPlayerDisplayName(cardResult.target.userEmail)}`, 'info');
+          }
         },
-        onCardResultDiscardAndDrawCard: (cardResult: any) => {
+        onCardResultDiscardAndDrawCard: (cardResult: CardActionResultDto) => {
           console.log('Card result - discard and draw:', cardResult);
           updatePlayerDataFromCardResult(cardResult);
-          showNotification(`${getPlayerDisplayName(cardResult.invoker.userEmail)} discarded and drew a new card`, 'info');
+          if (cardResult.invoker) {
+            showNotification(`${getPlayerDisplayName(cardResult.invoker.userEmail)} discarded and drew a new card`, 'info');
+          }
         },
-        onCardResultProtectionGranted: (cardResult: any) => {
+        onCardResultProtectionGranted: (cardResult: CardActionResultDto) => {
           console.log('Card result - protection granted:', cardResult);
           updatePlayerDataFromCardResult(cardResult);
-          showNotification(`${getPlayerDisplayName(cardResult.invoker.userEmail)} is now protected for 1 turn`, 'info');
+          if (cardResult.invoker) {
+            showNotification(`${getPlayerDisplayName(cardResult.invoker.userEmail)} is now protected for 1 turn`, 'info');
+          }
         },
-        onCardResultChooseCard: (cardResult: any) => {
+        onCardResultChooseCard: (cardResult: CardActionResultDto) => {
           console.log('Card result - choose card:', cardResult);
           updatePlayerDataFromCardResult(cardResult);
-          showNotification(`${getPlayerDisplayName(cardResult.invoker.userEmail)} needs to choose a card`, 'info');
+          if (cardResult.invoker) {
+            showNotification(`${getPlayerDisplayName(cardResult.invoker.userEmail)} needs to choose a card`, 'info');
+          }
         },
         // Other game events
         onChooseCard: (cardType: number) => {
@@ -309,7 +327,7 @@
           showNotification('You need to choose which cards to keep and return', 'info');
           // TODO: Implement card choice modal
         },
-        onCardChoiceSubmitted: (playerUpdate: any) => {
+        onCardChoiceSubmitted: (playerUpdate: PublicPlayerUpdateDto) => {
           console.log('Card choice submitted:', playerUpdate);
           showNotification(`${getPlayerDisplayName(playerUpdate.userEmail)} submitted their card choice`, 'info');
         },

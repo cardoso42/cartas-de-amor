@@ -52,9 +52,9 @@
   });
   
   // Handle card requirements response from server
-  function handleCardRequirements(requirements: any) {
+  function handleCardRequirements(requirements: CardRequirementsDto) {
     console.log('Received card requirements:', requirements);
-    cardRequirements = requirements as CardRequirementsDto;
+    cardRequirements = requirements;
     
     // Reset requirement state
     selectedTargetEmail = null;
@@ -362,7 +362,7 @@
           on:click={handleDrawCard}
           on:keydown={(e) => e.key === 'Enter' && handleDrawCard()}
           role="button"
-          tabindex={isMyTurn ? 0 : -1}
+          tabindex={isMyTurn ? 0 : undefined}
           title={isMyTurn ? 'Click to draw a card' : 'Wait for your turn to draw a card'}
         >
           <div class="deck-cards">
@@ -398,7 +398,6 @@
           on:click={() => handlePlayerClick(player.email)}
           on:keydown={(e) => e.key === 'Enter' && handlePlayerClick(player.email)}
           role={isValidTarget ? 'button' : undefined}
-          tabindex={isValidTarget ? 0 : -1}
           title={gameFlowState === 'selecting_player' 
             ? (isValidTarget ? `Click to target ${player.name}` : `Cannot target ${player.name}`)
             : undefined}
@@ -437,7 +436,7 @@
                   on:click={() => handleCardClick(card)}
                   on:keydown={(e) => e.key === 'Enter' && handleCardClick(card)}
                   role="button"
-                  tabindex={isMyTurn ? 0 : -1}
+                  tabindex={isMyTurn ? 0 : undefined}
                   title={isMyTurn ? `Click to play ${getCardName(card)}` : getCardName(card)}
                 >
                   <div class="card-content">
@@ -537,7 +536,6 @@
   bind:isOpen={showRequirementsModal}
   requirements={cardRequirements}
   players={players}
-  currentUserEmail={currentUserEmail}
   on:close={handleModalClose}
 />
 
