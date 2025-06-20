@@ -322,11 +322,6 @@
           }
         },
         // Other game events
-        onChooseCard: (cardType: number) => {
-          console.log('Choose card request:', cardType);
-          showNotification('You need to choose which cards to keep and return', 'info');
-          // TODO: Implement card choice modal
-        },
         onCardChoiceSubmitted: (playerUpdate: PublicPlayerUpdateDto) => {
           console.log('Card choice submitted:', playerUpdate);
           showNotification(`${getPlayerDisplayName(playerUpdate.userEmail)} submitted their card choice`, 'info');

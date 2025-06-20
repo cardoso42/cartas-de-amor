@@ -5,6 +5,7 @@
   import { page } from '$app/stores';
   import { onMount } from 'svelte';
   import CardRequirementsModal from './CardRequirementsModal.svelte';
+  import CardChoiceModal from './CardChoiceModal.svelte';
   
   // Props from parent component
   export let gameStatus: InitialGameStatusDto;
@@ -30,6 +31,10 @@
   let selectedTargetEmail: string | null = null;
   let selectedCardType: CardType | null = null;
   
+  // Card choice state
+  let showCardChoiceModal = false;
+  let cardsToChoose: CardType[] = [];
+  
   // Game flow states
   let gameFlowState: 'idle' | 'showing_rules' | 'selecting_player' | 'selecting_card_type' = 'idle';
   let currentStep = 0;
@@ -48,6 +53,8 @@
     signalR.registerHandlers({
       onCardRequirements: handleCardRequirements,
       onPlayCardError: handlePlayCardError,
+      onChooseCard: handleChooseCard,
+      onCardChoiceError: handleCardChoiceError,
     });
   });
   
@@ -106,11 +113,48 @@
     resetCardPlayingState();
   }
   
+  // Handle choose card event from server
+  function handleChooseCard(cardType: number) {
+    // Get the current player's cards from the game status directly
+    if (!gameStatus || !gameStatus.yourCards || gameStatus.yourCards.length === 0) {
+      alert('Error: No cards available to choose from');
+      return;
+    }
+    
+    cardsToChoose = [...gameStatus.yourCards]; // Make a copy
+    showCardChoiceModal = true;
+  }
+  
+  // Handle card choice error from server
+  function handleCardChoiceError(error: string) {
+    alert(`Card choice failed: ${error}`);
+  }
+  
   // Handle modal events
   function handleModalClose() {
     console.log('Modal closed - starting card playing flow');
     showRequirementsModal = false;
     startNextStep();
+  }
+  
+  // Handle card choice modal events
+  function handleCardChoiceModalClose() {
+    showCardChoiceModal = false;
+    cardsToChoose = [];
+  }
+  
+  async function handleCardChoiceSubmit(event: CustomEvent<{ keepCard: CardType; returnCards: CardType[] }>) {
+    const { keepCard, returnCards } = event.detail;
+    
+    try {
+      await signalR.submitCardChoice(roomId, keepCard, returnCards);
+      
+      // Close the modal
+      showCardChoiceModal = false;
+      cardsToChoose = [];
+    } catch (error) {
+      alert(`Failed to submit card choice: ${error}`);
+    }
   }
   
   // Start the next step in the card playing process
@@ -537,6 +581,14 @@
   requirements={cardRequirements}
   players={players}
   on:close={handleModalClose}
+/>
+
+<!-- Card Choice Modal -->
+<CardChoiceModal
+  bind:isOpen={showCardChoiceModal}
+  cards={cardsToChoose}
+  on:close={handleCardChoiceModalClose}
+  on:submit={handleCardChoiceSubmit}
 />
 
 <style>

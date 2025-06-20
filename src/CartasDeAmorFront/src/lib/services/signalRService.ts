@@ -361,5 +361,21 @@ export const signalR = {
     }
     
     return false;
+  },
+
+  async submitCardChoice(roomId: string, keepCardType: number, returnCardTypes: number[]) {
+    const state = get(signalRStore);
+    
+    if (state.connection) {
+      try {
+        await state.connection.invoke('SubmitCardChoice', roomId, keepCardType, returnCardTypes);
+        return true;
+      } catch (error) {
+        console.error('Error submitting card choice:', error);
+        throw error;
+      }
+    }
+    
+    return false;
   }
 };
