@@ -15,18 +15,20 @@
   
   // State
   let selectedKeepCard: CardType | null = null;
+  let selectedKeepCardIndex: number | null = null;
   let sortableCards: CardType[] = [];
   let draggedCardIndex: number | null = null;
   
   // Reset state when modal opens with new cards
   $: if (isOpen && cards.length > 0) {
     selectedKeepCard = null;
+    selectedKeepCardIndex = null;
     sortableCards = [];
   }
   
   // Update sortable cards when a card is selected to keep
-  $: if (selectedKeepCard !== null) {
-    sortableCards = cards.filter(card => card !== selectedKeepCard);
+  $: if (selectedKeepCard !== null && selectedKeepCardIndex !== null) {
+    sortableCards = cards.filter((card, index) => index !== selectedKeepCardIndex);
   }
   
   function getCardName(cardType: CardType): string {
@@ -66,8 +68,9 @@
     });
   }
   
-  function selectCard(cardType: CardType) {
+  function selectCard(cardType: CardType, index: number) {
     selectedKeepCard = cardType;
+    selectedKeepCardIndex = index;
   }
   
   function handleKeydown(event: KeyboardEvent) {
@@ -165,13 +168,13 @@
       <div class="selection-step">
         <h3>Step 1: Select card to keep</h3>
         <div class="card-options">
-          {#each cards as cardType, index (cardType)}
-            {@const isSelected = selectedKeepCard === cardType}
+          {#each cards as cardType, index (`card-${index}-${cardType}`)}
+            {@const isSelected = selectedKeepCardIndex === index}
             <div 
               class="card-option" 
               class:selected={isSelected}
-              on:click={() => selectCard(cardType)}
-              on:keydown={(e) => e.key === 'Enter' && selectCard(cardType)}
+              on:click={() => selectCard(cardType, index)}
+              on:keydown={(e) => e.key === 'Enter' && selectCard(cardType, index)}
               role="button"
               tabindex="0"
               title="Click to keep {getCardName(cardType)}"
@@ -193,7 +196,7 @@
           <p class="step-description">Order these cards from top to bottom as they should be placed back on the deck:</p>
           
           <div class="sortable-cards">
-            {#each sortableCards as cardType, index (cardType)}
+            {#each sortableCards as cardType, index (`sortable-${index}-${cardType}`)}
               <div 
                 class="sortable-card"
                 draggable="true"
