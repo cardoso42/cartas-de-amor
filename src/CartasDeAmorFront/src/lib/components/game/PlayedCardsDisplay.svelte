@@ -4,6 +4,11 @@
   export let playedCards: CardType[] = [];
   export let playerName: string = '';
   export let getCardName: (cardType: CardType) => string;
+
+  // TODO: When playing a card against a protected target, the card is not shown in the played cards FIX IT
+
+  const usualCardCount = 3; // Default number of cards to show normally
+  const maxVisibleCards = 5; // Maximum number of cards to show on hover
   
   let isExpanded = false;
   let isHovering = false;
@@ -12,8 +17,8 @@
   $: visibleCards = isExpanded 
     ? playedCards 
     : isHovering 
-      ? playedCards.slice(-5) // Show 5 cards on hover
-      : playedCards.slice(-3); // Show 3 cards normally
+      ? playedCards.slice(-maxVisibleCards)
+      : playedCards.slice(-usualCardCount);
   
   function toggleExpanded() {
     isExpanded = !isExpanded;
@@ -42,7 +47,7 @@
   title="Click to {isExpanded ? 'collapse' : 'expand'} all played cards for {playerName}"
 >
   <!-- Card count indicator -->
-  {#if playedCards.length > 3}
+  {#if playedCards.length > usualCardCount}
     <div class="card-count-badge">
       {playedCards.length}
     </div>
@@ -65,10 +70,10 @@
   </div>
   
   <!-- Expansion indicator -->
-  {#if playedCards.length > 3 && !isExpanded}
+  {#if playedCards.length > usualCardCount && !isExpanded}
     <div class="expansion-hint">
       <span class="expand-icon">⋯</span>
-      <span class="expand-text">+{playedCards.length - (isHovering ? 5 : 3)} more</span>
+      <span class="expand-text">+{playedCards.length - (isHovering ? maxVisibleCards : usualCardCount)} more</span>
     </div>
   {/if}
   
