@@ -213,7 +213,8 @@ public class Game
         CardsDeck.Add(CardType.Spy);         // 2 cards
         CardsDeck.Add(CardType.Spy);
 
-        CardsDeck.Add(CardType.Guard);       // 5 cards
+        CardsDeck.Add(CardType.Guard);       // 6 cards
+        CardsDeck.Add(CardType.Guard);
         CardsDeck.Add(CardType.Guard);
         CardsDeck.Add(CardType.Guard);
         CardsDeck.Add(CardType.Guard);
