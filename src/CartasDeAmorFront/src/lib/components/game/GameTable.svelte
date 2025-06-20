@@ -6,6 +6,7 @@
   import { onMount } from 'svelte';
   import CardRequirementsModal from './CardRequirementsModal.svelte';
   import CardChoiceModal from './CardChoiceModal.svelte';
+  import PlayedCardsDisplay from './PlayedCardsDisplay.svelte';
   
   // Props from parent component
   export let gameStatus: InitialGameStatusDto;
@@ -563,16 +564,11 @@
               transform: translate(calc(-50% + {playedX}px), calc(-50% + {playedY}px));
             "
           >
-            <div class="played-cards">
-              {#each player.playedCards.slice(-3) as playedCard, cardIndex}
-                <div class="card played-card face-up" style="margin-left: {cardIndex * 8}px;">
-                  <div class="card-content">
-                    <div class="card-number">{playedCard}</div>
-                    <div class="card-name">{getCardName(playedCard)}</div>
-                  </div>
-                </div>
-              {/each}
-            </div>
+            <PlayedCardsDisplay 
+              playedCards={player.playedCards} 
+              playerName={player.name}
+              {getCardName}
+            />
           </div>
         {/if}
       {/each}
@@ -946,14 +942,6 @@
     line-height: 1;
   }
   
-  .played-cards {
-    display: flex;
-    gap: 2px;
-    flex-wrap: wrap;
-    justify-content: center;
-    max-width: 100px;
-  }
-  
   .played-cards-area {
     position: absolute;
     display: flex;
@@ -961,24 +949,6 @@
     flex-wrap: wrap;
     justify-content: center;
     z-index: 5;
-  }
-  
-  .played-card {
-    width: 40px;
-    height: 56px;
-    background: linear-gradient(135deg, #fafafa 0%, #e0e0e0 100%);
-    display: flex;
-    flex-direction: column;
-    justify-content: space-between;
-    padding: 3px;
-  }
-  
-  .played-card .card-number {
-    font-size: 0.8rem;
-  }
-  
-  .played-card .card-name {
-    font-size: 0.4rem;
   }
   
   /* Card Type Selection Area */
@@ -1112,11 +1082,6 @@
     .card {
       width: 40px;
       height: 56px;
-    }
-    
-    .played-card {
-      width: 32px;
-      height: 45px;
     }
   }
 </style>
