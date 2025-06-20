@@ -9,7 +9,6 @@ import type {
   InitialGameStatusDto, 
   PrivatePlayerUpdateDto,
   CardRequirementsDto,
-  CardActionResultDto,
   PublicPlayerUpdateDto
 } from '$lib/types/game-types';
 
@@ -47,16 +46,22 @@ interface SignalRHandlers {
   onDrawCardError?: (error: string) => void;
   onCardRequirements?: (requirements: CardRequirementsDto) => void;
   onPlayCardError?: (error: string) => void;
-  // Card result events
-  onCardResultNone?: (cardResult: CardActionResultDto) => void;
-  onCardResultShowCard?: (cardResult: CardActionResultDto) => void;
-  onCardResultPlayerEliminated?: (cardResult: CardActionResultDto) => void;
-  onCardResultSwitchCards?: (cardResult: CardActionResultDto) => void;
-  onCardResultDiscardAndDrawCard?: (cardResult: CardActionResultDto) => void;
-  onCardResultProtectionGranted?: (cardResult: CardActionResultDto) => void;
-  onCardResultChooseCard?: (cardResult: CardActionResultDto) => void;
+  // New MessageFactory events
+  onPlayCard?: (data: { player: string; cardType: number }) => void;
+  onGuessCard?: (data: { invoker: string; cardType: number; target: string }) => void;
+  onPeekCard?: (data: { invoker: string; target: string }) => void;
+  onShowCard?: (data: { invoker: string; target: string, card: number }) => void;
+  onCompareCards?: (data: { invoker: string; target: string }) => void;
+  onComparisonTie?: (data: { invoker: string; target: string }) => void;
+  onDiscardCard?: (data: { target: string; cardType: number }) => void;
+  onDrawCard?: (data: { player: string }) => void;
+  onPlayerEliminated?: (data: { player: string }) => void;
+  onSwitchCards?: (data: { invoker: string; target: string }) => void;
+  onPlayerProtected?: (data: { player: string }) => void;
+  onChooseCard?: (data: { player: string }) => void;
+  // Player update events
+  onPublicPlayerUpdate?: (data: PublicPlayerUpdateDto) => void;
   // Other game events
-  onChooseCard?: (cardType: number) => void;
   onCardChoiceSubmitted?: (playerUpdate: PublicPlayerUpdateDto) => void;
   onCardChoiceError?: (error: string) => void;
   onMandatoryCardPlay?: (message: string, requiredCardType: number) => void;
@@ -64,6 +69,8 @@ interface SignalRHandlers {
   onBonusPoints?: (players: string[]) => void;
   onGameOver?: (winners: string[]) => void;
 }
+
+// TODO: acabei de jogar um principe, escolhi a mim mesmo para descartar, mas o jogo não atualizou corretamente a minha nova carta, apenas quando comprei do deck no próximo turno
 
 // Handler registration API
 let registeredHandlers: SignalRHandlers = {
@@ -77,16 +84,21 @@ let registeredHandlers: SignalRHandlers = {
   onDrawCardError: undefined,
   onCardRequirements: undefined,
   onPlayCardError: undefined,
-  // Card result events
-  onCardResultNone: undefined,
-  onCardResultShowCard: undefined,
-  onCardResultPlayerEliminated: undefined,
-  onCardResultSwitchCards: undefined,
-  onCardResultDiscardAndDrawCard: undefined,
-  onCardResultProtectionGranted: undefined,
-  onCardResultChooseCard: undefined,
-  // Other game events
+  // New MessageFactory events
+  onPlayCard: undefined,
+  onGuessCard: undefined,
+  onShowCard: undefined,
+  onCompareCards: undefined,
+  onComparisonTie: undefined,
+  onDiscardCard: undefined,
+  onDrawCard: undefined,
+  onPlayerEliminated: undefined,
+  onSwitchCards: undefined,
+  onPlayerProtected: undefined,
   onChooseCard: undefined,
+  // Player update events
+  onPublicPlayerUpdate: undefined,
+  // Other game events
   onCardChoiceSubmitted: undefined,
   onCardChoiceError: undefined,
   onMandatoryCardPlay: undefined,
@@ -103,20 +115,26 @@ function attachEventHandlers(connection: SignalR.HubConnection) {
   connection.off('NextTurn');
   connection.off('PlayerDrewCard');
   connection.off('GameStartError');
-  connection.off('PrivatePlayerUpdate');
+  connection.off('PlayerUpdatePrivate');
   connection.off('DrawCardError');
   connection.off('CardRequirements');
   connection.off('PlayCardError');
-  // Card result events
-  connection.off('CardResult-None');
-  connection.off('CardResult-ShowCard');
-  connection.off('CardResult-PlayerEliminated');
-  connection.off('CardResult-SwitchCards');
-  connection.off('CardResult-DiscardAndDrawCard');
-  connection.off('CardResult-ProtectionGranted');
-  connection.off('CardResult-ChooseCard');
-  // Other game events
+  // New MessageFactory events
+  connection.off('PlayCard');
+  connection.off('GuessCard');
+  connection.off('PeekCard');
+  connection.off('ShowCard');
+  connection.off('CompareCards');
+  connection.off('ComparisonTie');
+  connection.off('DiscardCard');
+  connection.off('DrawCard');
+  connection.off('PlayerEliminated');
+  connection.off('SwitchCards');
+  connection.off('PlayerProtected');
   connection.off('ChooseCard');
+  // Player update events
+  connection.off('PublicPlayerUpdate');
+  // Other game events
   connection.off('CardChoiceSubmitted');
   connection.off('CardChoiceError');
   connection.off('MandatoryCardPlay');
@@ -131,20 +149,26 @@ function attachEventHandlers(connection: SignalR.HubConnection) {
   connection.on('NextTurn', (playerEmail: string) => registeredHandlers.onNextTurn?.(playerEmail));
   connection.on('PlayerDrewCard', (playerEmail: string) => registeredHandlers.onPlayerDrewCard?.(playerEmail));
   connection.on('GameStartError', (error: string) => registeredHandlers.onGameStartError?.(error));
-  connection.on('PrivatePlayerUpdate', (playerUpdate: PrivatePlayerUpdateDto) => registeredHandlers.onPrivatePlayerUpdate?.(playerUpdate));
+  connection.on('PlayerUpdatePrivate', (playerUpdate: PrivatePlayerUpdateDto) => registeredHandlers.onPrivatePlayerUpdate?.(playerUpdate));
   connection.on('DrawCardError', (error: string) => registeredHandlers.onDrawCardError?.(error));
   connection.on('CardRequirements', (requirements: CardRequirementsDto) => registeredHandlers.onCardRequirements?.(requirements));
   connection.on('PlayCardError', (error: string) => registeredHandlers.onPlayCardError?.(error));
-  // Card result events
-  connection.on('CardResult-None', (cardResult: CardActionResultDto) => registeredHandlers.onCardResultNone?.(cardResult));
-  connection.on('CardResult-ShowCard', (cardResult: CardActionResultDto) => registeredHandlers.onCardResultShowCard?.(cardResult));
-  connection.on('CardResult-PlayerEliminated', (cardResult: CardActionResultDto) => registeredHandlers.onCardResultPlayerEliminated?.(cardResult));
-  connection.on('CardResult-SwitchCards', (cardResult: CardActionResultDto) => registeredHandlers.onCardResultSwitchCards?.(cardResult));
-  connection.on('CardResult-DiscardAndDrawCard', (cardResult: CardActionResultDto) => registeredHandlers.onCardResultDiscardAndDrawCard?.(cardResult));
-  connection.on('CardResult-ProtectionGranted', (cardResult: CardActionResultDto) => registeredHandlers.onCardResultProtectionGranted?.(cardResult));
-  connection.on('CardResult-ChooseCard', (cardResult: CardActionResultDto) => registeredHandlers.onCardResultChooseCard?.(cardResult));
+  // New MessageFactory events
+  connection.on('PlayCard', (data: { player: string; cardType: number }) => registeredHandlers.onPlayCard?.(data));
+  connection.on('GuessCard', (data: { invoker: string; cardType: number; target: string }) => registeredHandlers.onGuessCard?.(data));
+  connection.on('PeekCard', (data: { invoker: string; target: string }) => registeredHandlers.onPeekCard?.(data));
+  connection.on('ShowCard', (data: { invoker: string; target: string, card: number }) => registeredHandlers.onShowCard?.(data));
+  connection.on('CompareCards', (data: { invoker: string; target: string }) => registeredHandlers.onCompareCards?.(data));
+  connection.on('ComparisonTie', (data: { invoker: string; target: string }) => registeredHandlers.onComparisonTie?.(data));
+  connection.on('DiscardCard', (data: { target: string; cardType: number }) => registeredHandlers.onDiscardCard?.(data));
+  connection.on('DrawCard', (data: { player: string }) => registeredHandlers.onDrawCard?.(data));
+  connection.on('PlayerEliminated', (data: { player: string }) => registeredHandlers.onPlayerEliminated?.(data));
+  connection.on('SwitchCards', (data: { invoker: string; target: string }) => registeredHandlers.onSwitchCards?.(data));
+  connection.on('PlayerProtected', (data: { player: string }) => registeredHandlers.onPlayerProtected?.(data));
+  connection.on('ChooseCard', (data: { player: string }) => registeredHandlers.onChooseCard?.(data));
+  // Player update events
+  connection.on('PublicPlayerUpdate', (data: PublicPlayerUpdateDto) => registeredHandlers.onPublicPlayerUpdate?.(data));
   // Other game events
-  connection.on('ChooseCard', (cardType: number) => registeredHandlers.onChooseCard?.(cardType));
   connection.on('CardChoiceSubmitted', (playerUpdate: PublicPlayerUpdateDto) => registeredHandlers.onCardChoiceSubmitted?.(playerUpdate));
   connection.on('CardChoiceError', (error: string) => registeredHandlers.onCardChoiceError?.(error));
   connection.on('MandatoryCardPlay', (message: string, requiredCardType: number) => registeredHandlers.onMandatoryCardPlay?.(message, requiredCardType));

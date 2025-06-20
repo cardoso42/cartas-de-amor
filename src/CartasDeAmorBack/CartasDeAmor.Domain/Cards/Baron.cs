@@ -1,6 +1,7 @@
 using CartasDeAmor.Domain.Entities;
 using CartasDeAmor.Domain.Enums;
 using CartasDeAmor.Domain.Exceptions;
+using CartasDeAmor.Domain.Factories;
 
 namespace CartasDeAmor.Domain.Cards;
 
@@ -15,7 +16,7 @@ public class Baron : Card
         Value = 3;
     }
 
-    public override CardActionResults Play(Game game, Player invokerPlayer, Player? targetPlayer, CardType? targetCardType)
+    public override CardResult Play(Game game, Player invokerPlayer, Player? targetPlayer, CardType? targetCardType)
     {
         // Compare both the current player's card and the target player's card.
         // Whoever has the lower value loses the round
@@ -30,21 +31,30 @@ public class Baron : Card
             throw new PlayerProtectedException("Target player cannot be targeted by the Baron action.", targetPlayer.UserEmail);
         }
 
+        var result = new CardResult();
+        result.SpecialMessages.Add(MessageFactory.PlayCard(invokerPlayer.UserEmail, CardType));
+
         var invokerCard = invokerPlayer.GetCard();
         var targetCard = targetPlayer.GetCard();
+
+        result.SpecialMessages.Add(MessageFactory.CompareCards(invokerPlayer.UserEmail, targetPlayer.UserEmail));
 
         if (invokerCard > targetCard)
         {
             targetPlayer.Eliminate();
-            return CardActionResults.PlayerEliminated;
+            result.SpecialMessages.Add(MessageFactory.PlayerEliminated(targetPlayer.UserEmail));
         }
         else if (invokerCard < targetCard)
         {
             invokerPlayer.Eliminate();
-            return CardActionResults.PlayerEliminated;
+            result.SpecialMessages.Add(MessageFactory.PlayerEliminated(invokerPlayer.UserEmail));
         }
-
-        return CardActionResults.None;
+        else
+        {
+            result.SpecialMessages.Add(MessageFactory.ComparisonTie(invokerPlayer.UserEmail, targetPlayer.UserEmail));
+        }
+        
+        return result;
     }
 
     public override CardRequirements? GetCardActionRequirements()

@@ -55,7 +55,7 @@ public class GameHub(
             var playerStatus = await _gameService.DrawCardAsync(roomId, userEmail);
 
             // Notify all players about the drawn card
-            await Clients.Client(Context.ConnectionId).SendAsync("PrivatePlayerUpdate", playerStatus);
+            await Clients.Client(Context.ConnectionId).SendAsync("PlayerUpdatePrivate", playerStatus);
             await Clients.Group(roomId.ToString()).SendAsync("PlayerDrewCard", userEmail);
 
             _logger.LogInformation("User {User} drew a card in room {RoomId}", userEmail, roomId);
@@ -177,31 +177,29 @@ public class GameHub(
         try
         {
             var result = await _gameService.PlayCardAsync(roomId, userEmail, cardPlayDto);
-            await Clients.Group(roomId.ToString()).SendAsync($"CardResult-{result.Result}", result);
 
-            var invokerPrivateUpdate = await _gameService.GetPlayerStatusAsync(roomId, userEmail);
-            await Clients.Client(Context.ConnectionId).SendAsync("PrivatePlayerUpdate", invokerPrivateUpdate);
-
-            if (result.Target != null)
+            foreach (var message in result.SpecialMessages)
             {
-                var targetConnectionIds = GetUserConnectionIds(result.Target.UserEmail, roomId);
-                var targetPrivateUpdate = await _gameService.GetPlayerStatusAsync(roomId, result.Target.UserEmail);
-
-                foreach (var connectionId in targetConnectionIds)
+                if (string.IsNullOrEmpty(message.Dest))
                 {
-                    await Clients.Client(connectionId).SendAsync("PrivatePlayerUpdate", targetPrivateUpdate);
+                    await Clients.Group(roomId.ToString()).SendAsync(message.Message, message.ExtraData);
+                }
+                else
+                {
+                    var connectionIds = GetUserConnectionIds(message.Dest, roomId);
+                    foreach (var connectionId in connectionIds)
+                    {
+                        await Clients.Client(connectionId).SendAsync(message.Message, message.ExtraData);
+                    }
                 }
             }
 
             _logger.LogInformation("User {User} played card {CardType} in room {RoomId}", userEmail, cardPlayDto.CardType, roomId);
 
-            if (result.Result == CardActionResults.ChooseCard)
+            if (result.ShouldAdvanceTurn)
             {
-                await Clients.Client(Context.ConnectionId).SendAsync("ChooseCard", result.CardType);
-                return; // Do not advance the game until the user chooses a card
+                await AdvanceGame(roomId);
             }
-
-            await AdvanceGame(roomId);
         }
         catch (MandatoryCardPlayViolationException ex)
         {
@@ -237,7 +235,7 @@ public class GameHub(
             await Clients.Group(roomId.ToString()).SendAsync("CardChoiceSubmitted", playerUpdate);
 
             var invokerPrivateUpdate = await _gameService.GetPlayerStatusAsync(roomId, userEmail);
-            await Clients.Client(Context.ConnectionId).SendAsync("PrivatePlayerUpdate", invokerPrivateUpdate);
+            await Clients.Client(Context.ConnectionId).SendAsync("PlayerUpdatePrivate", invokerPrivateUpdate);
 
             await AdvanceGame(roomId);
         }

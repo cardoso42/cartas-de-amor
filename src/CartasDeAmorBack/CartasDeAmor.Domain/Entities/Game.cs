@@ -291,7 +291,7 @@ public class Game
     /// </summary>
     public void StartNewRound()
     {
-        var lastRoundWinner = new List<Player>();
+        List<Player> lastRoundWinner;
         try
         {
             lastRoundWinner = GetRoundWinners().ToList();

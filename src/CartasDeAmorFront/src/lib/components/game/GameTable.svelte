@@ -114,7 +114,12 @@
   }
   
   // Handle choose card event from server
-  function handleChooseCard(cardType: number) {
+  function handleChooseCard(data: { player: string }) {
+    // Only show card choice modal if it's for the current player
+    if (data.player !== currentUserEmail) {
+      return;
+    }
+    
     // Get the current player's cards from the game status directly
     if (!gameStatus || !gameStatus.yourCards || gameStatus.yourCards.length === 0) {
       alert('Error: No cards available to choose from');

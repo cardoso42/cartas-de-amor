@@ -1,5 +1,6 @@
 using CartasDeAmor.Domain.Entities;
 using CartasDeAmor.Domain.Enums;
+using CartasDeAmor.Domain.Factories;
 
 namespace CartasDeAmor.Domain.Cards;
 
@@ -15,11 +16,18 @@ public class Princess : Card
 
     public override Func<Game, Player, bool> ConditionForExtraPoint => new((game, player) => false);
 
-    public override CardActionResults Play(Game game, Player invokerPlayer, Player? targetPlayer, CardType? targetCardType)
+    public override CardResult Play(Game game, Player invokerPlayer, Player? targetPlayer, CardType? targetCardType)
     {
         // Player loses round
         invokerPlayer.Eliminate();
-        return CardActionResults.PlayerEliminated;
+        return new CardResult
+        {
+            SpecialMessages =
+            [
+                MessageFactory.PlayCard(invokerPlayer.UserEmail, CardType),
+                MessageFactory.PlayerEliminated(invokerPlayer.UserEmail)
+            ]
+        };
     }
 
     public override CardRequirements? GetCardActionRequirements()

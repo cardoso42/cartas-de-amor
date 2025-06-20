@@ -1,6 +1,7 @@
 using CartasDeAmor.Domain.Entities;
 using CartasDeAmor.Domain.Enums;
 using CartasDeAmor.Domain.Exceptions;
+using CartasDeAmor.Domain.Factories;
 
 namespace CartasDeAmor.Domain.Cards;
 
@@ -15,7 +16,7 @@ public class Prince : Card
     public override CardType CardType => CardType.Prince;
     public override Func<Game, Player, bool> ConditionForExtraPoint => new((game, player) => false);
 
-    public override CardActionResults Play(Game game, Player invokerPlayer, Player? targetPlayer, CardType? targetCardType)
+    public override CardResult Play(Game game, Player invokerPlayer, Player? targetPlayer, CardType? targetCardType)
     {
         // The player chooses another player and that player must discard their hand and draw a new card.
 
@@ -30,13 +31,23 @@ public class Prince : Card
         }
 
         // Discard the target player's hand
-            var discardedCard = targetPlayer.GetCard();
+        var discardedCard = targetPlayer.GetCard();
         targetPlayer.PlayCard(discardedCard);
+
+        var result = new CardResult
+        {
+            SpecialMessages =
+            [
+                MessageFactory.PlayCard(invokerPlayer.UserEmail, CardType),
+                MessageFactory.DiscardCard(targetPlayer.UserEmail, discardedCard)
+            ]
+        };
 
         if (discardedCard == CardType.Princess)
         {
             targetPlayer.Eliminate();
-            return CardActionResults.PlayerEliminated;
+            result.SpecialMessages.Add(MessageFactory.PlayerEliminated(targetPlayer.UserEmail));
+            return result;
         }
 
         CardType newCard;
@@ -50,8 +61,9 @@ public class Prince : Card
         }
 
         targetPlayer.HandCard(newCard);
+        result.SpecialMessages.Add(MessageFactory.DrawCard(targetPlayer.UserEmail));
 
-        return CardActionResults.DiscardAndDrawCard;
+        return result;
     }
 
     public override CardRequirements? GetCardActionRequirements()

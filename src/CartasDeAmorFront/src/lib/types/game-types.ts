@@ -109,8 +109,6 @@ export interface CardPlayDto {
  * Card action result DTO interface
  */
 export interface CardActionResultDto {
-  result: number; // CardActionResults enum
-  cardType: CardType;
   invoker?: PublicPlayerUpdateDto;
   target?: PublicPlayerUpdateDto;
 }

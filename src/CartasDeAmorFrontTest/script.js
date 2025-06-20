@@ -1283,7 +1283,7 @@ function setupSignalRHandlers() {
         updateDrawCardButton(isMyTurn);
     });
     
-    signalRConnection.on('PrivatePlayerUpdate', (playerUpdate) => {        
+    signalRConnection.on('PlayerUpdatePrivate', (playerUpdate) => {        
         // Update player's full status from the PlayerUpdateDto
         if (playerUpdate.HoldingCards || playerUpdate.holdingCards) {
             const holdingCards = playerUpdate.HoldingCards || playerUpdate.holdingCards;

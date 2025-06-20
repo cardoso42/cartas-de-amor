@@ -176,7 +176,7 @@ public class GameService : IGameService
         return newPlayer.UserEmail;
     }
 
-    public async Task<CardActionResultDto> PlayCardAsync(Guid roomId, string userEmail, CardPlayDto cardPlay)
+    public async Task<CardResult> PlayCardAsync(Guid roomId, string userEmail, CardPlayDto cardPlay)
     {
         var game = await _roomRepository.GetByIdAsync(roomId) ?? throw new InvalidOperationException("Room not found");
         if (game.HasStarted() == false)
@@ -199,6 +199,7 @@ public class GameService : IGameService
             throw new InvalidOperationException($"Cannot play a card in current state: {game.GameState}");
         }
 
+        // Player must have the card in hand
         var currentPlayer = game.GetPlayerByEmail(userEmail) ?? throw new InvalidOperationException("Player not found in the game");
         if (!currentPlayer.HoldingCards.Contains(cardPlay.CardType))
         {
@@ -222,12 +223,12 @@ public class GameService : IGameService
         }
 
         // Play the card
-            _logger.LogInformation("Player {UserEmail} is playing card {CardType} in room {RoomId}", userEmail, cardPlay.CardType, roomId);
+        _logger.LogInformation("Player {UserEmail} is playing card {CardType} in room {RoomId}", userEmail, cardPlay.CardType, roomId);
 
         var card = CardFactory.Create(cardPlay.CardType);
         var targetPlayer = game.GetPlayerByEmail(cardPlay.TargetPlayerEmail ?? string.Empty);
 
-        var result = CardActionResults.None;
+        var result = new CardResult();
         try
         {
             currentPlayer.PlayCard(cardPlay.CardType);
@@ -248,13 +249,16 @@ public class GameService : IGameService
 
         await _roomRepository.UpdateAsync(game);
 
-        return new CardActionResultDto
+        result.SpecialMessages.Insert(0, MessageFactory.PlayerUpdatePublic(currentPlayer));
+        result.SpecialMessages.Insert(1, MessageFactory.PlayerUpdatePrivate(currentPlayer));
+
+        if (targetPlayer != null)
         {
-            Result = result,
-            CardType = cardPlay.CardType,
-            Invoker = new PublicPlayerUpdateDto(currentPlayer),
-            Target = targetPlayer != null ? new PublicPlayerUpdateDto(targetPlayer) : null
-        };
+            result.SpecialMessages.Insert(2, MessageFactory.PlayerUpdatePublic(targetPlayer));
+            result.SpecialMessages.Insert(3, MessageFactory.PlayerUpdatePrivate(targetPlayer));
+        }
+
+        return result;
     }
 
     public async Task<CardRequirementsDto> GetCardActionRequirementsAsync(Guid roomId, string currentPlayer, CardType cardType)
