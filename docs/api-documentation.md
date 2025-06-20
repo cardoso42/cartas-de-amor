@@ -26,6 +26,7 @@ This document provides comprehensive documentation for the public interfaces of 
       - [Play Card](#play-card)
       - [Submit Card Choice](#submit-card-choice)
     - [Card Result Events](#card-result-events)
+      - [CardResult-None](#cardresult-none)
       - [CardResult-ShowCard](#cardresult-showcard)
       - [CardResult-PlayerEliminated](#cardresult-playereliminated)
       - [CardResult-SwitchCards](#cardresult-switchcards)
@@ -282,6 +283,11 @@ The Game Hub provides real-time communication for the Love Letter game. Connect 
 ### Card Result Events
 
 When a card is played using the `PlayCard` method, one of the following events will be emitted based on the result of the card action. All these events send a `CardActionResultDto` object containing information about the action result.
+
+#### CardResult-None
+- **Event**: `CardResult-None`
+- **Description**: Sent when the played card has no effect
+- **Data**: CardActionResultDto with invoker, target if any, and played card
 
 #### CardResult-ShowCard
 - **Event**: `CardResult-ShowCard` 
