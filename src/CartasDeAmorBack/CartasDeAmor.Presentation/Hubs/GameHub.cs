@@ -234,6 +234,12 @@ public class GameHub(
             var playerUpdate = await _gameService.SubmitCardChoiceAsync(roomId, userEmail, keepCardType, returnCardTypes);
             await Clients.Group(roomId.ToString()).SendAsync("CardChoiceSubmitted", playerUpdate);
 
+            // Send CardReturnedToDeck event when cards are returned to deck
+            if (returnCardTypes.Count > 0)
+            {
+                await Clients.Group(roomId.ToString()).SendAsync("CardReturnedToDeck", new { Player = userEmail, CardCount = returnCardTypes.Count });
+            }
+
             var invokerPrivateUpdate = await _gameService.GetPlayerStatusAsync(roomId, userEmail);
             await Clients.Client(Context.ConnectionId).SendAsync("PlayerUpdatePrivate", invokerPrivateUpdate);
 

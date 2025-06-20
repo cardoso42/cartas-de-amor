@@ -55,6 +55,7 @@ interface SignalRHandlers {
   onComparisonTie?: (data: { invoker: string; target: string }) => void;
   onDiscardCard?: (data: { target: string; cardType: number }) => void;
   onDrawCard?: (data: { player: string }) => void;
+  onCardReturnedToDeck?: (data: { player: string; cardCount: number }) => void;
   onPlayerEliminated?: (data: { player: string }) => void;
   onSwitchCards?: (data: { invoker: string; target: string }) => void;
   onPlayerProtected?: (data: { player: string }) => void;
@@ -92,6 +93,7 @@ let registeredHandlers: SignalRHandlers = {
   onComparisonTie: undefined,
   onDiscardCard: undefined,
   onDrawCard: undefined,
+  onCardReturnedToDeck: undefined,
   onPlayerEliminated: undefined,
   onSwitchCards: undefined,
   onPlayerProtected: undefined,
@@ -128,6 +130,7 @@ function attachEventHandlers(connection: SignalR.HubConnection) {
   connection.off('ComparisonTie');
   connection.off('DiscardCard');
   connection.off('DrawCard');
+  connection.off('CardReturnedToDeck');
   connection.off('PlayerEliminated');
   connection.off('SwitchCards');
   connection.off('PlayerProtected');
@@ -162,6 +165,7 @@ function attachEventHandlers(connection: SignalR.HubConnection) {
   connection.on('ComparisonTie', (data: { invoker: string; target: string }) => registeredHandlers.onComparisonTie?.(data));
   connection.on('DiscardCard', (data: { target: string; cardType: number }) => registeredHandlers.onDiscardCard?.(data));
   connection.on('DrawCard', (data: { player: string }) => registeredHandlers.onDrawCard?.(data));
+  connection.on('CardReturnedToDeck', (data: { player: string; cardCount: number }) => registeredHandlers.onCardReturnedToDeck?.(data));
   connection.on('PlayerEliminated', (data: { player: string }) => registeredHandlers.onPlayerEliminated?.(data));
   connection.on('SwitchCards', (data: { invoker: string; target: string }) => registeredHandlers.onSwitchCards?.(data));
   connection.on('PlayerProtected', (data: { player: string }) => registeredHandlers.onPlayerProtected?.(data));

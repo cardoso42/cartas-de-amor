@@ -204,4 +204,18 @@ public static class MessageFactory
             }
         };
     }
+
+    public static SpecialMessage CardReturnedToDeck(string player, int cardCount)
+    {
+        return new SpecialMessage
+        {
+            Dest = "",
+            Message = "CardReturnedToDeck",
+            ExtraData = new
+            {
+                Player = player,
+                CardCount = cardCount
+            }
+        };
+    }
 }

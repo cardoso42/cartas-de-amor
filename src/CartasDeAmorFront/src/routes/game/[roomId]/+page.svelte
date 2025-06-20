@@ -286,6 +286,11 @@
               console.log(`Updated ${playerEmail} cards in hand to ${playerToUpdate.cardsInHand}`);
             }
           }
+
+          // Decrease the deck count when any player draws a card
+          if (gameStatus && gameStatus.cardsRemainingInDeck > 0) {
+            gameStatus.cardsRemainingInDeck -= 1;
+          }
         },
         onPrivatePlayerUpdate: (playerUpdate: PrivatePlayerUpdateDto) => {
           console.log('Private player update:', playerUpdate);
@@ -348,6 +353,18 @@
         onDrawCard: (data: { player: string }) => {
           console.log('DrawCard event:', data);
           showNotification(`${getPlayerDisplayName(data.player)} drew a card`, 'info');
+          // Decrease deck count when a card is drawn
+          if (gameStatus) {
+            gameStatus.cardsRemainingInDeck = Math.max(0, (gameStatus.cardsRemainingInDeck || 0) - 1);
+          }
+        },
+        onCardReturnedToDeck: (data: { player: string; cardCount: number }) => {
+          console.log('CardReturnedToDeck event:', data);
+          showNotification(`${getPlayerDisplayName(data.player)} returned ${data.cardCount} card(s) to the deck`, 'info');
+          // Increase deck count when cards are returned to deck
+          if (gameStatus) {
+            gameStatus.cardsRemainingInDeck = (gameStatus.cardsRemainingInDeck || 0) + data.cardCount;
+          }
         },
         onPlayerEliminated: (data: { player: string }) => {
           console.log('PlayerEliminated event:', data);
