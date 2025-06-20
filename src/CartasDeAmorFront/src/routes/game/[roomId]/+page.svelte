@@ -153,14 +153,7 @@
     console.log(`Handling card play: ${getPlayerDisplayName(playerEmail)} played ${getCardName(playedCard)}`);
     
     // If the player is the current user, update their cards in hand and played cards
-    if (playerEmail === userEmail && gameStatus.yourCards) {
-      // Remove the played card from the local player's hand
-      const cardIndex = gameStatus.yourCards.indexOf(playedCard);
-      if (cardIndex > -1) {
-        gameStatus.yourCards.splice(cardIndex, 1);
-        console.log(`Removed ${getCardName(playedCard)} from your hand`);
-      }
-      
+    if (playerEmail === userEmail && gameStatus.yourCards) {    
       // Add to local player's played cards
       localPlayerPlayedCards = [...localPlayerPlayedCards, playedCard];
     } else {
