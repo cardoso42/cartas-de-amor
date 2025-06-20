@@ -38,6 +38,23 @@ interface SignalRHandlers {
   onPrivatePlayerUpdate?: (playerUpdate: unknown) => void;
   onDrawCardError?: (error: string) => void;
   onCardRequirements?: (requirements: unknown) => void;
+  onPlayCardError?: (error: string) => void;
+  // Card result events
+  onCardResultNone?: (cardResult: unknown) => void;
+  onCardResultShowCard?: (cardResult: unknown) => void;
+  onCardResultPlayerEliminated?: (cardResult: unknown) => void;
+  onCardResultSwitchCards?: (cardResult: unknown) => void;
+  onCardResultDiscardAndDrawCard?: (cardResult: unknown) => void;
+  onCardResultProtectionGranted?: (cardResult: unknown) => void;
+  onCardResultChooseCard?: (cardResult: unknown) => void;
+  // Other game events
+  onChooseCard?: (cardType: number) => void;
+  onCardChoiceSubmitted?: (playerUpdate: unknown) => void;
+  onCardChoiceError?: (error: string) => void;
+  onMandatoryCardPlay?: (message: string, requiredCardType: number) => void;
+  onRoundWinners?: (winners: string[]) => void;
+  onBonusPoints?: (players: string[]) => void;
+  onGameOver?: (winners: string[]) => void;
 }
 
 // Handler registration API
@@ -50,7 +67,24 @@ let registeredHandlers: SignalRHandlers = {
   onGameStartError: undefined,
   onPrivatePlayerUpdate: undefined,
   onDrawCardError: undefined,
-  onCardRequirements: undefined
+  onCardRequirements: undefined,
+  onPlayCardError: undefined,
+  // Card result events
+  onCardResultNone: undefined,
+  onCardResultShowCard: undefined,
+  onCardResultPlayerEliminated: undefined,
+  onCardResultSwitchCards: undefined,
+  onCardResultDiscardAndDrawCard: undefined,
+  onCardResultProtectionGranted: undefined,
+  onCardResultChooseCard: undefined,
+  // Other game events
+  onChooseCard: undefined,
+  onCardChoiceSubmitted: undefined,
+  onCardChoiceError: undefined,
+  onMandatoryCardPlay: undefined,
+  onRoundWinners: undefined,
+  onBonusPoints: undefined,
+  onGameOver: undefined
 };
 
 function attachEventHandlers(connection: SignalR.HubConnection) {
@@ -64,6 +98,23 @@ function attachEventHandlers(connection: SignalR.HubConnection) {
   connection.off('PrivatePlayerUpdate');
   connection.off('DrawCardError');
   connection.off('CardRequirements');
+  connection.off('PlayCardError');
+  // Card result events
+  connection.off('CardResult-None');
+  connection.off('CardResult-ShowCard');
+  connection.off('CardResult-PlayerEliminated');
+  connection.off('CardResult-SwitchCards');
+  connection.off('CardResult-DiscardAndDrawCard');
+  connection.off('CardResult-ProtectionGranted');
+  connection.off('CardResult-ChooseCard');
+  // Other game events
+  connection.off('ChooseCard');
+  connection.off('CardChoiceSubmitted');
+  connection.off('CardChoiceError');
+  connection.off('MandatoryCardPlay');
+  connection.off('RoundWinners');
+  connection.off('BonusPoints');
+  connection.off('GameOver');
   
   // Add new handlers
   connection.on('JoinedRoom', (joinRoomResult: unknown) => registeredHandlers.onJoinedRoom?.(joinRoomResult));
@@ -75,6 +126,23 @@ function attachEventHandlers(connection: SignalR.HubConnection) {
   connection.on('PrivatePlayerUpdate', (playerUpdate: unknown) => registeredHandlers.onPrivatePlayerUpdate?.(playerUpdate));
   connection.on('DrawCardError', (error: string) => registeredHandlers.onDrawCardError?.(error));
   connection.on('CardRequirements', (requirements: unknown) => registeredHandlers.onCardRequirements?.(requirements));
+  connection.on('PlayCardError', (error: string) => registeredHandlers.onPlayCardError?.(error));
+  // Card result events
+  connection.on('CardResult-None', (cardResult: unknown) => registeredHandlers.onCardResultNone?.(cardResult));
+  connection.on('CardResult-ShowCard', (cardResult: unknown) => registeredHandlers.onCardResultShowCard?.(cardResult));
+  connection.on('CardResult-PlayerEliminated', (cardResult: unknown) => registeredHandlers.onCardResultPlayerEliminated?.(cardResult));
+  connection.on('CardResult-SwitchCards', (cardResult: unknown) => registeredHandlers.onCardResultSwitchCards?.(cardResult));
+  connection.on('CardResult-DiscardAndDrawCard', (cardResult: unknown) => registeredHandlers.onCardResultDiscardAndDrawCard?.(cardResult));
+  connection.on('CardResult-ProtectionGranted', (cardResult: unknown) => registeredHandlers.onCardResultProtectionGranted?.(cardResult));
+  connection.on('CardResult-ChooseCard', (cardResult: unknown) => registeredHandlers.onCardResultChooseCard?.(cardResult));
+  // Other game events
+  connection.on('ChooseCard', (cardType: number) => registeredHandlers.onChooseCard?.(cardType));
+  connection.on('CardChoiceSubmitted', (playerUpdate: unknown) => registeredHandlers.onCardChoiceSubmitted?.(playerUpdate));
+  connection.on('CardChoiceError', (error: string) => registeredHandlers.onCardChoiceError?.(error));
+  connection.on('MandatoryCardPlay', (message: string, requiredCardType: number) => registeredHandlers.onMandatoryCardPlay?.(message, requiredCardType));
+  connection.on('RoundWinners', (winners: string[]) => registeredHandlers.onRoundWinners?.(winners));
+  connection.on('BonusPoints', (players: string[]) => registeredHandlers.onBonusPoints?.(players));
+  connection.on('GameOver', (winners: string[]) => registeredHandlers.onGameOver?.(winners));
 }
 
 // Create exported object with methods
@@ -264,6 +332,22 @@ export const signalR = {
         return true;
       } catch (error) {
         console.error('Error getting card requirements:', error);
+        throw error;
+      }
+    }
+    
+    return false;
+  },
+
+  async playCard(roomId: string, cardPlayDto: { cardType: number; targetPlayerEmail?: string | null; targetCardType?: number | null }) {
+    const state = get(signalRStore);
+    
+    if (state.connection) {
+      try {
+        await state.connection.invoke('PlayCard', roomId, cardPlayDto);
+        return true;
+      } catch (error) {
+        console.error('Error playing card:', error);
         throw error;
       }
     }

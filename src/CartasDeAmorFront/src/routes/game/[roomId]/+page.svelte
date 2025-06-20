@@ -22,6 +22,7 @@
   
   // Game state
   let gameStatus: InitialGameStatusDto | null = null;
+  let localPlayerPlayedCards: number[] = []; // Track local player's played cards
   let isConnected = false;
   let connectionError = '';
   let roomName = '';
@@ -84,6 +85,90 @@
     errorMessage = '';
   }
   
+  function showNotification(message: string, type: 'info' | 'success' | 'warning' = 'info') {
+    // For now, just log to console. Could be enhanced with a proper notification system
+    console.log(`[${type.toUpperCase()}] ${message}`);
+  }
+  
+  function getPlayerDisplayName(email: string): string {
+    // If it's the current user, return "You"
+    if (email === userEmail) {
+      return 'You';
+    }
+    
+    // Try to find the player in the game status to get their username
+    if (gameStatus?.otherPlayersPublicData) {
+      const player = gameStatus.otherPlayersPublicData.find(p => p.userEmail === email);
+      if (player?.username) {
+        return player.username;
+      }
+    }
+    
+    // Fall back to the part before @ in the email
+    return email.split('@')[0];
+  }
+  
+  function getCardName(cardType: number): string {
+    const cardNames = {
+      0: 'Spy',
+      1: 'Guard',
+      2: 'Priest',
+      3: 'Baron',
+      4: 'Servant',
+      5: 'Prince',
+      6: 'Chancellor',
+      7: 'King',
+      8: 'Countess',
+      9: 'Princess'
+    };
+    return cardNames[cardType as keyof typeof cardNames] || `Card ${cardType}`;
+  }
+  
+  // Update player data when a card is played based on CardResult events
+  function updatePlayerDataFromCardResult(cardResult: any) {
+    if (!gameStatus || !cardResult?.invoker) {
+      return;
+    }
+    
+    const invokerEmail = cardResult.invoker.userEmail;
+    const playedCard = cardResult.cardType;
+    
+    console.log(`Updating UI for card play: ${getPlayerDisplayName(invokerEmail)} played ${getCardName(playedCard)}`);
+    
+    // If the invoker is the current user, update their cards in hand and played cards
+    if (invokerEmail === userEmail && gameStatus.yourCards) {
+      // Remove the played card from the local player's hand
+      const cardIndex = gameStatus.yourCards.indexOf(playedCard);
+      if (cardIndex > -1) {
+        gameStatus.yourCards.splice(cardIndex, 1);
+        console.log(`Removed ${getCardName(playedCard)} from your hand`);
+      }
+      
+      // Add to local player's played cards
+      localPlayerPlayedCards = [...localPlayerPlayedCards, playedCard];
+    } else {
+      // Update other players' card count and played cards
+      const otherPlayers = gameStatus.otherPlayersPublicData || [];
+      const playerToUpdate = otherPlayers.find(p => p.userEmail === invokerEmail);
+      
+      if (playerToUpdate) {
+        // Reduce their cards in hand count
+        playerToUpdate.cardsInHand = Math.max(0, (playerToUpdate.cardsInHand || 1) - 1);
+        
+        // Add the played card to their played cards list
+        if (!playerToUpdate.playedCards) {
+          playerToUpdate.playedCards = [];
+        }
+        playerToUpdate.playedCards.push(playedCard);
+        
+        console.log(`Updated ${getPlayerDisplayName(invokerEmail)} - cards in hand: ${playerToUpdate.cardsInHand}, played card: ${getCardName(playedCard)}`);
+      }
+    }
+    
+    // Trigger reactivity by creating a new gameStatus object
+    gameStatus = { ...gameStatus };
+  }
+  
   async function startGame() {
     if (!isRoomOwner) {
       return; // Only room owner can start the game
@@ -129,6 +214,7 @@
         onRoundStarted: (initialGameStatus: unknown) => {
           console.log('Round started:', initialGameStatus);
           gameStatus = initialGameStatus as InitialGameStatusDto;
+          localPlayerPlayedCards = []; // Reset played cards for new round
           isGameStarting = false;
           
           // Set initial turn player from game status
@@ -176,6 +262,79 @@
           console.error('Game start error:', error);
           isGameStarting = false;
           showError(`Failed to start game: ${error}`);
+        },
+        // Card result events
+        onCardResultNone: (cardResult: any) => {
+          console.log('Card had no effect:', cardResult);
+          updatePlayerDataFromCardResult(cardResult);
+          showNotification(`${getPlayerDisplayName(cardResult.invoker.userEmail)} played ${getCardName(cardResult.cardType)} - no effect`, 'info');
+        },
+        onCardResultShowCard: (cardResult: any) => {
+          console.log('Card result - show card:', cardResult);
+          updatePlayerDataFromCardResult(cardResult);
+          showNotification(`${getPlayerDisplayName(cardResult.invoker.userEmail)} looked at ${getPlayerDisplayName(cardResult.target.userEmail)}'s card`, 'info');
+        },
+        onCardResultPlayerEliminated: (cardResult: any) => {
+          console.log('Card result - player eliminated:', cardResult);
+          updatePlayerDataFromCardResult(cardResult);
+          if (cardResult.target.status === 2) {
+            showNotification(`${getPlayerDisplayName(cardResult.invoker.userEmail)} eliminated ${getPlayerDisplayName(cardResult.target.userEmail)}!`, 'warning');
+          } else {
+            showNotification(`${getPlayerDisplayName(cardResult.target.userEmail)} was eliminated!`, 'warning');
+          }
+        },
+        onCardResultSwitchCards: (cardResult: any) => {
+          console.log('Card result - switch cards:', cardResult);
+          updatePlayerDataFromCardResult(cardResult);
+          showNotification(`${getPlayerDisplayName(cardResult.invoker.userEmail)} switched cards with ${getPlayerDisplayName(cardResult.target.userEmail)}`, 'info');
+        },
+        onCardResultDiscardAndDrawCard: (cardResult: any) => {
+          console.log('Card result - discard and draw:', cardResult);
+          updatePlayerDataFromCardResult(cardResult);
+          showNotification(`${getPlayerDisplayName(cardResult.invoker.userEmail)} discarded and drew a new card`, 'info');
+        },
+        onCardResultProtectionGranted: (cardResult: any) => {
+          console.log('Card result - protection granted:', cardResult);
+          updatePlayerDataFromCardResult(cardResult);
+          showNotification(`${getPlayerDisplayName(cardResult.invoker.userEmail)} is now protected for 1 turn`, 'info');
+        },
+        onCardResultChooseCard: (cardResult: any) => {
+          console.log('Card result - choose card:', cardResult);
+          updatePlayerDataFromCardResult(cardResult);
+          showNotification(`${getPlayerDisplayName(cardResult.invoker.userEmail)} needs to choose a card`, 'info');
+        },
+        // Other game events
+        onChooseCard: (cardType: number) => {
+          console.log('Choose card request:', cardType);
+          showNotification('You need to choose which cards to keep and return', 'info');
+          // TODO: Implement card choice modal
+        },
+        onCardChoiceSubmitted: (playerUpdate: any) => {
+          console.log('Card choice submitted:', playerUpdate);
+          showNotification(`${getPlayerDisplayName(playerUpdate.userEmail)} submitted their card choice`, 'info');
+        },
+        onCardChoiceError: (error: string) => {
+          console.error('Card choice error:', error);
+          showError(`Failed to submit card choice: ${error}`);
+        },
+        onMandatoryCardPlay: (message: string, requiredCardType: number) => {
+          console.log('Mandatory card play:', message, requiredCardType);
+          showError(`You must play the ${getCardName(requiredCardType)} card! ${message}`);
+        },
+        onRoundWinners: (winners: string[]) => {
+          console.log('Round winners:', winners);
+          const winnerNames = winners.map(email => getPlayerDisplayName(email)).join(', ');
+          showNotification(`Round won by: ${winnerNames}`, 'success');
+        },
+        onBonusPoints: (players: string[]) => {
+          console.log('Bonus points awarded to:', players);
+          const playerNames = players.map(email => getPlayerDisplayName(email)).join(', ');
+          showNotification(`Bonus points awarded to: ${playerNames}`, 'success');
+        },
+        onGameOver: (winners: string[]) => {
+          console.log('Game over, winners:', winners);
+          const winnerNames = winners.map(email => getPlayerDisplayName(email)).join(', ');
+          showNotification(`🎉 Game Over! Winners: ${winnerNames}`, 'success');
         }
       });
     } catch (err) {
@@ -233,7 +392,7 @@
     {#if !gameStatus}
       <GameLobby {players} {userEmail} />
     {:else}
-      <GameTable gameStatus={gameStatus} currentUserEmail={userEmail} currentTurnPlayerEmail={currentTurnPlayerEmail} />
+      <GameTable gameStatus={gameStatus} currentUserEmail={userEmail} currentTurnPlayerEmail={currentTurnPlayerEmail} localPlayerPlayedCards={localPlayerPlayedCards} />
     {/if}
   </div>
 </AuthGuard>

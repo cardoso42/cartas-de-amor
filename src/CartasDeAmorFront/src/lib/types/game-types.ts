@@ -47,6 +47,7 @@ export interface PlayerStatusDto {
   isProtected: boolean;
   score: number;
   cardsInHand: number;
+  playedCards?: CardType[]; // Add played cards for displaying card play history
 }
 
 /**
@@ -91,4 +92,13 @@ export interface JoinRoomResultDto {
   playerId: number;
   hostEmail: string;
   players: string[];
+}
+
+/**
+ * Card play DTO interface
+ */
+export interface CardPlayDto {
+  cardType: CardType;
+  targetPlayerEmail?: string | null;
+  targetCardType?: CardType | null;
 }

@@ -10,6 +10,7 @@
   export let gameStatus: InitialGameStatusDto;
   export let currentUserEmail: string;
   export let currentTurnPlayerEmail: string = '';
+  export let localPlayerPlayedCards: number[] = []; // Played cards for the local player
   
   // Get room ID from URL params
   const roomId = $page.params.roomId;
@@ -33,9 +34,9 @@
   let gameFlowState: 'idle' | 'showing_rules' | 'selecting_player' | 'selecting_card_type' = 'idle';
   let currentStep = 0;
   let totalSteps = 0;
-  
-  // Process the game data into display format
-  $: players = gameStatus ? processGameData(gameStatus, currentUserEmail) : [];
+
+  // Process the game data into display format (depends on currentTurnPlayer for turn indicator)
+  $: players = gameStatus ? processGameData(gameStatus, currentUserEmail, currentTurnPlayer) : [];
   $: totalPlayers = players.length;
   
   // Determine whose turn it is
@@ -45,7 +46,8 @@
   // Set up SignalR handlers
   onMount(() => {
     signalR.registerHandlers({
-      onCardRequirements: handleCardRequirements
+      onCardRequirements: handleCardRequirements,
+      onPlayCardError: handlePlayCardError,
     });
   });
   
@@ -91,6 +93,17 @@
       case CardActionRequirements.SelectCardType: return 'Select Card Type';
       default: return 'Unknown';
     }
+  }
+  
+  // Handle play card error from server
+  function handlePlayCardError(error: string) {
+    console.error('❌ Play card error from server:', error);
+    
+    // Show error to user (you might want to replace this with a proper notification system)
+    alert(`Card play failed: ${error}`);
+    
+    // Reset the card playing state so user can try again
+    resetCardPlayingState();
   }
   
   // Handle modal events
@@ -177,16 +190,35 @@
   }
   
   // Placeholder function for actually playing a card
-  function playCard(cardType: CardType, targetPlayerEmail: string | null, targetCardType: CardType | null) {
+  async function playCard(cardType: CardType, targetPlayerEmail: string | null, targetCardType: CardType | null) {
     console.log('🎮 Playing card:', {
       card: getCardName(cardType),
       target: targetPlayerEmail ? getPlayerDisplayName(targetPlayerEmail) : 'none',
       guessedCard: targetCardType ? getCardName(targetCardType) : 'none'
     });
     
-    // TODO: Implement actual card playing logic here
-    // This would typically involve calling a SignalR method like:
-    // await signalR.playCard(roomId, cardType, targetPlayerEmail, targetCardType);
+    try {
+      // Create the card play DTO
+      const cardPlayDto = {
+        cardType: cardType,
+        targetPlayerEmail: targetPlayerEmail,
+        targetCardType: targetCardType
+      };
+      
+      // Send play card request to server
+      await signalR.playCard(roomId, cardPlayDto);
+      console.log('✅ Card play request sent successfully');
+      
+      // Reset the card playing state after successful send
+      // Note: The actual game state will be updated via SignalR events
+      resetCardPlayingState();
+    } catch (error) {
+      console.error('❌ Error sending card play request:', error);
+      // Let the PlayCardError handler deal with server-side errors
+      // For client-side errors, we could show a different message
+      alert(`Failed to send card play request: ${error}`);
+      resetCardPlayingState();
+    }
   }
   
   function getPlayerDisplayName(email: string): string {
@@ -247,7 +279,7 @@
     return '';
   }
   
-  function processGameData(status: InitialGameStatusDto, userEmail: string) {
+  function processGameData(status: InitialGameStatusDto, userEmail: string, turnPlayer: string) {
     const processedPlayers = [];
     
     // Add local player at position 0 (bottom)
@@ -260,8 +292,9 @@
       tokens: status.score || 0,
       cards: status.yourCards || [],
       cardsInHand: (status.yourCards || []).length,
+      playedCards: localPlayerPlayedCards, // Use the tracked local player played cards
       isProtected: status.isProtected || false,
-      isCurrentTurn: userEmail === currentTurnPlayer
+      isCurrentTurn: userEmail === turnPlayer
     });
     
     // Add other players in order around the table
@@ -275,8 +308,9 @@
         tokens: player.score || 0,
         cards: [], // Other players' cards are hidden
         cardsInHand: player.cardsInHand || 1,
+        playedCards: player.playedCards || [], // Include played cards for display
         isProtected: player.isProtected || false,
-        isCurrentTurn: player.userEmail === currentTurnPlayer
+        isCurrentTurn: player.userEmail === turnPlayer
       });
     });
     
@@ -467,28 +501,33 @@
       {/if}
       
       <!-- Played cards positioned on the table surface in front of each player -->
-      <!-- TODO: Add played cards when implementing card playing functionality -->
-      <!-- {#each players as player, index (player.id)}
+      {#each players as player, index (player.id)}
         {@const position = getPlayerPosition(index, totalPlayers)}
         {@const playedCardDistance = 150}
         {@const playedX = Math.cos((position.angle - 90) * Math.PI / 180) * playedCardDistance}
         {@const playedY = Math.sin((position.angle - 90) * Math.PI / 180) * playedCardDistance}
-        <div 
-          class="played-cards-area"
-          style="
-            left: 50%;
-            top: 50%;
-            transform: translate(calc(-50% + {playedX}px), calc(-50% + {playedY}px));
-          "
-        >
-          <div class="card played-card face-up">
-            <div class="card-content">
-              <div class="card-number">2</div>
-              <div class="card-name">Priest</div>
+        {#if player.playedCards && player.playedCards.length > 0}
+          <div 
+            class="played-cards-area"
+            style="
+              left: 50%;
+              top: 50%;
+              transform: translate(calc(-50% + {playedX}px), calc(-50% + {playedY}px));
+            "
+          >
+            <div class="played-cards">
+              {#each player.playedCards.slice(-3) as playedCard, cardIndex}
+                <div class="card played-card face-up" style="margin-left: {cardIndex * 8}px;">
+                  <div class="card-content">
+                    <div class="card-number">{playedCard}</div>
+                    <div class="card-name">{getCardName(playedCard)}</div>
+                  </div>
+                </div>
+              {/each}
             </div>
           </div>
-        </div>
-      {/each} -->
+        {/if}
+      {/each}
     </div>
   </div>
 </div>
