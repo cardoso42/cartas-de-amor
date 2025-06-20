@@ -424,6 +424,9 @@
           <div class="deck-label">
             {isMyTurn ? 'Draw Card' : 'Deck'}
           </div>
+          <div class="deck-counter">
+            {gameStatus?.cardsRemainingInDeck || 0} cards left
+          </div>
         </div>
       </div>
       
@@ -719,6 +722,17 @@
     font-size: 0.8rem;
     font-weight: bold;
     text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.8);
+  }
+  
+  .deck-counter {
+    color: #ffd700;
+    font-size: 0.7rem;
+    font-weight: bold;
+    text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.8);
+    background: rgba(0, 0, 0, 0.3);
+    padding: 0.2rem 0.5rem;
+    border-radius: 8px;
+    border: 1px solid rgba(255, 215, 0, 0.3);
   }
   
   /* Player positioning around the circular table */

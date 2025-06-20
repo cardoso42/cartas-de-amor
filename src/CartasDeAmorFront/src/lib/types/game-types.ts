@@ -61,6 +61,7 @@ export interface InitialGameStatusDto {
   allPlayersInOrder: string[];
   firstPlayerIndex: number;
   score: number;
+  cardsRemainingInDeck: number;
 }
 
 /**

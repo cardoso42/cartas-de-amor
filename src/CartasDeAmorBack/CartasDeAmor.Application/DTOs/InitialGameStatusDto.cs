@@ -10,4 +10,5 @@ public class InitialGameStatusDto
     public IList<string> AllPlayersInOrder { get; set; } = [];
     public int FirstPlayerIndex { get; set; } = 0;
     public int Score { get; set; } = 0;
+    public int CardsRemainingInDeck { get; set; } = 0;
 }

@@ -45,7 +45,9 @@ public class GameService : IGameService
                 YourCards = player.HoldingCards,
                 AllPlayersInOrder = game.Players.Select(p => p.UserEmail).ToList(),
                 FirstPlayerIndex = game.CurrentPlayerIndex + 1,
-                IsProtected = player.IsProtected()
+                IsProtected = player.IsProtected(),
+                Score = player.Score,
+                CardsRemainingInDeck = game.CardsDeck.Count
             });
         }
 
