@@ -273,6 +273,6 @@
     gap: 4px;
     flex-wrap: wrap;
     justify-content: center;
-    z-index: 5;
+    z-index: 15;
   }
 </style>

@@ -56,14 +56,6 @@
       </div>
     {/each}
   </div>
-  
-  <!-- Expansion indicator -->
-  {#if playedCards.length > usualCardCount && !isHovering}
-    <div class="expansion-hint">
-      <span class="expand-icon">⋯</span>
-      <span class="expand-text">+{playedCards.length - usualCardCount} more</span>
-    </div>
-  {/if}
 </div>
 
 <style>
@@ -190,26 +182,6 @@
     color: #333;
     text-align: center;
     line-height: 1;
-  }
-  
-  .expansion-hint {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 2px;
-    margin-top: 2px;
-    color: rgba(255, 255, 255, 0.8);
-    font-size: 0.6rem;
-    text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.8);
-  }
-  
-  .expand-icon {
-    font-size: 0.8rem;
-    animation: pulse 2s ease-in-out infinite;
-  }
-  
-  .expand-text {
-    font-weight: bold;
   }
   
   @keyframes pulse {
