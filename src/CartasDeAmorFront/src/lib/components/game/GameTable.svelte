@@ -20,6 +20,9 @@
   export let currentUserEmail: string;
   export let currentTurnPlayerEmail: string = '';
   export let localPlayerPlayedCards: number[] = []; // Played cards for the local player
+  // Animation support props
+  export let hiddenCardType: CardType | null = null;
+  export let animatingPlayerEmail: string = '';
   
   // Get room ID from URL params
   const roomId = $page.params.roomId;
@@ -55,6 +58,18 @@
   // Determine whose turn it is
   $: currentTurnPlayer = getCurrentTurnPlayer(gameStatus, currentTurnPlayerEmail);
   $: isMyTurn = currentTurnPlayer === currentUserEmail;
+  
+  // Store references to player areas for card position retrieval
+  let playerAreaComponents: { [key: string]: PlayerArea } = {};
+  
+  // Export function to get card position for animations
+  export function getPlayerCardPosition(playerEmail: string, cardType: CardType): { x: number; y: number; width: number; height: number } | null {
+    const playerArea = playerAreaComponents[playerEmail];
+    if (playerArea) {
+      return playerArea.getCardPosition(cardType);
+    }
+    return null;
+  }
   
   // Set up SignalR handlers
   onMount(() => {
@@ -322,6 +337,7 @@
       {@const isValidTarget = gameFlowState === 'selecting_player' && cardRequirements && cardRequirements.possibleTargets.includes(player.email)}
       {@const isSelectedTarget = selectedTargetEmail === player.email}
       <PlayerArea 
+        bind:this={playerAreaComponents[player.email]}
         {player}
         {position}
         isValidTarget={!!isValidTarget}
@@ -329,6 +345,8 @@
         {isMyTurn}
         {selectedCard}
         {gameFlowState}
+        {hiddenCardType}
+        {animatingPlayerEmail}
         on:playerClick={(e) => handlePlayerClick(e.detail.playerEmail)}
         on:cardClick={(e) => handleCardClick(e.detail.cardType)}
       />

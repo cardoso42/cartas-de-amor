@@ -11,7 +11,8 @@
   import type { 
     InitialGameStatusDto, 
     PrivatePlayerUpdateDto, 
-    PublicPlayerUpdateDto 
+    PublicPlayerUpdateDto,
+    CardType
   } from '$lib/types/game-types';
   import { getCardName } from '$lib/utils/cardUtils';
 
@@ -41,9 +42,26 @@
   // Track recent draw events to prevent duplicate processing
   let recentDrawEvents = new Set<string>();
 
+  // Show card animation state
+  let showCardAnimationVisible = false;
+  let showCardData: { 
+    targetPlayerEmail: string;
+    targetPlayerName: string;
+    cardType: CardType;
+    sourcePosition: { x: number; y: number; width?: number; height?: number };
+  } | null = null;
+  
+  // Animation control
+  let hiddenCardType: CardType | null = null;
+  let animatingPlayerEmail: string = '';
+  
+  // Reference to GameTable for getting card positions
+  let gameTableComponent: any;
+
   // Get initial game data from gameStore
   import { get as getStore } from 'svelte/store';
 	import GameTable from '$lib/components/game/GameTable.svelte';
+  import ShowCardAnimation from '$lib/components/game/ShowCardAnimation.svelte';
   const initialGameData = getStore(gameStore);
   if (initialGameData && initialGameData.roomId === roomId) {
     roomName = initialGameData.roomName || '';
@@ -93,6 +111,38 @@
   function showNotification(message: string, type: 'info' | 'success' | 'warning' = 'info') {
     // For now, just log to console. Could be enhanced with a proper notification system
     console.log(`[${type.toUpperCase()}] ${message}`);
+  }
+  
+  // Function to get player position on screen for animations
+  function getPlayerScreenPosition(playerEmail: string): { x: number; y: number } {
+    if (!gameStatus) {
+      return { x: window.innerWidth / 2, y: window.innerHeight / 2 };
+    }
+    
+    // Find player in the game
+    const allPlayers = gameStatus.allPlayersInOrder || [];
+    const playerIndex = allPlayers.findIndex(email => email === playerEmail);
+    
+    if (playerIndex === -1) {
+      return { x: window.innerWidth / 2, y: window.innerHeight / 2 };
+    }
+    
+    // Calculate position based on circular table layout
+    const totalPlayers = allPlayers.length;
+    const baseAngle = 180; // Start at bottom (180 degrees)
+    const angleStep = 360 / totalPlayers;
+    const angle = (baseAngle + (playerIndex * angleStep)) % 360;
+    const distance = 320;
+    
+    // Convert to screen coordinates
+    const centerX = window.innerWidth / 2;
+    const centerY = window.innerHeight / 2;
+    const radians = (angle - 90) * Math.PI / 180;
+    
+    return {
+      x: centerX + Math.cos(radians) * distance,
+      y: centerY + Math.sin(radians) * distance
+    };
   }
   
   function getPlayerDisplayName(email: string): string {
@@ -312,9 +362,52 @@
           console.log('PeekCard event:', data);
           showNotification(`${getPlayerDisplayName(data.invoker)} looked at ${getPlayerDisplayName(data.target)}'s card`, 'info');
         },
-        onShowCard: (data: { invoker: string; target: string, card: number }) => {
+        onShowCard: (data: { invoker: string; target: string, cardType: number }) => {
           console.log('ShowCard event:', data);
-          showNotification(`${getPlayerDisplayName(data.invoker)} looked at ${getPlayerDisplayName(data.target)}'s card: ${data.card}`, 'info');
+          
+          // Only show animation if this is relevant to the current user
+          // (i.e., the current user is the one who gets to see the card)
+          if (data.invoker === userEmail) {
+            const targetPlayerName = getPlayerDisplayName(data.target);
+            
+            // Get specific card position from GameTable
+            let sourcePosition = { x: window.innerWidth / 2, y: window.innerHeight / 2 };
+            
+            if (gameTableComponent) {
+              const cardPosition = gameTableComponent.getPlayerCardPosition(data.target, data.cardType);
+              if (cardPosition) {
+                sourcePosition = cardPosition;
+              } else {
+                // Fallback to general player position
+                sourcePosition = getPlayerScreenPosition(data.target);
+              }
+            } else {
+              // Fallback to general player position
+              sourcePosition = getPlayerScreenPosition(data.target);
+            }
+            
+            // Debug logging
+            console.log('Target player email:', data.target);
+            console.log('Target player name:', targetPlayerName);
+            console.log('Card type:', data.cardType);
+            console.log('Source position:', sourcePosition);
+            
+            // Set up animation data
+            showCardData = {
+              targetPlayerEmail: data.target,
+              targetPlayerName: targetPlayerName,
+              cardType: data.cardType as CardType,
+              sourcePosition
+            };
+            
+            // Hide the card in the target player's hand and start animation
+            hiddenCardType = data.cardType as CardType;
+            animatingPlayerEmail = data.target;
+            showCardAnimationVisible = true;
+          } else {
+            // For other players, just show the regular notification
+            showNotification(`${getPlayerDisplayName(data.invoker)} looked at ${getPlayerDisplayName(data.target)}'s card`, 'info');
+          }
         },
         onCompareCards: (data: { invoker: string; target: string }) => {
           console.log('CompareCards event:', data);
@@ -482,7 +575,32 @@
     {#if !gameStatus}
       <GameLobby {players} {userEmail} />
     {:else}
-      <GameTable gameStatus={gameStatus} currentUserEmail={userEmail} currentTurnPlayerEmail={currentTurnPlayerEmail} localPlayerPlayedCards={localPlayerPlayedCards} />
+      <GameTable 
+        bind:this={gameTableComponent}
+        gameStatus={gameStatus} 
+        currentUserEmail={userEmail} 
+        currentTurnPlayerEmail={currentTurnPlayerEmail} 
+        localPlayerPlayedCards={localPlayerPlayedCards}
+        {hiddenCardType}
+        {animatingPlayerEmail}
+      />
+    {/if}
+
+    <!-- Show Card Animation -->
+    {#if showCardAnimationVisible && showCardData}
+      <ShowCardAnimation
+        targetPlayerName={showCardData.targetPlayerName}
+        cardType={showCardData.cardType}
+        sourcePosition={showCardData.sourcePosition}
+        isVisible={showCardAnimationVisible}
+        on:animationComplete={() => {
+          showCardAnimationVisible = false;
+          showCardData = null;
+          // Clean up card hiding state
+          hiddenCardType = null;
+          animatingPlayerEmail = '';
+        }}
+      />
     {/if}
   </div>
 </AuthGuard>

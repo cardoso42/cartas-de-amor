@@ -50,7 +50,7 @@ interface SignalRHandlers {
   onPlayCard?: (data: { player: string; cardType: number }) => void;
   onGuessCard?: (data: { invoker: string; cardType: number; target: string }) => void;
   onPeekCard?: (data: { invoker: string; target: string }) => void;
-  onShowCard?: (data: { invoker: string; target: string, card: number }) => void;
+  onShowCard?: (data: { invoker: string; target: string, cardType: number }) => void;
   onCompareCards?: (data: { invoker: string; target: string }) => void;
   onComparisonTie?: (data: { invoker: string; target: string }) => void;
   onDiscardCard?: (data: { target: string; cardType: number }) => void;
@@ -160,7 +160,7 @@ function attachEventHandlers(connection: SignalR.HubConnection) {
   connection.on('PlayCard', (data: { player: string; cardType: number }) => registeredHandlers.onPlayCard?.(data));
   connection.on('GuessCard', (data: { invoker: string; cardType: number; target: string }) => registeredHandlers.onGuessCard?.(data));
   connection.on('PeekCard', (data: { invoker: string; target: string }) => registeredHandlers.onPeekCard?.(data));
-  connection.on('ShowCard', (data: { invoker: string; target: string, card: number }) => registeredHandlers.onShowCard?.(data));
+  connection.on('ShowCard', (data: { invoker: string; target: string, cardType: number }) => registeredHandlers.onShowCard?.(data));
   connection.on('CompareCards', (data: { invoker: string; target: string }) => registeredHandlers.onCompareCards?.(data));
   connection.on('ComparisonTie', (data: { invoker: string; target: string }) => registeredHandlers.onComparisonTie?.(data));
   connection.on('DiscardCard', (data: { target: string; cardType: number }) => registeredHandlers.onDiscardCard?.(data));

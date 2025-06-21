@@ -25,6 +25,9 @@
   export let isMyTurn: boolean = false;
   export let selectedCard: CardType | null = null;
   export let gameFlowState: 'idle' | 'showing_rules' | 'selecting_player' | 'selecting_card_type' = 'idle';
+  // Animation support props
+  export let hiddenCardType: CardType | null = null;
+  export let animatingPlayerEmail: string = '';
 
   // Calculate positions for player area and played cards
   $: playerX = Math.cos((position.angle - 90) * Math.PI / 180) * position.distance;
@@ -37,7 +40,10 @@
   const dispatch = createEventDispatcher<{
     playerClick: { playerEmail: string };
     cardClick: { cardType: CardType };
+    cardPosition: { playerEmail: string; cardType: CardType; position: { x: number; y: number; width: number; height: number } };
   }>();
+
+  let playerHandComponent: PlayerHand;
 
   function handlePlayerClick() {
     dispatch('playerClick', { playerEmail: player.email });
@@ -45,6 +51,14 @@
 
   function handleCardClick(event: CustomEvent<{ cardType: CardType }>) {
     dispatch('cardClick', { cardType: event.detail.cardType });
+  }
+
+  // Export function to get card position for animations
+  export function getCardPosition(cardType: CardType): { x: number; y: number; width: number; height: number } | null {
+    if (playerHandComponent) {
+      return playerHandComponent.getCardPosition(cardType);
+    }
+    return null;
   }
 </script>
 
@@ -90,11 +104,14 @@
   
   <!-- Player's hand -->
   <PlayerHand 
+    bind:this={playerHandComponent}
     cards={player.cards}
     isLocalPlayer={player.isLocalPlayer}
     cardsInHand={player.cardsInHand}
     {isMyTurn}
     {selectedCard}
+    {hiddenCardType}
+    {animatingPlayerEmail}
     on:cardClick={handleCardClick}
   />
 </div>

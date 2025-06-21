@@ -10,14 +10,51 @@
   export let cardsInHand: number = 1;
   export let isMyTurn: boolean = false;
   export let selectedCard: CardType | null = null;
+  // New props for animation support
+  export let hiddenCardType: CardType | null = null; // Card type to hide during animation
+  export let animatingPlayerEmail: string = ''; // Player whose card is being animated
 
   // Events
   const dispatch = createEventDispatcher<{
     cardClick: { cardType: CardType };
+    cardPosition: { cardType: CardType; position: { x: number; y: number; width: number; height: number } };
   }>();
 
   function handleCardClick(cardType: CardType) {
     dispatch('cardClick', { cardType });
+  }
+
+  // Function to get the position of a specific card element
+  export function getCardPosition(cardType: CardType): { x: number; y: number; width: number; height: number } | null {
+    if (isLocalPlayer) {
+      // For local player, find the actual card element
+      const cardElements = document.querySelectorAll('.player-hand .card.face-up');
+      const cardIndex = cards.findIndex(card => card === cardType);
+      if (cardIndex >= 0 && cardIndex < cardElements.length) {
+        const element = cardElements[cardIndex] as HTMLElement;
+        const rect = element.getBoundingClientRect();
+        return {
+          x: rect.left + rect.width / 2,
+          y: rect.top + rect.height / 2,
+          width: rect.width,
+          height: rect.height
+        };
+      }
+    } else {
+      // For other players, get position of the first face-down card
+      const cardElements = document.querySelectorAll('.player-hand .card.face-down');
+      if (cardElements.length > 0) {
+        const element = cardElements[0] as HTMLElement;
+        const rect = element.getBoundingClientRect();
+        return {
+          x: rect.left + rect.width / 2,
+          y: rect.top + rect.height / 2,
+          width: rect.width,
+          height: rect.height
+        };
+      }
+    }
+    return null;
   }
 </script>
 
@@ -29,6 +66,7 @@
         class="card player-card face-up" 
         class:clickable={isMyTurn}
         class:selected={selectedCard === card}
+        class:hidden={hiddenCardType === card && animatingPlayerEmail}
         on:click={() => handleCardClick(card)}
         on:keydown={(e) => e.key === 'Enter' && handleCardClick(card)}
         role="button"
@@ -44,7 +82,10 @@
   {:else}
     <!-- Other players' cards are face down -->
     {#each Array(cardsInHand || 1) as _, i}
-      <div class="card player-card face-down"></div>
+      <div 
+        class="card player-card face-down"
+        class:hidden={hiddenCardType && animatingPlayerEmail && i === 0}
+      ></div>
     {/each}
   {/if}
 </div>
@@ -61,7 +102,12 @@
     border-radius: 6px;
     border: 2px solid #333;
     box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
-    transition: transform 0.2s ease;
+    transition: transform 0.2s ease, opacity 0.2s ease;
+  }
+
+  .card.hidden {
+    opacity: 0;
+    pointer-events: none;
   }
   
   .card.clickable {
