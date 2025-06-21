@@ -11,8 +11,7 @@
   import { getCardName } from '$lib/utils/cardUtils';
   import { get as getStore } from 'svelte/store';
   import GameTable from '$lib/components/game/GameTable.svelte';
-  import ShowCardAnimation from '$lib/components/game/ShowCardAnimation.svelte';
-  import EliminationAnimation from '$lib/components/game/EliminationAnimation.svelte';
+  import AnimationManager from '$lib/components/game/AnimationManager.svelte';
   import type { 
     InitialGameStatusDto, 
     PrivatePlayerUpdateDto, 
@@ -46,25 +45,15 @@
   // Track recent draw events to prevent duplicate processing
   let recentDrawEvents = new Set<string>();
 
-  // Show card animation state
-  let showCardAnimationVisible = false;
-  let showCardData: { 
-    targetPlayerEmail: string;
-    targetPlayerName: string;
-    cardType: CardType;
-    sourcePosition: { x: number; y: number; width?: number; height?: number };
-  } | null = null;
-  
   // Animation control
   let hiddenCardType: CardType | null = null;
   let animatingPlayerEmail: string = '';
   
-  // Elimination animation state
-  let eliminationAnimationVisible = false;
-  let eliminationPlayerName = '';
-  
   // Reference to GameTable for getting card positions
   let gameTableComponent: any;
+  
+  // Animation manager reference
+  let animationManager: AnimationManager;
 
   // Get initial game data from gameStore
   const initialGameData = getStore(gameStore);
@@ -391,24 +380,16 @@
               sourcePosition = getPlayerScreenPosition(data.target);
             }
             
-            // Debug logging
-            console.log('Target player email:', data.target);
-            console.log('Target player name:', targetPlayerName);
-            console.log('Card type:', data.cardType);
-            console.log('Source position:', sourcePosition);
+            // Hide the card in the target player's hand
+            hiddenCardType = data.cardType as CardType;
+            animatingPlayerEmail = data.target;
             
-            // Set up animation data
-            showCardData = {
-              targetPlayerEmail: data.target,
+            // Queue show card animation using animation manager
+            animationManager.queueShowCardAnimation({
               targetPlayerName: targetPlayerName,
               cardType: data.cardType as CardType,
               sourcePosition
-            };
-            
-            // Hide the card in the target player's hand and start animation
-            hiddenCardType = data.cardType as CardType;
-            animatingPlayerEmail = data.target;
-            showCardAnimationVisible = true;
+            });
           } else {
             // For other players, just show the regular notification
             showNotification(`${getPlayerDisplayName(data.invoker)} looked at ${getPlayerDisplayName(data.target)}'s card`, 'info');
@@ -473,12 +454,13 @@
         onPlayerEliminated: (data: { player: string }) => {
           console.log('PlayerEliminated event:', data);
           
-          // Get player display name and position for animation
+          // Get player display name for animation
           const eliminatedPlayerName = getPlayerDisplayName(data.player);
           
-          // Set up elimination animation
-          eliminationPlayerName = eliminatedPlayerName;
-          eliminationAnimationVisible = true;
+          // Queue elimination animation using animation manager
+          animationManager.queueEliminationAnimation({
+            playerName: eliminatedPlayerName
+          });
           
           // Show notification after a short delay to let animation play
           setTimeout(() => {
@@ -602,34 +584,16 @@
       />
     {/if}
 
-    <!-- Show Card Animation -->
-    {#if showCardAnimationVisible && showCardData}
-      <ShowCardAnimation
-        targetPlayerName={showCardData.targetPlayerName}
-        cardType={showCardData.cardType}
-        sourcePosition={showCardData.sourcePosition}
-        isVisible={showCardAnimationVisible}
-        on:animationComplete={() => {
-          showCardAnimationVisible = false;
-          showCardData = null;
-          // Clean up card hiding state
+    <!-- Animation Manager - handles all animations centrally -->
+    <AnimationManager 
+      bind:this={animationManager}
+      on:animationComplete={(event) => {
+        if (event.detail.type === 'showCard') {
           hiddenCardType = null;
           animatingPlayerEmail = '';
-        }}
-      />
-    {/if}
-
-    <!-- Elimination Animation -->
-    {#if eliminationAnimationVisible}
-      <EliminationAnimation
-        playerName={eliminationPlayerName}
-        isVisible={eliminationAnimationVisible}
-        on:animationComplete={() => {
-          eliminationAnimationVisible = false;
-          eliminationPlayerName = '';
-        }}
-      />
-    {/if}
+        }
+      }}
+    />
   </div>
 </AuthGuard>
 
