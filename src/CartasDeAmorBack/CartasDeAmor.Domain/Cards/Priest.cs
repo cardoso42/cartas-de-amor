@@ -33,7 +33,7 @@ public class Priest : Card
             SpecialMessages =
             [
                 MessageFactory.PlayCard(invokerPlayer.UserEmail, CardType),
-                MessageFactory.PeekCard(targetPlayer.UserEmail, invokerPlayer.UserEmail),
+                MessageFactory.PeekCard(invokerPlayer.UserEmail, targetPlayer.UserEmail),
                 MessageFactory.ShowCard(invokerPlayer.UserEmail, targetPlayer.UserEmail, targetPlayer.HoldingCards.FirstOrDefault())
             ]
         };
