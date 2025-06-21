@@ -1,6 +1,7 @@
 <script lang="ts">
   import { CardType, CardActionRequirements, type CardRequirementsDto } from '$lib/types/game-types';
   import { createEventDispatcher } from 'svelte';
+  import { getCardName } from '$lib/utils/cardUtils';
   
   // Simple interface for player display context
   interface PlayerDisplayInfo {
@@ -20,22 +21,6 @@
   
   function close() {
     dispatch('close');
-  }
-  
-  function getCardName(cardType: CardType): string {
-    const cardNames = {
-      [CardType.Spy]: 'Spy',
-      [CardType.Guard]: 'Guard',
-      [CardType.Priest]: 'Priest', 
-      [CardType.Baron]: 'Baron',
-      [CardType.Handmaid]: 'Handmaid',
-      [CardType.Prince]: 'Prince',
-      [CardType.Chanceller]: 'Chancellor',
-      [CardType.King]: 'King',
-      [CardType.Countess]: 'Countess',
-      [CardType.Princess]: 'Princess'
-    };
-    return cardNames[cardType] || 'Unknown';
   }
   
   function handleKeydown(event: KeyboardEvent) {

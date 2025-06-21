@@ -11,9 +11,9 @@
   import type { 
     InitialGameStatusDto, 
     PrivatePlayerUpdateDto, 
-    CardActionResultDto,
     PublicPlayerUpdateDto 
   } from '$lib/types/game-types';
+  import { getCardName } from '$lib/utils/cardUtils';
 
   // Get room ID from URL params
   const roomId = $page.data.roomId;
@@ -117,28 +117,6 @@
     
     // Fall back to the part before @ in the email
     return email.split('@')[0];
-  }
-  
-  function getCardName(cardType: number): string {
-    // Handle undefined or null cardType
-    if (cardType === undefined || cardType === null) {
-      console.warn('getCardName called with undefined/null cardType');
-      return 'Unknown Card';
-    }
-    
-    const cardNames = {
-      0: 'Spy',
-      1: 'Guard',
-      2: 'Priest',
-      3: 'Baron',
-      4: 'Servant',
-      5: 'Prince',
-      6: 'Chancellor',
-      7: 'King',
-      8: 'Countess',
-      9: 'Princess'
-    };
-    return cardNames[cardType as keyof typeof cardNames] || `Card ${cardType}`;
   }
   
   // Handle card played event - triggered when a card is initially played

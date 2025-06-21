@@ -1,9 +1,9 @@
 <script lang="ts">
   import type { CardType } from '$lib/types/game-types';
+  import { getCardName } from '$lib/utils/cardUtils';
   
   export let playedCards: CardType[] = [];
   export let playerName: string = '';
-  export let getCardName: (cardType: CardType) => string;
 
   // TODO: When playing a card against a protected target, the card is not shown in the played cards FIX IT
 

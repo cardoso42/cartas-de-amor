@@ -1,6 +1,7 @@
 <script lang="ts">
   import { createEventDispatcher } from 'svelte';
   import { CardType } from '$lib/types/game-types';
+  import { getCardName } from '$lib/utils/cardUtils';
   
   const dispatch = createEventDispatcher<{
     close: void;
@@ -29,22 +30,6 @@
   // Update sortable cards when a card is selected to keep
   $: if (selectedKeepCard !== null && selectedKeepCardIndex !== null) {
     sortableCards = cards.filter((card, index) => index !== selectedKeepCardIndex);
-  }
-  
-  function getCardName(cardType: CardType): string {
-    const cardNames = {
-      [CardType.Spy]: 'Spy',
-      [CardType.Guard]: 'Guard',
-      [CardType.Priest]: 'Priest', 
-      [CardType.Baron]: 'Baron',
-      [CardType.Handmaid]: 'Handmaid',
-      [CardType.Prince]: 'Prince',
-      [CardType.Chanceller]: 'Chancellor',
-      [CardType.King]: 'King',
-      [CardType.Countess]: 'Countess',
-      [CardType.Princess]: 'Princess'
-    };
-    return cardNames[cardType] || 'Unknown';
   }
   
   function close() {
