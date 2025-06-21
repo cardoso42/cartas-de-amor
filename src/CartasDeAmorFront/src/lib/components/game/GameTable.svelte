@@ -407,7 +407,6 @@
       <div class="deck-area">
         <div 
           class="card-deck" 
-          class:clickable={isMyTurn}
           class:disabled={!isMyTurn}
           on:click={handleDrawCard}
           on:keydown={(e) => e.key === 'Enter' && handleDrawCard()}
@@ -415,7 +414,10 @@
           tabindex={isMyTurn ? 0 : undefined}
           title={isMyTurn ? 'Click to draw a card' : 'Wait for your turn to draw a card'}
         >
-          <div class="deck-cards">
+          <div 
+            class="deck-cards"
+            class:clickable={isMyTurn}
+          >
             <!-- Deck cards stack -->
             <div class="deck-card"></div>
             <div class="deck-card"></div>
@@ -660,19 +662,6 @@
     transition: transform 0.2s ease, box-shadow 0.2s ease;
   }
   
-  .card-deck.clickable {
-    cursor: pointer;
-  }
-  
-  .card-deck.clickable:hover {
-    transform: scale(1.05);
-    box-shadow: 0 0 15px rgba(255, 215, 0, 0.8);
-  }
-  
-  .card-deck.clickable:hover .deck-cards {
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
-  }
-  
   .card-deck.disabled {
     cursor: not-allowed;
     opacity: 0.7;
@@ -681,6 +670,15 @@
   .card-deck:focus {
     outline: 2px solid #ffd700;
     outline-offset: 2px;
+  }
+
+  .deck-cards.clickable {
+    cursor: pointer;
+  }
+  
+  .deck-cards.clickable:hover {
+    transform: scale(1.05);
+    box-shadow: 0 0 15px rgba(255, 215, 0, 0.8);
   }
   
   .deck-cards {
@@ -753,6 +751,9 @@
   
   .player-area.clickable-target:hover {
     transform: scale(1.05);
+  }
+    
+  .player-area.clickable-target:hover .player-hand .card {
     box-shadow: 0 0 15px rgba(0, 255, 0, 0.6);
   }
   
