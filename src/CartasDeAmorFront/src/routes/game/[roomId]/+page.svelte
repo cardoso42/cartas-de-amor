@@ -349,6 +349,34 @@
         onDiscardCard: (data: { target: string; cardType: number }) => {
           console.log('DiscardCard event:', data);
           showNotification(`${getPlayerDisplayName(data.target)} discarded ${getCardName(data.cardType)}`, 'info');
+          
+          // Add the discarded card to the player's played cards display
+          if (gameStatus) {
+            const playerEmail = data.target;
+            const discardedCard = data.cardType;
+            
+            if (playerEmail === userEmail) {
+              // Add to local player's played cards
+              localPlayerPlayedCards = [...localPlayerPlayedCards, discardedCard];
+            } else {
+              // Update other players' played cards
+              const otherPlayers = gameStatus.otherPlayersPublicData || [];
+              const playerToUpdate = otherPlayers.find(p => p.userEmail === playerEmail);
+              
+              if (playerToUpdate) {
+                // Add the discarded card to their played cards list
+                if (!playerToUpdate.playedCards) {
+                  playerToUpdate.playedCards = [];
+                }
+                playerToUpdate.playedCards.push(discardedCard);
+                
+                console.log(`Added discarded card to ${getPlayerDisplayName(playerEmail)}: ${getCardName(discardedCard)}`);
+              }
+            }
+            
+            // Trigger reactivity by creating a new gameStatus object
+            gameStatus = { ...gameStatus };
+          }
         },
         onDrawCard: (data: { player: string }) => {
           console.log('DrawCard event:', data);
