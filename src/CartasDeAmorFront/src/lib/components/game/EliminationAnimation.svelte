@@ -11,6 +11,7 @@
 
   let animationContainer: HTMLElement;
   let animationComplete = false;
+  let hasStarted = false;
 
   // Animation phases
   let phase: 'shake' | 'crack' | 'shatter' | 'fade' = 'shake';
@@ -22,6 +23,11 @@
   });
 
   async function startAnimation() {
+    if (hasStarted) {
+      return; // Prevent duplicate starts
+    }
+    hasStarted = true;
+    
     // Phase 1: Shake the warning circle (0.8s)
     phase = 'shake';
     
@@ -43,11 +49,13 @@
     await new Promise(resolve => setTimeout(resolve, 2800));
     
     // Mark animation as complete and dispatch event
-    animationComplete = true;
-    dispatch('animationComplete');
+    if (!animationComplete) {
+      animationComplete = true;
+      dispatch('animationComplete');
+    }
   }
 
-  $: if (isVisible && !animationComplete) {
+  $: if (isVisible && !animationComplete && !hasStarted) {
     startAnimation();
   }
 </script>

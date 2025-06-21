@@ -5,8 +5,7 @@
   // Animation types
   export interface AnimationRequest {
     id: string;
-    type: 'elimination' | 'showCard' | 'cardPlay' | 'custom';
-    priority: number; // Higher priority animations interrupt lower priority ones
+    type: 'elimination' | 'showCard' | 'guessCard' | 'cardPlay' | 'custom';
     data: any;
   }
 
@@ -19,12 +18,19 @@
     cardType: CardType;
     sourcePosition: { x: number; y: number; width?: number; height?: number };
   }
+
+  export interface GuessCardAnimationData {
+    invokerName: string;
+    targetName: string;
+    guessedCardType: CardType;
+  }
 </script>
 
 <script lang="ts">
-  import { createEventDispatcher, onDestroy } from 'svelte';
+  import { createEventDispatcher, onDestroy, tick } from 'svelte';
   import EliminationAnimation from './EliminationAnimation.svelte';
   import ShowCardAnimation from './ShowCardAnimation.svelte';
+  import GuessCardAnimation from './GuessCardAnimation.svelte';
 
   const dispatch = createEventDispatcher<{
     animationComplete: { id: string; type: string };
@@ -36,58 +42,26 @@
   let isAnimating = false;
   let animationTimeout: number | null = null;
 
-  // Animation priorities (higher = more important)
-  const ANIMATION_PRIORITIES = {
-    elimination: 100,
-    showCard: 80,
-    cardPlay: 60,
-    custom: 40
-  } as const;
-
   // Maximum animation duration as fallback (in ms)
   const MAX_ANIMATION_DURATION = 10000;
 
   /**
    * Add an animation to the queue
    */
-  export function queueAnimation(animationRequest: Omit<AnimationRequest, 'id' | 'priority'>) {
+  export function queueAnimation(animationRequest: Omit<AnimationRequest, 'id'>) {
     const id = generateAnimationId();
-    const priority = ANIMATION_PRIORITIES[animationRequest.type] || ANIMATION_PRIORITIES.custom;
     
     const animation: AnimationRequest = {
       id,
-      priority,
       ...animationRequest
     };
 
-    console.log(`🎬 Queuing animation:`, animation);
+    // Add to end of queue (FIFO - first in, first out)
+    animationQueue.push(animation);
 
-    // Check if we should interrupt current animation
-    if (currentAnimation && animation.priority > currentAnimation.priority) {
-      console.log(`⚡ Interrupting lower priority animation (${currentAnimation.priority} -> ${animation.priority})`);
-      stopCurrentAnimation();
-      
-      // Add current animation back to queue if it wasn't completed
-      if (currentAnimation) {
-        animationQueue.unshift(currentAnimation);
-      }
-      
-      // Start the high priority animation immediately
-      currentAnimation = animation;
-      startAnimation(animation);
-    } else {
-      // Add to queue based on priority
-      const insertIndex = animationQueue.findIndex(a => a.priority < animation.priority);
-      if (insertIndex === -1) {
-        animationQueue.push(animation);
-      } else {
-        animationQueue.splice(insertIndex, 0, animation);
-      }
-
-      // Start animation if nothing is currently playing
-      if (!isAnimating) {
-        processQueue();
-      }
+    // Start animation if nothing is currently playing
+    if (!isAnimating) {
+      processQueue();
     }
 
     return id;
@@ -133,7 +107,7 @@
       isAnimating,
       currentAnimation: currentAnimation?.id || null,
       queueLength: animationQueue.length,
-      queue: animationQueue.map(a => ({ id: a.id, type: a.type, priority: a.priority }))
+      queue: animationQueue.map(a => ({ id: a.id, type: a.type }))
     };
   }
 
@@ -142,19 +116,23 @@
     return `anim_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
   }
 
-  function processQueue() {
+  async function processQueue() {
     if (isAnimating || animationQueue.length === 0) {
       return;
     }
 
+    // Set isAnimating IMMEDIATELY to prevent race conditions
+    isAnimating = true;
+    
     currentAnimation = animationQueue.shift()!;
+    
+    // Force a tick to ensure Svelte has updated the DOM
+    await tick();
+    
     startAnimation(currentAnimation);
   }
 
   function startAnimation(animation: AnimationRequest) {
-    console.log(`▶️ Starting animation:`, animation);
-    isAnimating = true;
-
     // Set a fallback timeout to prevent stuck animations
     animationTimeout = window.setTimeout(() => {
       console.warn(`⏰ Animation timed out: ${animation.id}`);
@@ -169,20 +147,21 @@
     }
     
     if (currentAnimation) {
-      console.log(`⏹️ Stopping animation: ${currentAnimation.id}`);
       isAnimating = false;
       currentAnimation = null;
     }
   }
 
-  function handleAnimationComplete(animationId: string) {
+  async function handleAnimationComplete(animationId: string) {
+    // Guard against empty or invalid animation IDs
+    if (!animationId) {
+      return;
+    }
+    
     if (currentAnimation?.id !== animationId) {
-      console.warn(`⚠️ Received completion for non-current animation: ${animationId}`);
       return;
     }
 
-    console.log(`✅ Animation completed: ${animationId}`);
-    
     const completedAnimation = currentAnimation;
     stopCurrentAnimation();
     
@@ -193,6 +172,7 @@
     });
 
     // Process next animation in queue
+    await tick();
     processQueue();
   }
 
@@ -217,6 +197,13 @@
       data
     });
   }
+
+  export function queueGuessCardAnimation(data: GuessCardAnimationData): string {
+    return queueAnimation({
+      type: 'guessCard',
+      data
+    });
+  }
 </script>
 
 <!-- Render current animation based on type -->
@@ -233,6 +220,14 @@
         targetPlayerName={currentAnimation.data.targetPlayerName}
         cardType={currentAnimation.data.cardType}
         sourcePosition={currentAnimation.data.sourcePosition}
+        isVisible={true}
+        on:animationComplete={() => handleAnimationComplete(currentAnimation?.id || '')}
+      />
+    {:else if currentAnimation.type === 'guessCard'}
+      <GuessCardAnimation
+        invokerName={currentAnimation.data.invokerName}
+        targetName={currentAnimation.data.targetName}
+        guessedCardType={currentAnimation.data.guessedCardType}
         isVisible={true}
         on:animationComplete={() => handleAnimationComplete(currentAnimation?.id || '')}
       />
@@ -256,7 +251,7 @@
       
       {#if animationQueue.length > 0}
         <div class="debug-queue">
-          Queue: {animationQueue.map(a => `${a.type}(${a.priority})`).join(', ')}
+          Queue: {animationQueue.map(a => a.type).join(', ')}
         </div>
       {/if}
     </div>

@@ -15,6 +15,7 @@
 
   let animationContainer: HTMLElement;
   let animationComplete = false;
+  let hasStarted = false;
 
   // Animation phases
   let phase: 'moving' | 'flipping' | 'revealed' | 'fading' = 'moving';
@@ -26,6 +27,9 @@
   });
 
   async function startAnimation() {
+    if (hasStarted) return; // Prevent duplicate starts
+    hasStarted = true;
+    
     // Phase 1: Move to center (0.5s)
     phase = 'moving';
     
@@ -47,11 +51,13 @@
     await new Promise(resolve => setTimeout(resolve, 250));
     
     // Mark animation as complete and dispatch event
-    animationComplete = true;
-    dispatch('animationComplete');
+    if (!animationComplete) {
+      animationComplete = true;
+      dispatch('animationComplete');
+    }
   }
 
-  $: if (isVisible && !animationComplete) {
+  $: if (isVisible && !animationComplete && !hasStarted) {
     startAnimation();
   }
 </script>

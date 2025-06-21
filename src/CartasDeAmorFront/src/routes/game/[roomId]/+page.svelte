@@ -350,7 +350,22 @@
             return;
           }
           
-          showNotification(`${getPlayerDisplayName(data.invoker)} guessed ${getPlayerDisplayName(data.target)} has ${getCardName(data.cardType)}`, 'info');
+          // Get display names for the animation
+          const invokerName = getPlayerDisplayName(data.invoker);
+          const targetName = getPlayerDisplayName(data.target);
+          const guessedCardType = data.cardType as CardType;
+          
+          // Queue guess card animation using animation manager
+          animationManager.queueGuessCardAnimation({
+            invokerName,
+            targetName,
+            guessedCardType
+          });
+          
+          // Show notification after a short delay to let animation play
+          setTimeout(() => {
+            showNotification(`${invokerName} guessed ${targetName} has ${getCardName(data.cardType)}`, 'info');
+          }, 2000);
         },
         onPeekCard: (data: { invoker: string; target: string }) => {
           console.log('PeekCard event:', data);
