@@ -23,6 +23,7 @@
   // Animation support props
   export let hiddenCardType: CardType | null = null;
   export let animatingPlayerEmail: string = '';
+  export let isAnimationPlaying: boolean = false;
   
   // Get room ID from URL params
   const roomId = $page.params.roomId;
@@ -208,6 +209,12 @@
   
   // Handle clicking on players for targeting
   function handlePlayerClick(playerEmail: string) {
+    // Prevent interactions during animations
+    if (isAnimationPlaying) {
+      console.log('🚫 Player click blocked: animation in progress');
+      return;
+    }
+    
     if (gameFlowState !== 'selecting_player' || !cardRequirements) {
       return; // Not in player selection mode
     }
@@ -228,6 +235,12 @@
   
   // Handle clicking on card types for selection
   function handleCardTypeClick(cardType: CardType) {
+    // Prevent interactions during animations
+    if (isAnimationPlaying) {
+      console.log('🚫 Card type click blocked: animation in progress');
+      return;
+    }
+    
     if (gameFlowState !== 'selecting_card_type' || !cardRequirements) {
       return; // Not in card type selection mode
     }
@@ -290,6 +303,12 @@
 
   // Handle clicking on a player's card
   async function handleCardClick(cardType: CardType) {
+    // Prevent interactions during animations
+    if (isAnimationPlaying) {
+      console.log('🚫 Card click blocked: animation in progress');
+      return;
+    }
+    
     if (!isMyTurn) {
       console.log('Not your turn - cannot play cards');
       return;
@@ -315,6 +334,12 @@
 
   // Handle drawing a card by clicking on the deck
   async function handleDrawCard() {
+    // Prevent interactions during animations
+    if (isAnimationPlaying) {
+      console.log('🚫 Draw card blocked: animation in progress');
+      return;
+    }
+    
     if (!isMyTurn) {
       return; // Ignore clicks when it's not the player's turn
     }
@@ -333,6 +358,7 @@
     <CardDeck 
       {isMyTurn} 
       cardsRemainingInDeck={gameStatus?.cardsRemainingInDeck || 0}
+      {isAnimationPlaying}
       on:drawCard={handleDrawCard}
     />
     
@@ -352,6 +378,7 @@
         {gameFlowState}
         {hiddenCardType}
         {animatingPlayerEmail}
+        {isAnimationPlaying}
         on:playerClick={(e) => handlePlayerClick(e.detail.playerEmail)}
         on:cardClick={(e) => handleCardClick(e.detail.cardType)}
       />
@@ -359,8 +386,8 @@
   </WoodenTable>
 </div>
 
-<!-- Card Type Selection Area (appears in center when needed) -->
-{#if gameFlowState === 'selecting_card_type' && cardRequirements}
+<!-- Card Type Selection Area (appears in center when needed) - Hidden during animations -->
+{#if gameFlowState === 'selecting_card_type' && cardRequirements && !isAnimationPlaying}
   <CardTypeSelector 
     possibleCardTypes={cardRequirements.possibleCardTypes}
     {selectedCardType}
@@ -375,21 +402,25 @@
   {totalSteps}
 />
 
-<!-- Card Requirements Modal -->
-<CardRequirementsModal
-  bind:isOpen={showRequirementsModal}
-  requirements={cardRequirements}
-  players={players}
-  on:close={handleModalClose}
-/>
+<!-- Card Requirements Modal - Hidden during animations -->
+{#if !isAnimationPlaying}
+  <CardRequirementsModal
+    bind:isOpen={showRequirementsModal}
+    requirements={cardRequirements}
+    players={players}
+    on:close={handleModalClose}
+  />
+{/if}
 
-<!-- Card Choice Modal -->
-<CardChoiceModal
-  bind:isOpen={showCardChoiceModal}
-  cards={cardsToChoose}
-  on:close={handleCardChoiceModalClose}
-  on:submit={handleCardChoiceSubmit}
-/>
+<!-- Card Choice Modal - Hidden during animations -->
+{#if !isAnimationPlaying}
+  <CardChoiceModal
+    bind:isOpen={showCardChoiceModal}
+    cards={cardsToChoose}
+    on:close={handleCardChoiceModalClose}
+    on:submit={handleCardChoiceSubmit}
+  />
+{/if}
 
 <style>
   .game-container {

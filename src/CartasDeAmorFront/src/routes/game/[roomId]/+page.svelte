@@ -13,6 +13,7 @@
   import { getPlayerPlayedCardsPosition, getPlayerScreenPosition } from '$lib/utils/gameUtils';
   import GameTable from '$lib/components/game/core/GameTable.svelte';
   import AnimationManager from '$lib/components/game/animations/AnimationManager.svelte';
+  import { InteractionBlocker } from '$lib/components/game/ui';
   import type { 
     InitialGameStatusDto, 
     PrivatePlayerUpdateDto, 
@@ -49,6 +50,10 @@
   // Animation control
   let hiddenCardType: CardType | null = null;
   let animatingPlayerEmail: string = '';
+  
+  // Animation blocking state
+  let isAnimationPlaying = false;
+  let currentAnimationType: string | null = null;
   
   // Reference to GameTable for getting card positions
   let gameTableComponent: any;
@@ -606,6 +611,7 @@
         localPlayerPlayedCards={localPlayerPlayedCards}
         {hiddenCardType}
         {animatingPlayerEmail}
+        {isAnimationPlaying}
       />
     {/if}
 
@@ -618,6 +624,24 @@
           animatingPlayerEmail = '';
         }
         // Card play animations don't need special cleanup
+      }}
+      on:animationStateChange={(event) => {
+        isAnimationPlaying = event.detail.isAnimating;
+        currentAnimationType = event.detail.currentAnimation;
+        console.log(`🎬 Animation state changed: ${isAnimationPlaying ? 'PLAYING' : 'STOPPED'} (${currentAnimationType || 'none'})`);
+      }}
+    />
+    
+    <!-- Interaction Blocker - prevents user interactions during animations -->
+    <InteractionBlocker 
+      isBlocking={isAnimationPlaying}
+      showOverlay={true}
+      overlayOpacity={0.2}
+      blockPointerEvents={true}
+      preventScrolling={false}
+      zIndex={1500}
+      on:blocked={(event) => {
+        console.log(`🚫 Interaction blocked during animation: ${event.detail.event} (current: ${currentAnimationType})`);
       }}
     />
   </div>

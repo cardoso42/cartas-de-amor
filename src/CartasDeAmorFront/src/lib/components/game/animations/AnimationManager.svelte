@@ -42,6 +42,7 @@
 
   const dispatch = createEventDispatcher<{
     animationComplete: { id: string; type: string };
+    animationStateChange: { isAnimating: boolean; currentAnimation: string | null };
   }>();
 
   // Animation queue and state
@@ -49,6 +50,21 @@
   let currentAnimation: AnimationRequest | null = null;
   let isAnimating = false;
   let animationTimeout: number | null = null;
+  
+  // Export animation state for reactive access
+  export { isAnimating };
+  export let currentAnimationType: string | null = null;
+  
+  // Update current animation type reactively
+  $: currentAnimationType = currentAnimation?.type || null;
+  
+  // Dispatch state changes
+  $: {
+    dispatch('animationStateChange', {
+      isAnimating,
+      currentAnimation: currentAnimationType
+    });
+  }
 
   // Maximum animation duration as fallback (in ms)
   const MAX_ANIMATION_DURATION = 10000;

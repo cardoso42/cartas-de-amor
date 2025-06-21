@@ -5,6 +5,7 @@
   // Props
   export let isMyTurn: boolean = false;
   export let cardsRemainingInDeck: number = 0;
+  export let isAnimationPlaying: boolean = false;
 
   // Events
   const dispatch = createEventDispatcher<{
@@ -12,8 +13,8 @@
   }>();
 
   function handleDrawCard() {
-    if (!isMyTurn) {
-      return; // Ignore clicks when it's not the player's turn
+    if (!isMyTurn || isAnimationPlaying) {
+      return; // Ignore clicks when it's not the player's turn or during animations
     }
     dispatch('drawCard');
   }
@@ -22,12 +23,18 @@
 <div class="deck-area">
   <div 
     class="card-deck" 
-    class:disabled={!isMyTurn}
+    class:disabled={!isMyTurn || isAnimationPlaying}
     on:click={handleDrawCard}
     on:keydown={(e) => e.key === 'Enter' && handleDrawCard()}
     role="button"
-    tabindex={isMyTurn ? 0 : undefined}
-    title={isMyTurn ? 'Click to draw a card' : 'Wait for your turn to draw a card'}
+    tabindex={isMyTurn && !isAnimationPlaying ? 0 : undefined}
+    title={
+      isAnimationPlaying 
+        ? 'Wait for animation to finish' 
+        : isMyTurn 
+          ? 'Click to draw a card' 
+          : 'Wait for your turn to draw a card'
+    }
   >
     <div 
       class="deck-cards"

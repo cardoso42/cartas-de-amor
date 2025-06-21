@@ -28,6 +28,7 @@
   // Animation support props
   export let hiddenCardType: CardType | null = null;
   export let animatingPlayerEmail: string = '';
+  export let isAnimationPlaying: boolean = false;
 
   // Calculate positions for player area and played cards
   $: playerX = Math.cos((position.angle - 90) * Math.PI / 180) * position.distance;
@@ -46,10 +47,20 @@
   let playerHandComponent: PlayerHand;
 
   function handlePlayerClick() {
+    // Prevent interactions during animations
+    if (isAnimationPlaying) {
+      console.log('🚫 Player click blocked: animation in progress');
+      return;
+    }
     dispatch('playerClick', { playerEmail: player.email });
   }
 
   function handleCardClick(event: CustomEvent<{ cardType: CardType }>) {
+    // Prevent interactions during animations
+    if (isAnimationPlaying) {
+      console.log('🚫 Card click blocked: animation in progress');
+      return;
+    }
     dispatch('cardClick', { cardType: event.detail.cardType });
   }
 
@@ -112,6 +123,7 @@
     {selectedCard}
     {hiddenCardType}
     {animatingPlayerEmail}
+    {isAnimationPlaying}
     on:cardClick={handleCardClick}
   />
 </div>

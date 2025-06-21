@@ -13,6 +13,7 @@
   // New props for animation support
   export let hiddenCardType: CardType | null = null; // Card type to hide during animation
   export let animatingPlayerEmail: string = ''; // Player whose card is being animated
+  export let isAnimationPlaying: boolean = false;
 
   // Events
   const dispatch = createEventDispatcher<{
@@ -21,6 +22,11 @@
   }>();
 
   function handleCardClick(cardType: CardType) {
+    // Prevent interactions during animations
+    if (isAnimationPlaying) {
+      console.log('🚫 Card click blocked: animation in progress');
+      return;
+    }
     dispatch('cardClick', { cardType });
   }
 
@@ -64,14 +70,21 @@
     {#each cards as card}
       <div 
         class="card player-card face-up" 
-        class:clickable={isMyTurn}
+        class:clickable={isMyTurn && !isAnimationPlaying}
         class:selected={selectedCard === card}
         class:hidden={hiddenCardType === card && animatingPlayerEmail}
+        class:disabled={isAnimationPlaying}
         on:click={() => handleCardClick(card)}
         on:keydown={(e) => e.key === 'Enter' && handleCardClick(card)}
         role="button"
-        tabindex={isMyTurn ? 0 : undefined}
-        title={isMyTurn ? `Click to play ${getCardName(card)}` : getCardName(card)}
+        tabindex={isMyTurn && !isAnimationPlaying ? 0 : undefined}
+        title={
+          isAnimationPlaying 
+            ? 'Wait for animation to finish' 
+            : isMyTurn 
+              ? `Click to play ${getCardName(card)}` 
+              : getCardName(card)
+        }
       >
         <div class="card-content">
           <div class="card-number">{card}</div>
@@ -107,6 +120,12 @@
 
   .card.hidden {
     opacity: 0;
+    pointer-events: none;
+  }
+  
+  .card.disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
     pointer-events: none;
   }
   
