@@ -8,13 +8,17 @@
   import { get } from 'svelte/store';
   import { user } from '$lib/stores/userStore';
   import { gameStore } from '$lib/stores/gameStore';
+  import { getCardName } from '$lib/utils/cardUtils';
+  import { get as getStore } from 'svelte/store';
+  import GameTable from '$lib/components/game/GameTable.svelte';
+  import ShowCardAnimation from '$lib/components/game/ShowCardAnimation.svelte';
+  import EliminationAnimation from '$lib/components/game/EliminationAnimation.svelte';
   import type { 
     InitialGameStatusDto, 
     PrivatePlayerUpdateDto, 
     PublicPlayerUpdateDto,
     CardType
   } from '$lib/types/game-types';
-  import { getCardName } from '$lib/utils/cardUtils';
 
   // Get room ID from URL params
   const roomId = $page.data.roomId;
@@ -55,13 +59,14 @@
   let hiddenCardType: CardType | null = null;
   let animatingPlayerEmail: string = '';
   
+  // Elimination animation state
+  let eliminationAnimationVisible = false;
+  let eliminationPlayerName = '';
+  
   // Reference to GameTable for getting card positions
   let gameTableComponent: any;
 
   // Get initial game data from gameStore
-  import { get as getStore } from 'svelte/store';
-	import GameTable from '$lib/components/game/GameTable.svelte';
-  import ShowCardAnimation from '$lib/components/game/ShowCardAnimation.svelte';
   const initialGameData = getStore(gameStore);
   if (initialGameData && initialGameData.roomId === roomId) {
     roomName = initialGameData.roomName || '';
@@ -467,7 +472,18 @@
         },
         onPlayerEliminated: (data: { player: string }) => {
           console.log('PlayerEliminated event:', data);
-          showNotification(`${getPlayerDisplayName(data.player)} was eliminated!`, 'warning');
+          
+          // Get player display name and position for animation
+          const eliminatedPlayerName = getPlayerDisplayName(data.player);
+          
+          // Set up elimination animation
+          eliminationPlayerName = eliminatedPlayerName;
+          eliminationAnimationVisible = true;
+          
+          // Show notification after a short delay to let animation play
+          setTimeout(() => {
+            showNotification(`${eliminatedPlayerName} was eliminated!`, 'warning');
+          }, 500);
         },
         onSwitchCards: (data: { invoker: string; target: string }) => {
           console.log('SwitchCards event:', data);
@@ -599,6 +615,18 @@
           // Clean up card hiding state
           hiddenCardType = null;
           animatingPlayerEmail = '';
+        }}
+      />
+    {/if}
+
+    <!-- Elimination Animation -->
+    {#if eliminationAnimationVisible}
+      <EliminationAnimation
+        playerName={eliminationPlayerName}
+        isVisible={eliminationAnimationVisible}
+        on:animationComplete={() => {
+          eliminationAnimationVisible = false;
+          eliminationPlayerName = '';
         }}
       />
     {/if}
