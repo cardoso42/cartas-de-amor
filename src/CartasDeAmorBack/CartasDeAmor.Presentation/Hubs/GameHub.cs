@@ -152,14 +152,15 @@ public class GameHub(
             }
 
             var newRoundData = await _gameService.StartNewRoundAsync(roomId);
+            var players = await _gameService.GetPlayersAsync(roomId);
 
-            var players = (await _gameService.GetPlayersAsync(roomId)).Select(p => p.UserEmail).ToList();
-            foreach (var playerEmail in players)
+            // Send each player their personalized game status
+            for (int i = 0; i < players.Count; i++)
             {
-                var connectionIds = GetUserConnectionIds(playerEmail, roomId);
+                var connectionIds = GetUserConnectionIds(players[i].UserEmail, roomId);
                 foreach (var connectionId in connectionIds)
                 {
-                    await Clients.Client(connectionId).SendAsync("RoundStarted", newRoundData);
+                    await Clients.Client(connectionId).SendAsync("RoundStarted", newRoundData[i]);
                 }
             }
         }
