@@ -1,5 +1,6 @@
 <script lang="ts">
   import { createEventDispatcher } from 'svelte';
+  import { Card, Button, Input } from '$lib/components/ui';
   
   export let isCreating = false;
   export let error = '';
@@ -25,87 +26,99 @@
   }
 </script>
 
-<div class="create-room">
+<Card padding="large">
   <h2>Create New Room</h2>
   
   {#if error}
-    <div class="error-message">
+    <div class="error-display">
       <p>{error}</p>
     </div>
   {/if}
   
-  <form on:submit|preventDefault={handleSubmit}>
-    <div class="form-group">
-      <input 
+  <form on:submit|preventDefault={handleSubmit} class="create-form">
+    <div class="form-fields">
+      <Input 
         type="text" 
         placeholder="Enter room name" 
+        label="Room Name"
         bind:value={roomName}
         disabled={isCreating}
         required
       />
-      <input 
+      <Input 
         type="password" 
         placeholder="Password (optional)" 
+        label="Room Password"
         bind:value={roomPassword}
         disabled={isCreating}
       />
-      <button type="submit" disabled={isCreating || !roomName.trim()}>
+      <Button 
+        type="submit" 
+        variant="primary"
+        disabled={isCreating || !roomName.trim()}
+        loading={isCreating}
+      >
         {isCreating ? 'Creating...' : 'Create Room'}
-      </button>
+      </Button>
     </div>
   </form>
-</div>
+</Card>
 
 <style>
-  .create-room {
-    background-color: white;
-    border-radius: 8px;
-    padding: 1.5rem;
-    margin-bottom: 2rem;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  h2 {
+    color: var(--primary-color);
+    margin-bottom: 1rem;
+    font-size: 1.5rem;
   }
   
-  h2 {
-    color: #7b1fa2;
+  .error-display {
+    background-color: #fef2f2;
+    border: 1px solid #fecaca;
+    color: #dc2626;
+    padding: 0.75rem;
+    border-radius: var(--border-radius);
     margin-bottom: 1rem;
   }
   
-  form {
+  .create-form {
     width: 100%;
   }
   
-  .form-group {
+  .form-fields {
     display: flex;
+    flex-direction: column;
     gap: 1rem;
-    flex-wrap: wrap;
+    width: 100%;
   }
   
-  @media (max-width: 768px) {
-    .form-group {
-      flex-direction: column;
+  @media (min-width: 768px) {
+    .form-fields {
+      flex-direction: row;
+      align-items: flex-end;
+      flex-wrap: nowrap;
+    }
+    
+    .form-fields :global(.input-field) {
+      flex: 0 1 auto;
+      width: 180px;
+      margin-right: 0.5rem;
+    }
+    
+    .form-fields :global(.input-field):last-of-type {
+      margin-right: 1rem;
+    }
+    
+    .form-fields :global(button) {
+      flex-shrink: 0;
+      width: auto;
+      min-width: 120px;
+      max-width: 140px;
     }
   }
   
-  input {
-    flex: 1;
-    padding: 0.75rem;
-    border: 1px solid #ddd;
-    border-radius: 4px;
-    font-size: 1rem;
-    min-width: 0;
-  }
-  
-  /* Button styles are now defined globally in +layout.svelte */
-  
-  .error-message {
-    background-color: #ffebee;
-    color: #c62828;
-    padding: 1rem;
-    border-radius: 4px;
-    margin-bottom: 1rem;
-  }
-  
-  .error-message p {
-    margin: 0;
+  @media (max-width: 767px) {
+    .form-fields :global(button) {
+      width: 100%;
+    }
   }
 </style>

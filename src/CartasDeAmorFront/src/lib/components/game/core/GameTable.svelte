@@ -4,12 +4,12 @@
   import { signalR } from '$lib/services/signalRService';
   import { page } from '$app/stores';
   import { onMount } from 'svelte';
-  import CardRequirementsModal from './CardRequirementsModal.svelte';
-  import CardChoiceModal from './CardChoiceModal.svelte';
-  import WoodenTable from './WoodenTable.svelte';
-  import CardDeck from './CardDeck.svelte';
-  import PlayerArea from './PlayerArea.svelte';
-  import CardTypeSelector from './CardTypeSelector.svelte';
+  import CardRequirementsModal from '../ui/CardRequirementsModal.svelte';
+  import CardChoiceModal from '../ui/CardChoiceModal.svelte';
+  import WoodenTable from '../../layout/WoodenTable.svelte';
+  import CardDeck from '../cards/CardDeck.svelte';
+  import PlayerArea from '../player/PlayerArea.svelte';
+  import CardTypeSelector from '../ui/CardTypeSelector.svelte';
   import GameFlowInstructions from './GameFlowInstructions.svelte';
   import { getCardName, getRequirementName } from '$lib/utils/cardUtils';
   import { getPlayerPosition, getCurrentTurnPlayer, getPlayerDisplayName } from '$lib/utils/gameUtils';

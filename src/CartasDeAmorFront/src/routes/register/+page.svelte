@@ -1,6 +1,6 @@
 <script lang="ts">
   import { onMount } from 'svelte';
-  import AuthGuard from '$lib/components/AuthGuard.svelte';
+  import AuthGuard from '$lib/components/auth/AuthGuard.svelte';
   import { goto } from '$app/navigation';
   import { register } from '$lib/services/authService';
 

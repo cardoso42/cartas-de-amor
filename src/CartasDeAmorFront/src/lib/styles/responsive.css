@@ -1,0 +1,258 @@
+/* Responsive Design Utilities */
+
+/* Breakpoints */
+:root {
+  --breakpoint-xs: 0;
+  --breakpoint-sm: 576px;
+  --breakpoint-md: 768px;
+  --breakpoint-lg: 992px;
+  --breakpoint-xl: 1200px;
+  --breakpoint-xxl: 1400px;
+}
+
+/* Container utilities */
+.container {
+  width: 100%;
+  padding-right: 1rem;
+  padding-left: 1rem;
+  margin-right: auto;
+  margin-left: auto;
+}
+
+.container-sm {
+  max-width: 540px;
+}
+
+.container-md {
+  max-width: 720px;
+}
+
+.container-lg {
+  max-width: 960px;
+}
+
+.container-xl {
+  max-width: 1140px;
+}
+
+.container-xxl {
+  max-width: 1320px;
+}
+
+/* Responsive display utilities */
+.d-none { display: none !important; }
+.d-block { display: block !important; }
+.d-flex { display: flex !important; }
+.d-grid { display: grid !important; }
+.d-inline { display: inline !important; }
+.d-inline-block { display: inline-block !important; }
+.d-inline-flex { display: inline-flex !important; }
+
+/* Small devices (landscape phones, 576px and up) */
+@media (min-width: 576px) {
+  .container {
+    max-width: 540px;
+  }
+  
+  .d-sm-none { display: none !important; }
+  .d-sm-block { display: block !important; }
+  .d-sm-flex { display: flex !important; }
+  .d-sm-grid { display: grid !important; }
+  .d-sm-inline { display: inline !important; }
+  .d-sm-inline-block { display: inline-block !important; }
+  .d-sm-inline-flex { display: inline-flex !important; }
+}
+
+/* Medium devices (tablets, 768px and up) */
+@media (min-width: 768px) {
+  .container {
+    max-width: 720px;
+  }
+  
+  .d-md-none { display: none !important; }
+  .d-md-block { display: block !important; }
+  .d-md-flex { display: flex !important; }
+  .d-md-grid { display: grid !important; }
+  .d-md-inline { display: inline !important; }
+  .d-md-inline-block { display: inline-block !important; }
+  .d-md-inline-flex { display: inline-flex !important; }
+}
+
+/* Large devices (desktops, 992px and up) */
+@media (min-width: 992px) {
+  .container {
+    max-width: 960px;
+  }
+  
+  .d-lg-none { display: none !important; }
+  .d-lg-block { display: block !important; }
+  .d-lg-flex { display: flex !important; }
+  .d-lg-grid { display: grid !important; }
+  .d-lg-inline { display: inline !important; }
+  .d-lg-inline-block { display: inline-block !important; }
+  .d-lg-inline-flex { display: inline-flex !important; }
+}
+
+/* Extra large devices (large desktops, 1200px and up) */
+@media (min-width: 1200px) {
+  .container {
+    max-width: 1140px;
+  }
+  
+  .d-xl-none { display: none !important; }
+  .d-xl-block { display: block !important; }
+  .d-xl-flex { display: flex !important; }
+  .d-xl-grid { display: grid !important; }
+  .d-xl-inline { display: inline !important; }
+  .d-xl-inline-block { display: inline-block !important; }
+  .d-xl-inline-flex { display: inline-flex !important; }
+}
+
+/* Grid system */
+.row {
+  display: flex;
+  flex-wrap: wrap;
+  margin-right: -0.75rem;
+  margin-left: -0.75rem;
+}
+
+.col {
+  flex: 1 0 0%;
+  padding-right: 0.75rem;
+  padding-left: 0.75rem;
+}
+
+/* Column sizes */
+.col-auto { flex: 0 0 auto; width: auto; }
+.col-1 { flex: 0 0 8.33333%; max-width: 8.33333%; }
+.col-2 { flex: 0 0 16.66667%; max-width: 16.66667%; }
+.col-3 { flex: 0 0 25%; max-width: 25%; }
+.col-4 { flex: 0 0 33.33333%; max-width: 33.33333%; }
+.col-5 { flex: 0 0 41.66667%; max-width: 41.66667%; }
+.col-6 { flex: 0 0 50%; max-width: 50%; }
+.col-7 { flex: 0 0 58.33333%; max-width: 58.33333%; }
+.col-8 { flex: 0 0 66.66667%; max-width: 66.66667%; }
+.col-9 { flex: 0 0 75%; max-width: 75%; }
+.col-10 { flex: 0 0 83.33333%; max-width: 83.33333%; }
+.col-11 { flex: 0 0 91.66667%; max-width: 91.66667%; }
+.col-12 { flex: 0 0 100%; max-width: 100%; }
+
+/* Responsive spacing utilities */
+@media (max-width: 767px) {
+  .mobile-p-0 { padding: 0 !important; }
+  .mobile-p-1 { padding: 0.25rem !important; }
+  .mobile-p-2 { padding: 0.5rem !important; }
+  .mobile-p-3 { padding: 0.75rem !important; }
+  .mobile-p-4 { padding: 1rem !important; }
+  
+  .mobile-m-0 { margin: 0 !important; }
+  .mobile-m-1 { margin: 0.25rem !important; }
+  .mobile-m-2 { margin: 0.5rem !important; }
+  .mobile-m-3 { margin: 0.75rem !important; }
+  .mobile-m-4 { margin: 1rem !important; }
+  
+  .mobile-text-center { text-align: center !important; }
+  .mobile-text-left { text-align: left !important; }
+  .mobile-text-right { text-align: right !important; }
+}
+
+/* Mobile-first responsive typography */
+.h1, .h2, .h3, .h4, .h5, .h6 {
+  font-weight: 600;
+  line-height: 1.2;
+}
+
+.h1 { font-size: 1.5rem; }
+.h2 { font-size: 1.25rem; }
+.h3 { font-size: 1.125rem; }
+.h4 { font-size: 1rem; }
+.h5 { font-size: 0.875rem; }
+.h6 { font-size: 0.75rem; }
+
+@media (min-width: 768px) {
+  .h1 { font-size: 2.5rem; }
+  .h2 { font-size: 2rem; }
+  .h3 { font-size: 1.75rem; }
+  .h4 { font-size: 1.5rem; }
+  .h5 { font-size: 1.25rem; }
+  .h6 { font-size: 1rem; }
+}
+
+/* Touch-friendly interactions */
+@media (hover: none) and (pointer: coarse) {
+  .btn,
+  .card,
+  .clickable {
+    min-height: 44px;
+    min-width: 44px;
+  }
+  
+  /* Increase tap targets on mobile */
+  .card-btn {
+    padding: 1rem 1.5rem;
+    font-size: 1.1rem;
+  }
+  
+  /* Remove hover effects on touch devices */
+  .hover-scale:hover,
+  .hover-lift:hover {
+    transform: none;
+  }
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+  .card {
+    border-width: 3px;
+  }
+  
+  .btn {
+    border: 2px solid currentColor;
+  }
+  
+  .modal-backdrop {
+    background: rgba(0, 0, 0, 0.9);
+  }
+}
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+  
+  .pulse-animation {
+    animation: none;
+  }
+  
+  .loading::after {
+    animation: none;
+    opacity: 0.5;
+  }
+}
+
+/* Print styles */
+@media print {
+  .d-print-none {
+    display: none !important;
+  }
+  
+  .d-print-block {
+    display: block !important;
+  }
+  
+  .modal-backdrop,
+  .btn,
+  .navbar {
+    display: none !important;
+  }
+  
+  body {
+    background: white !important;
+    color: black !important;
+  }
+}

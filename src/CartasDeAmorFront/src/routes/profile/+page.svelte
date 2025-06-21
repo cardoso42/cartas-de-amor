@@ -1,5 +1,5 @@
 <script lang="ts">
-  import AuthGuard from '$lib/components/AuthGuard.svelte';
+  import AuthGuard from '$lib/components/auth/AuthGuard.svelte';
   import { onMount } from 'svelte';
   import { 
     getCurrentUserProfile, 

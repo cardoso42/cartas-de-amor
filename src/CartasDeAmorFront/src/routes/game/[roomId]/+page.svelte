@@ -1,6 +1,6 @@
 <script lang="ts">
-  import AuthGuard from '$lib/components/AuthGuard.svelte';
-  import GameLobby from '$lib/components/game/GameLobby.svelte';
+  import AuthGuard from '$lib/components/auth/AuthGuard.svelte';
+  import GameLobby from '$lib/components/game/core/GameLobby.svelte';
   import { onMount, onDestroy } from 'svelte';
   import { page } from '$app/stores';
   import { signalR } from '$lib/services/signalRService';
@@ -11,8 +11,8 @@
   import { getCardName } from '$lib/utils/cardUtils';
   import { get as getStore } from 'svelte/store';
   import { getPlayerPlayedCardsPosition, getPlayerScreenPosition } from '$lib/utils/gameUtils';
-  import GameTable from '$lib/components/game/GameTable.svelte';
-  import AnimationManager from '$lib/components/game/AnimationManager.svelte';
+  import GameTable from '$lib/components/game/core/GameTable.svelte';
+  import AnimationManager from '$lib/components/game/animations/AnimationManager.svelte';
   import type { 
     InitialGameStatusDto, 
     PrivatePlayerUpdateDto, 

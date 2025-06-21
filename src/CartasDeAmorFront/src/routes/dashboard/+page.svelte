@@ -1,6 +1,6 @@
 <script lang="ts">
   import { logout } from '$lib/services/authService';
-  import AuthGuard from '$lib/components/AuthGuard.svelte';
+  import AuthGuard from '$lib/components/auth/AuthGuard.svelte';
 
   function handleLogout() {
     logout();

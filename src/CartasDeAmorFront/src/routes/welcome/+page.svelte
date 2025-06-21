@@ -1,6 +1,6 @@
 <script lang="ts">
   import { goto } from '$app/navigation';
-  import AuthGuard from '$lib/components/AuthGuard.svelte';
+  import AuthGuard from '$lib/components/auth/AuthGuard.svelte';
 
   function handleLogin() {
     goto('/login');

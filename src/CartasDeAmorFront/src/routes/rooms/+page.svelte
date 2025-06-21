@@ -1,5 +1,5 @@
 <script lang="ts">
-  import AuthGuard from '$lib/components/AuthGuard.svelte';
+  import AuthGuard from '$lib/components/auth/AuthGuard.svelte';
   import { onMount, onDestroy } from 'svelte';
   import { getGameRooms, createGameRoom, type GameRoom } from '$lib/services/gameRoomService';
   import { signalR } from '$lib/services/signalRService';
@@ -8,6 +8,9 @@
   import { gameStore } from '$lib/stores/gameStore';
 	import type { JoinRoomResultDto } from '$lib/types/game-types';
 	import auth from '$lib/stores/authStore';
+  
+  // Import reusable UI components
+  import { Card, Button, LoadingSpinner } from '$lib/components/ui';
   
   // Import new components
   import ConnectionStatus from '$lib/components/rooms/ConnectionStatus.svelte';

@@ -1,6 +1,6 @@
 <script lang="ts">
-  import Login from '$lib/components/Login.svelte';
-  import AuthGuard from '$lib/components/AuthGuard.svelte';
+  import Login from '$lib/components/auth/Login.svelte';
+  import AuthGuard from '$lib/components/auth/AuthGuard.svelte';
 </script>
 
 <svelte:head>
