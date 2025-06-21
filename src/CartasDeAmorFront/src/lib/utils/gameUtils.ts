@@ -58,7 +58,7 @@ export function getPlayerPlayedCardsPosition(
   const player = players.find((p: ProcessedPlayer) => p.email === playerEmail);
   
   if (!player) {
-    return { x: window.innerWidth / 2, y: window.innerHeight / 2, width: 32, height: 45 };
+    return { x: window.innerWidth / 2, y: window.innerHeight / 2, width: 42, height: 58 };
   }
   
   // Use the player's processed position which is already perspective-aware
@@ -79,8 +79,8 @@ export function getPlayerPlayedCardsPosition(
   return {
     x: centerX + Math.cos(radians) * playedCardDistance,
     y: centerY + Math.sin(radians) * playedCardDistance,
-    width: 32,
-    height: 45
+    width: 42,
+    height: 58
   };
 }
 

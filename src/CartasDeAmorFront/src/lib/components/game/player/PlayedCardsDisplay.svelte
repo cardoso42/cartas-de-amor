@@ -7,7 +7,7 @@
 
   // TODO: When playing a card against a protected target, the card is not shown in the played cards FIX IT
 
-  const usualCardCount = 3; // Default number of cards to show normally
+  const usualCardCount = 1; // Default number of cards to show normally
   
   let isHovering = false;
   
@@ -73,7 +73,7 @@
     background: rgba(0, 0, 0, 0.1);
     border-radius: 8px;
     padding: 4px;
-    max-width: 120px;
+    max-width: 150px;
   }
   
   .played-cards-container:hover {
@@ -85,8 +85,8 @@
     background: rgba(0, 0, 0, 0.85);
     backdrop-filter: blur(5px);
     border: 2px solid rgba(255, 215, 0, 0.6);
-    max-width: 300px;
-    max-height: 200px;
+    max-width: 160px;
+    max-height: 380px;
     z-index: 20;
     box-shadow: 0 8px 25px rgba(0, 0, 0, 0.7);
   }
@@ -121,10 +121,13 @@
   .played-cards.scrollable {
     flex-wrap: wrap;
     gap: 4px;
-    max-height: 150px;
+    max-width: 300px;
+    max-height: 300px;
     overflow-y: auto;
     overflow-x: hidden;
     padding: 2px;
+    justify-content: center;
+    align-items: flex-start;
   }
   
   .played-cards.scrollable::-webkit-scrollbar {
@@ -146,35 +149,24 @@
   }
   
   .played-card {
-    width: 32px;
-    height: 45px;
+    width: 42px;
+    height: 58px;
     background: linear-gradient(135deg, #fafafa 0%, #e0e0e0 100%);
     display: flex;
     flex-direction: column;
     justify-content: space-between;
-    padding: 2px;
-    border-radius: 4px;
+    padding: 3px;
+    border-radius: 5px;
     border: 1px solid #333;
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
     transition: transform 0.2s ease;
     flex-shrink: 0;
   }
   
-  .expanded .played-card {
-    width: 40px;
-    height: 56px;
-    padding: 3px;
-    margin: 1px;
-  }
-  
   .played-card:hover {
     transform: scale(1.1);
     z-index: 5;
     box-shadow: 0 3px 8px rgba(0, 0, 0, 0.4);
-  }
-  
-  .expanded .played-card:hover {
-    transform: scale(1.15);
   }
   
   .card-content {
@@ -185,27 +177,19 @@
   }
   
   .card-number {
-    font-size: 0.7rem;
+    font-size: 0.9rem;
     font-weight: bold;
     color: #9c27b0;
     text-align: center;
     line-height: 1;
   }
   
-  .expanded .card-number {
-    font-size: 0.8rem;
-  }
-  
   .card-name {
-    font-size: 0.35rem;
+    font-size: 0.45rem;
     font-weight: bold;
     color: #333;
     text-align: center;
     line-height: 1;
-  }
-  
-  .expanded .card-name {
-    font-size: 0.4rem;
   }
   
   .expansion-hint {
@@ -236,18 +220,13 @@
   /* Responsive adjustments */
   @media (max-width: 768px) {
     .played-cards-container.expanded {
-      max-width: 250px;
-      max-height: 150px;
+      max-width: 320px;
+      max-height: 180px;
     }
     
     .played-card {
-      width: 28px;
-      height: 39px;
-    }
-    
-    .expanded .played-card {
-      width: 35px;
-      height: 49px;
+      width: 36px;
+      height: 50px;
     }
     
     .card-count-badge {

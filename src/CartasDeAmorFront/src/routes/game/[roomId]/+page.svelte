@@ -319,11 +319,11 @@
               // Fallback to general player position
               const players = gameTableComponent.getProcessedPlayers();
               const playerPos = getPlayerScreenPosition(playerEmail, players);
-              sourcePosition = { ...playerPos, width: 50, height: 70 };
+              sourcePosition = { ...playerPos, width: 65, height: 90 };
             }
           } else {
             // Fallback to center when no game table component
-            sourcePosition = { x: window.innerWidth / 2, y: window.innerHeight / 2, width: 50, height: 70 };
+            sourcePosition = { x: window.innerWidth / 2, y: window.innerHeight / 2, width: 65, height: 90 };
           }
           
           // Get played cards destination position

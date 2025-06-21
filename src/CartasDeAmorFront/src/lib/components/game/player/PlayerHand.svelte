@@ -97,9 +97,9 @@
   }
   
   .card {
-    width: 50px;
-    height: 70px;
-    border-radius: 6px;
+    width: 65px;
+    height: 90px;
+    border-radius: 8px;
     border: 2px solid #333;
     box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
     transition: transform 0.2s ease, opacity 0.2s ease;
@@ -148,7 +148,7 @@
     display: flex;
     flex-direction: column;
     justify-content: space-between;
-    padding: 4px;
+    padding: 6px;
   }
   
   .face-down {
@@ -173,14 +173,14 @@
   }
   
   .card-number {
-    font-size: 1.1rem;
+    font-size: 1.4rem;
     font-weight: bold;
     color: #9c27b0;
     text-align: center;
   }
   
   .card-name {
-    font-size: 0.6rem;
+    font-size: 0.75rem;
     font-weight: bold;
     color: #333;
     text-align: center;

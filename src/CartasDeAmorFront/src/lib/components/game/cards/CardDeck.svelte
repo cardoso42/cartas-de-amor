@@ -85,14 +85,14 @@
   
   .deck-cards {
     position: relative;
-    width: 60px;
-    height: 84px;
+    width: 70px;
+    height: 98px;
   }
   
   .deck-card {
     position: absolute;
-    width: 60px;
-    height: 84px;
+    width: 70px;
+    height: 98px;
     background-image: url('/images/card-back.png'), linear-gradient(135deg, #1565c0 0%, #0d47a1 100%);
     background-size: cover;
     background-position: center;
