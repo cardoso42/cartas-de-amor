@@ -10,6 +10,7 @@
   import { gameStore } from '$lib/stores/gameStore';
   import { getCardName } from '$lib/utils/cardUtils';
   import { get as getStore } from 'svelte/store';
+  import { getPlayerPlayedCardsPosition, getPlayerScreenPosition } from '$lib/utils/gameUtils';
   import GameTable from '$lib/components/game/GameTable.svelte';
   import AnimationManager from '$lib/components/game/AnimationManager.svelte';
   import type { 
@@ -105,38 +106,6 @@
   function showNotification(message: string, type: 'info' | 'success' | 'warning' = 'info') {
     // For now, just log to console. Could be enhanced with a proper notification system
     console.log(`[${type.toUpperCase()}] ${message}`);
-  }
-  
-  // Function to get player position on screen for animations
-  function getPlayerScreenPosition(playerEmail: string): { x: number; y: number } {
-    if (!gameStatus) {
-      return { x: window.innerWidth / 2, y: window.innerHeight / 2 };
-    }
-    
-    // Find player in the game
-    const allPlayers = gameStatus.allPlayersInOrder || [];
-    const playerIndex = allPlayers.findIndex(email => email === playerEmail);
-    
-    if (playerIndex === -1) {
-      return { x: window.innerWidth / 2, y: window.innerHeight / 2 };
-    }
-    
-    // Calculate position based on circular table layout
-    const totalPlayers = allPlayers.length;
-    const baseAngle = 180; // Start at bottom (180 degrees)
-    const angleStep = 360 / totalPlayers;
-    const angle = (baseAngle + (playerIndex * angleStep)) % 360;
-    const distance = 320;
-    
-    // Convert to screen coordinates
-    const centerX = window.innerWidth / 2;
-    const centerY = window.innerHeight / 2;
-    const radians = (angle - 90) * Math.PI / 180;
-    
-    return {
-      x: centerX + Math.cos(radians) * distance,
-      y: centerY + Math.sin(radians) * distance
-    };
   }
   
   function getPlayerDisplayName(email: string): string {
@@ -334,10 +303,50 @@
         // New MessageFactory events replace old CardResult events
         onPlayCard: (data: { player: string; cardType: number }) => {
           console.log('PlayCard event:', data);
-          // Handle the card play event with the card type information
-          handleCardPlayed(data);
-          // Also show notification
-          showNotification(`${getPlayerDisplayName(data.player)} played ${getCardName(data.cardType)}`, 'info');
+          
+          const playerEmail = data.player;
+          const playedCard = data.cardType as CardType;
+          const playerName = getPlayerDisplayName(playerEmail);
+          
+          // Get card source position from player's hand
+          let sourcePosition = { x: window.innerWidth / 2, y: window.innerHeight / 2, width: 50, height: 70 };
+          
+          if (gameTableComponent) {
+            const cardPosition = gameTableComponent.getPlayerCardPosition(playerEmail, playedCard);
+            if (cardPosition) {
+              sourcePosition = cardPosition;
+            } else {
+              // Fallback to general player position
+              const players = gameTableComponent.getProcessedPlayers();
+              const playerPos = getPlayerScreenPosition(playerEmail, players);
+              sourcePosition = { ...playerPos, width: 50, height: 70 };
+            }
+          } else {
+            // Fallback to center when no game table component
+            sourcePosition = { x: window.innerWidth / 2, y: window.innerHeight / 2, width: 50, height: 70 };
+          }
+          
+          // Get played cards destination position
+          const players = gameTableComponent?.getProcessedPlayers() || [];
+          const playedCardsPosition = getPlayerPlayedCardsPosition(playerEmail, players);
+          
+          // Queue card play animation using animation manager
+          animationManager.queueCardPlayAnimation({
+            playerName,
+            cardType: playedCard,
+            sourcePosition,
+            playedCardsPosition
+          });
+          
+          // Handle the card play event logic after a delay to let animation start
+          setTimeout(() => {
+            handleCardPlayed(data);
+          }, 200);
+          
+          // Show notification after the animation completes
+          setTimeout(() => {
+            showNotification(`${playerName} played ${getCardName(playedCard)}`, 'info');
+          }, 3500); // Total animation time is about 3.8s, show notification a bit before end
         },
         onGuessCard: (data: { invoker: string; cardType: number; target: string }) => {
           console.log('GuessCard event received:', data);
@@ -388,11 +397,12 @@
                 sourcePosition = cardPosition;
               } else {
                 // Fallback to general player position
-                sourcePosition = getPlayerScreenPosition(data.target);
+                const players = gameTableComponent.getProcessedPlayers();
+                sourcePosition = getPlayerScreenPosition(data.target, players);
               }
             } else {
-              // Fallback to general player position
-              sourcePosition = getPlayerScreenPosition(data.target);
+              // Fallback to center when no game table component
+              sourcePosition = { x: window.innerWidth / 2, y: window.innerHeight / 2 };
             }
             
             // Hide the card in the target player's hand
@@ -607,6 +617,7 @@
           hiddenCardType = null;
           animatingPlayerEmail = '';
         }
+        // Card play animations don't need special cleanup
       }}
     />
   </div>

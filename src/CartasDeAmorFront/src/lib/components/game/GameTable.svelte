@@ -71,6 +71,11 @@
     return null;
   }
   
+  // Export function to get processed players data for positioning calculations
+  export function getProcessedPlayers() {
+    return players;
+  }
+  
   // Set up SignalR handlers
   onMount(() => {
     signalR.registerHandlers({

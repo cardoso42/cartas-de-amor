@@ -24,6 +24,13 @@
     targetName: string;
     guessedCardType: CardType;
   }
+
+  export interface CardPlayAnimationData {
+    playerName: string;
+    cardType: CardType;
+    sourcePosition: { x: number; y: number; width?: number; height?: number };
+    playedCardsPosition: { x: number; y: number; width?: number; height?: number };
+  }
 </script>
 
 <script lang="ts">
@@ -31,6 +38,7 @@
   import EliminationAnimation from './EliminationAnimation.svelte';
   import ShowCardAnimation from './ShowCardAnimation.svelte';
   import GuessCardAnimation from './GuessCardAnimation.svelte';
+  import CardPlayAnimation from './CardPlayAnimation.svelte';
 
   const dispatch = createEventDispatcher<{
     animationComplete: { id: string; type: string };
@@ -204,6 +212,13 @@
       data
     });
   }
+
+  export function queueCardPlayAnimation(data: CardPlayAnimationData): string {
+    return queueAnimation({
+      type: 'cardPlay',
+      data
+    });
+  }
 </script>
 
 <!-- Render current animation based on type -->
@@ -228,6 +243,15 @@
         invokerName={currentAnimation.data.invokerName}
         targetName={currentAnimation.data.targetName}
         guessedCardType={currentAnimation.data.guessedCardType}
+        isVisible={true}
+        on:animationComplete={() => handleAnimationComplete(currentAnimation?.id || '')}
+      />
+    {:else if currentAnimation.type === 'cardPlay'}
+      <CardPlayAnimation
+        playerName={currentAnimation.data.playerName}
+        cardType={currentAnimation.data.cardType}
+        sourcePosition={currentAnimation.data.sourcePosition}
+        playedCardsPosition={currentAnimation.data.playedCardsPosition}
         isVisible={true}
         on:animationComplete={() => handleAnimationComplete(currentAnimation?.id || '')}
       />
