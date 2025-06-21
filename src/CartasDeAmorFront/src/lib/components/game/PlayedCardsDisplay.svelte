@@ -8,26 +8,16 @@
   // TODO: When playing a card against a protected target, the card is not shown in the played cards FIX IT
 
   const usualCardCount = 3; // Default number of cards to show normally
-  const maxVisibleCards = 5; // Maximum number of cards to show on hover
   
-  let isExpanded = false;
   let isHovering = false;
   
-  // Show more cards on hover (but not all to avoid clutter)
-  $: visibleCards = isExpanded 
+  // Show all cards on hover, otherwise show limited cards
+  $: visibleCards = isHovering 
     ? playedCards 
-    : isHovering 
-      ? playedCards.slice(-maxVisibleCards)
-      : playedCards.slice(-usualCardCount);
-  
-  function toggleExpanded() {
-    isExpanded = !isExpanded;
-  }
+    : playedCards.slice(-usualCardCount);
   
   function handleMouseEnter() {
-    if (!isExpanded) {
-      isHovering = true;
-    }
+    isHovering = true;
   }
   
   function handleMouseLeave() {
@@ -37,14 +27,12 @@
 
 <div 
   class="played-cards-container"
-  class:expanded={isExpanded}
+  class:expanded={isHovering}
   on:mouseenter={handleMouseEnter}
   on:mouseleave={handleMouseLeave}
-  role="button"
-  tabindex="0"
-  on:click={toggleExpanded}
-  on:keydown={(e) => e.key === 'Enter' && toggleExpanded()}
-  title="Click to {isExpanded ? 'collapse' : 'expand'} all played cards for {playerName}"
+  role="region"
+  aria-label="Played cards for {playerName}"
+  title="Hover to see all played cards for {playerName}"
 >
   <!-- Card count indicator -->
   {#if playedCards.length > usualCardCount}
@@ -54,11 +42,11 @@
   {/if}
   
   <!-- Cards display -->
-  <div class="played-cards" class:scrollable={isExpanded}>
+  <div class="played-cards" class:scrollable={isHovering}>
     {#each visibleCards as playedCard, cardIndex}
       <div 
         class="card played-card face-up" 
-        style="margin-left: {isExpanded ? 0 : cardIndex * 6}px;"
+        style="margin-left: {isHovering ? 0 : cardIndex * 6}px;"
         title="{getCardName(playedCard)} (played {visibleCards.length - cardIndex} turn{visibleCards.length - cardIndex === 1 ? '' : 's'} ago)"
       >
         <div class="card-content">
@@ -70,17 +58,10 @@
   </div>
   
   <!-- Expansion indicator -->
-  {#if playedCards.length > usualCardCount && !isExpanded}
+  {#if playedCards.length > usualCardCount && !isHovering}
     <div class="expansion-hint">
       <span class="expand-icon">⋯</span>
-      <span class="expand-text">+{playedCards.length - (isHovering ? maxVisibleCards : usualCardCount)} more</span>
-    </div>
-  {/if}
-  
-  <!-- Collapse button when expanded -->
-  {#if isExpanded}
-    <div class="collapse-button">
-      <span class="collapse-icon">⤴</span>
+      <span class="expand-text">+{playedCards.length - usualCardCount} more</span>
     </div>
   {/if}
 </div>
@@ -88,7 +69,6 @@
 <style>
   .played-cards-container {
     position: relative;
-    cursor: pointer;
     transition: all 0.3s ease;
     background: rgba(0, 0, 0, 0.1);
     border-radius: 8px;
@@ -109,11 +89,6 @@
     max-height: 200px;
     z-index: 20;
     box-shadow: 0 8px 25px rgba(0, 0, 0, 0.7);
-  }
-  
-  .played-cards-container:focus {
-    outline: 2px solid #ffd700;
-    outline-offset: 2px;
   }
   
   .card-count-badge {
@@ -256,25 +231,6 @@
   @keyframes pulse {
     0%, 100% { opacity: 0.8; }
     50% { opacity: 1; }
-  }
-  
-  .collapse-button {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    margin-top: 4px;
-    color: #ffd700;
-    font-size: 0.8rem;
-    font-weight: bold;
-  }
-  
-  .collapse-icon {
-    animation: bounce 1.5s ease-in-out infinite;
-  }
-  
-  @keyframes bounce {
-    0%, 100% { transform: translateY(0); }
-    50% { transform: translateY(-2px); }
   }
   
   /* Responsive adjustments */
