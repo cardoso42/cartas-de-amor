@@ -7,6 +7,7 @@
     id: string;
     type: 'elimination' | 'showCard' | 'guessCard' | 'cardPlay' | 'drawCard' | 'peekCard' | 'roundWinners' | 'gameOver' | 'custom';
     data: any;
+    callback?: () => void;
   }
 
   export interface EliminationAnimationData {
@@ -117,6 +118,15 @@
 
     // If animations are disabled, immediately complete the animation without showing it
     if (!animationsEnabled) {
+      // Execute callback if provided
+      if (animation.callback) {
+        try {
+          animation.callback();
+        } catch (error) {
+          console.error('Error executing animation callback (animations disabled):', error);
+        }
+      }
+      
       // Dispatch completion event immediately
       setTimeout(() => {
         dispatch('animationComplete', {
@@ -236,6 +246,15 @@
     const completedAnimation = currentAnimation;
     stopCurrentAnimation();
     
+    // Execute callback if provided
+    if (completedAnimation.callback) {
+      try {
+        completedAnimation.callback();
+      } catch (error) {
+        console.error('Error executing animation callback:', error);
+      }
+    }
+    
     // Dispatch completion event
     dispatch('animationComplete', {
       id: completedAnimation.id,
@@ -255,59 +274,67 @@
   });
 
   // Helper functions for specific animation types
-  export function queueEliminationAnimation(data: EliminationAnimationData): string {
+  export function queueEliminationAnimation(data: EliminationAnimationData, callback?: () => void): string {
     return queueAnimation({
       type: 'elimination',
-      data
+      data,
+      callback
     });
   }
 
-  export function queueShowCardAnimation(data: ShowCardAnimationData): string {
+  export function queueShowCardAnimation(data: ShowCardAnimationData, callback?: () => void): string {
     return queueAnimation({
       type: 'showCard',
-      data
+      data,
+      callback
     });
   }
 
-  export function queueGuessCardAnimation(data: GuessCardAnimationData): string {
+  export function queueGuessCardAnimation(data: GuessCardAnimationData, callback?: () => void): string {
     return queueAnimation({
       type: 'guessCard',
-      data
+      data,
+      callback
     });
   }
 
-  export function queueCardPlayAnimation(data: CardPlayAnimationData): string {
+  export function queueCardPlayAnimation(data: CardPlayAnimationData, callback?: () => void): string {
     return queueAnimation({
       type: 'cardPlay',
-      data
+      data,
+      callback
     });
   }
 
-  export function queueDrawCardAnimation(data: DrawCardAnimationData): string {
+  export function queueDrawCardAnimation(data: DrawCardAnimationData, callback?: () => void): string {
     return queueAnimation({
       type: 'drawCard',
-      data
+      data,
+      callback
     });
   }
 
-  export function queuePeekCardAnimation(data: PeekCardAnimationData): string {
+  export function queuePeekCardAnimation(data: PeekCardAnimationData, callback?: () => void): string {
     return queueAnimation({
       type: 'peekCard',
-      data
+      data,
+      callback
     });
   }
 
-  export function queueRoundWinnersAnimation(data: RoundWinnersAnimationData): string {
+  export function queueRoundWinnersAnimation(data: RoundWinnersAnimationData, callback?: () => void): string {
     return queueAnimation({
       type: 'roundWinners',
-      data
+      data,
+      callback
     });
   }
 
-  export function queueGameOverAnimation(data: GameOverAnimationData): string {
+  export function queueGameOverAnimation(data: GameOverAnimationData, callback?: () => void): string {
     return queueAnimation({
       type: 'gameOver',
-      data
+      data,
+      callback
     });
   }
 </script>
