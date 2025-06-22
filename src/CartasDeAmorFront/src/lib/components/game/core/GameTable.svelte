@@ -72,6 +72,68 @@
     return null;
   }
   
+  // Export function to get deck position for animations
+  export function getDeckPosition(): { x: number; y: number; width: number; height: number } | null {
+    const deckElement = document.querySelector('.deck-cards');
+    if (deckElement) {
+      const rect = deckElement.getBoundingClientRect();
+      return {
+        x: rect.left + rect.width / 2,
+        y: rect.top + rect.height / 2,
+        width: rect.width,
+        height: rect.height
+      };
+    }
+    return null;
+  }
+  
+  // Export function to get player hand position for animations
+  export function getPlayerHandPosition(playerEmail: string): { x: number; y: number; width: number; height: number } | null {
+    const playerArea = playerAreaComponents[playerEmail];
+    if (playerArea) {
+      // For local player, try to get position of their hand area
+      if (playerEmail === currentUserEmail) {
+        const handElement = document.querySelector('.player-hand');
+        if (handElement) {
+          const rect = handElement.getBoundingClientRect();
+          return {
+            x: rect.left + rect.width / 2,
+            y: rect.top + rect.height / 2,
+            width: 65,
+            height: 90
+          };
+        }
+      } else {
+        // For other players, use their general position and adjust for hand area
+        const players = getProcessedPlayers();
+        const player = players.find(p => p.email === playerEmail);
+        if (player) {
+          const totalPlayers = players.length;
+          const playerPosition = player.position;
+          
+          // Calculate position using the same logic as PlayerArea
+          const baseAngle = 180; // Start at bottom (180 degrees)
+          const angleStep = 360 / totalPlayers;
+          const angle = (baseAngle + (playerPosition * angleStep)) % 360;
+          const distance = 320;
+          
+          // Convert to screen coordinates
+          const centerX = window.innerWidth / 2;
+          const centerY = window.innerHeight / 2;
+          const radians = (angle - 90) * Math.PI / 180;
+          
+          return {
+            x: centerX + Math.cos(radians) * distance,
+            y: centerY + Math.sin(radians) * distance,
+            width: 65,
+            height: 90
+          };
+        }
+      }
+    }
+    return null;
+  }
+  
   // Export function to get processed players data for positioning calculations
   export function getProcessedPlayers() {
     return players;

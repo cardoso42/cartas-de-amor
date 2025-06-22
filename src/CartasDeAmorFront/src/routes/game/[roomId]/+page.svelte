@@ -268,25 +268,59 @@
         },
         onPlayerDrewCard: (playerEmail: string) => {
           console.log('Player drew card:', playerEmail);
-                    
-          // Update the visual representation to show the player now has an additional card
-          if (gameStatus && playerEmail !== userEmail) {
-            // Find the player in otherPlayersPublicData and increment their cardsInHand
-            const otherPlayers = gameStatus.otherPlayersPublicData || [];
-            const playerToUpdate = otherPlayers.find(p => p.userEmail === playerEmail);
+          
+          const playerName = getPlayerDisplayName(playerEmail);
+          
+          // Get deck position and player position for animation
+          let deckPosition = { x: window.innerWidth / 2, y: window.innerHeight / 2, width: 70, height: 98 };
+          let playerPosition = { x: window.innerWidth / 2, y: window.innerHeight / 2, width: 65, height: 90 };
+          
+          if (gameTableComponent) {
+            // Get deck position
+            const deckPos = gameTableComponent.getDeckPosition();
+            if (deckPos) {
+              deckPosition = deckPos;
+            }
             
-            if (playerToUpdate) {
-              playerToUpdate.cardsInHand = (playerToUpdate.cardsInHand || 1) + 1;
-              // Trigger reactivity by creating a new gameStatus object
-              gameStatus = { ...gameStatus, otherPlayersPublicData: [...otherPlayers] };
-              console.log(`Updated ${playerEmail} cards in hand to ${playerToUpdate.cardsInHand}`);
+            // Get player hand position
+            const playerPos = gameTableComponent.getPlayerHandPosition(playerEmail);
+            if (playerPos) {
+              playerPosition = playerPos;
             }
           }
+          
+          // Queue draw card animation using animation manager
+          animationManager.queueDrawCardAnimation({
+            playerName,
+            deckPosition,
+            playerPosition
+          });
+          
+          // Update the visual representation to show the player now has an additional card (after animation starts)
+          setTimeout(() => {
+            if (gameStatus && playerEmail !== userEmail) {
+              // Find the player in otherPlayersPublicData and increment their cardsInHand
+              const otherPlayers = gameStatus.otherPlayersPublicData || [];
+              const playerToUpdate = otherPlayers.find(p => p.userEmail === playerEmail);
+              
+              if (playerToUpdate) {
+                playerToUpdate.cardsInHand = (playerToUpdate.cardsInHand || 1) + 1;
+                // Trigger reactivity by creating a new gameStatus object
+                gameStatus = { ...gameStatus, otherPlayersPublicData: [...otherPlayers] };
+                console.log(`Updated ${playerEmail} cards in hand to ${playerToUpdate.cardsInHand}`);
+              }
+            }
 
-          // Decrease the deck count when any player draws a card
-          if (gameStatus && gameStatus.cardsRemainingInDeck > 0) {
-            gameStatus.cardsRemainingInDeck -= 1;
-          }
+            // Decrease the deck count when any player draws a card
+            if (gameStatus && gameStatus.cardsRemainingInDeck > 0) {
+              gameStatus.cardsRemainingInDeck -= 1;
+            }
+          }, 500); // Start updating after animation begins
+          
+          // Show notification after the animation completes
+          setTimeout(() => {
+            showNotification(`${playerName} drew a card`, 'info');
+          }, 800); // Total animation time is about 0.7s
         },
         onPrivatePlayerUpdate: (playerUpdate: PrivatePlayerUpdateDto) => {
           console.log('Private player update:', playerUpdate);
@@ -467,11 +501,60 @@
         },
         onDrawCard: (data: { player: string }) => {
           console.log('DrawCard event:', data);
-          showNotification(`${getPlayerDisplayName(data.player)} drew a card`, 'info');
-          // Decrease deck count when a card is drawn
-          if (gameStatus) {
-            gameStatus.cardsRemainingInDeck = Math.max(0, (gameStatus.cardsRemainingInDeck || 0) - 1);
+          
+          const playerEmail = data.player;
+          const playerName = getPlayerDisplayName(playerEmail);
+          
+          // Get deck position and player position for animation
+          let deckPosition = { x: window.innerWidth / 2, y: window.innerHeight / 2, width: 70, height: 98 };
+          let playerPosition = { x: window.innerWidth / 2, y: window.innerHeight / 2, width: 65, height: 90 };
+          
+          if (gameTableComponent) {
+            // Get deck position
+            const deckPos = gameTableComponent.getDeckPosition();
+            if (deckPos) {
+              deckPosition = deckPos;
+            }
+            
+            // Get player hand position
+            const playerPos = gameTableComponent.getPlayerHandPosition(playerEmail);
+            if (playerPos) {
+              playerPosition = playerPos;
+            }
           }
+          
+          // Queue draw card animation using animation manager
+          animationManager.queueDrawCardAnimation({
+            playerName,
+            deckPosition,
+            playerPosition
+          });
+          
+          // Update the visual representation to show the player now has an additional card (after animation starts)
+          setTimeout(() => {
+            if (gameStatus && playerEmail !== userEmail) {
+              // Find the player in otherPlayersPublicData and increment their cardsInHand
+              const otherPlayers = gameStatus.otherPlayersPublicData || [];
+              const playerToUpdate = otherPlayers.find(p => p.userEmail === playerEmail);
+              
+              if (playerToUpdate) {
+                playerToUpdate.cardsInHand = (playerToUpdate.cardsInHand || 1) + 1;
+                // Trigger reactivity by creating a new gameStatus object
+                gameStatus = { ...gameStatus, otherPlayersPublicData: [...otherPlayers] };
+                console.log(`Updated ${playerEmail} cards in hand to ${playerToUpdate.cardsInHand}`);
+              }
+            }
+
+            // Decrease the deck count when any player draws a card
+            if (gameStatus && gameStatus.cardsRemainingInDeck > 0) {
+              gameStatus.cardsRemainingInDeck -= 1;
+            }
+          }, 500); // Start updating after animation begins
+          
+          // Show notification after the animation completes
+          setTimeout(() => {
+            showNotification(`${playerName} drew a card`, 'info');
+          }, 800); // Total animation time is about 0.7s
         },
         onCardReturnedToDeck: (data: { player: string; cardCount: number }) => {
           console.log('CardReturnedToDeck event:', data);

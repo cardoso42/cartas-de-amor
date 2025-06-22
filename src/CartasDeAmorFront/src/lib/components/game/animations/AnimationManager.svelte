@@ -5,7 +5,7 @@
   // Animation types
   export interface AnimationRequest {
     id: string;
-    type: 'elimination' | 'showCard' | 'guessCard' | 'cardPlay' | 'custom';
+    type: 'elimination' | 'showCard' | 'guessCard' | 'cardPlay' | 'drawCard' | 'custom';
     data: any;
   }
 
@@ -31,6 +31,12 @@
     sourcePosition: { x: number; y: number; width?: number; height?: number };
     playedCardsPosition: { x: number; y: number; width?: number; height?: number };
   }
+
+  export interface DrawCardAnimationData {
+    playerName: string;
+    deckPosition: { x: number; y: number; width?: number; height?: number };
+    playerPosition: { x: number; y: number; width?: number; height?: number };
+  }
 </script>
 
 <script lang="ts">
@@ -39,6 +45,7 @@
   import ShowCardAnimation from './ShowCardAnimation.svelte';
   import GuessCardAnimation from './GuessCardAnimation.svelte';
   import CardPlayAnimation from './CardPlayAnimation.svelte';
+  import DrawCardAnimation from './DrawCardAnimation.svelte';
 
   const dispatch = createEventDispatcher<{
     animationComplete: { id: string; type: string };
@@ -235,6 +242,13 @@
       data
     });
   }
+
+  export function queueDrawCardAnimation(data: DrawCardAnimationData): string {
+    return queueAnimation({
+      type: 'drawCard',
+      data
+    });
+  }
 </script>
 
 <!-- Render current animation based on type -->
@@ -268,6 +282,14 @@
         cardType={currentAnimation.data.cardType}
         sourcePosition={currentAnimation.data.sourcePosition}
         playedCardsPosition={currentAnimation.data.playedCardsPosition}
+        isVisible={true}
+        on:animationComplete={() => handleAnimationComplete(currentAnimation?.id || '')}
+      />
+    {:else if currentAnimation.type === 'drawCard'}
+      <DrawCardAnimation
+        playerName={currentAnimation.data.playerName}
+        deckPosition={currentAnimation.data.deckPosition}
+        playerPosition={currentAnimation.data.playerPosition}
         isVisible={true}
         on:animationComplete={() => handleAnimationComplete(currentAnimation?.id || '')}
       />
