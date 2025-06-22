@@ -14,7 +14,8 @@
   import { isPlayerProtected } from '$lib/utils/gameDataProcessor';
   import GameTable from '$lib/components/game/core/GameTable.svelte';
   import AnimationManager from '$lib/components/game/animations/AnimationManager.svelte';
-  import { InteractionBlocker } from '$lib/components/game/ui';
+  import { InteractionBlocker, GameLog } from '$lib/components/game/ui';
+  import type { LogEntry } from '$lib/components/game/ui/GameLog.svelte';
   import type { 
     InitialGameStatusDto, 
     PrivatePlayerUpdateDto, 
@@ -61,6 +62,10 @@
   
   // Animation manager reference
   let animationManager: AnimationManager;
+
+  // Game log state
+  let logEntries: LogEntry[] = [];
+  let isLogCollapsed: boolean = false;
 
   // Get initial game data from gameStore
   const initialGameData = getStore(gameStore);
@@ -109,8 +114,18 @@
     errorMessage = '';
   }
   
-  function showNotification(message: string, type: 'info' | 'success' | 'warning' = 'info') {
-    // For now, just log to console. Could be enhanced with a proper notification system
+  function showNotification(message: string, type: 'info' | 'success' | 'warning' | 'error' = 'info') {
+    const logEntry: LogEntry = {
+      id: `${Date.now()}-${Math.random()}`,
+      timestamp: new Date(),
+      message,
+      type
+    };
+    
+    // Add to log entries
+    logEntries = [logEntry, ...logEntries].slice(0, 100); // Keep last 100 entries
+    
+    // Still log to console for debugging
     console.log(`[${type.toUpperCase()}] ${message}`);
   }
   
@@ -136,6 +151,15 @@
     
     // Fall back to the part before @ in the email
     return email.split('@')[0];
+  }
+  
+  // Handle log events
+  function handleLogToggle(event: CustomEvent<{ collapsed: boolean }>) {
+    isLogCollapsed = event.detail.collapsed;
+  }
+  
+  function handleLogClear() {
+    logEntries = [];
   }
   
   // Handle card played event - triggered when a card is initially played
@@ -251,6 +275,8 @@
           if (!players.includes(playerEmail)) {
             players = [...players, playerEmail];
           }
+          const playerName = getPlayerDisplayName(playerEmail);
+          showNotification(`Player joined: ${playerName}`, 'info');
         },
         onRoundStarted: (initialGameStatus: InitialGameStatusDto) => {
           console.log('Round started:', initialGameStatus);
@@ -264,10 +290,17 @@
             currentTurnPlayerEmail = status.allPlayersInOrder[status.firstPlayerIndex];
             console.log('Initial turn player:', currentTurnPlayerEmail);
           }
+          
+          // Add round started notification to log
+          showNotification('New round started!', 'success');
+          const firstPlayerName = getPlayerDisplayName(currentTurnPlayerEmail);
+          showNotification(`${firstPlayerName} goes first`, 'info');
         },
         onNextTurn: (playerEmail: string) => {
           console.log('Next turn:', playerEmail);
           currentTurnPlayerEmail = playerEmail;
+          const playerName = getPlayerDisplayName(playerEmail);
+          showNotification(`${playerName}'s turn`, 'info');
         },
         onPlayerDrewCard: (playerEmail: string) => {
           console.log('Player drew card:', playerEmail);
@@ -347,11 +380,13 @@
         onDrawCardError: (error: string) => {
           console.error('Draw card error:', error);
           showError(`Failed to draw card: ${error}`);
+          showNotification(`Draw card failed: ${error}`, 'error');
         },
         onGameStartError: (error: string) => {
           console.error('Game start error:', error);
           isGameStarting = false;
           showError(`Failed to start game: ${error}`);
+          showNotification(`Game start failed: ${error}`, 'error');
         },
         // New MessageFactory events replace old CardResult events
         onPlayCard: (data: { player: string; cardType: number }) => {
@@ -431,7 +466,9 @@
         },
         onPeekCard: (data: { invoker: string; target: string }) => {
           console.log('PeekCard event:', data);
-          showNotification(`${getPlayerDisplayName(data.invoker)} looked at ${getPlayerDisplayName(data.target)}'s card`, 'info');
+          const invokerName = getPlayerDisplayName(data.invoker);
+          const targetName = getPlayerDisplayName(data.target);
+          showNotification(`${invokerName} looked at ${targetName}'s card`, 'info');
         },
         onShowCard: (data: { invoker: string; target: string, cardType: number }) => {
           console.log('ShowCard event:', data);
@@ -470,20 +507,28 @@
             });
           } else {
             // For other players, just show the regular notification
-            showNotification(`${getPlayerDisplayName(data.invoker)} looked at ${getPlayerDisplayName(data.target)}'s card`, 'info');
+            const invokerName = getPlayerDisplayName(data.invoker);
+            const targetName = getPlayerDisplayName(data.target);
+            showNotification(`${invokerName} looked at ${targetName}'s card`, 'info');
           }
         },
         onCompareCards: (data: { invoker: string; target: string }) => {
           console.log('CompareCards event:', data);
-          showNotification(`${getPlayerDisplayName(data.invoker)} compared cards with ${getPlayerDisplayName(data.target)}`, 'info');
+          const invokerName = getPlayerDisplayName(data.invoker);
+          const targetName = getPlayerDisplayName(data.target);
+          showNotification(`${invokerName} compared cards with ${targetName}`, 'info');
         },
         onComparisonTie: (data: { invoker: string; target: string }) => {
           console.log('ComparisonTie event:', data);
-          showNotification(`${getPlayerDisplayName(data.invoker)} and ${getPlayerDisplayName(data.target)} tied in comparison`, 'info');
+          const invokerName = getPlayerDisplayName(data.invoker);
+          const targetName = getPlayerDisplayName(data.target);
+          showNotification(`${invokerName} and ${targetName} tied in comparison`, 'info');
         },
         onDiscardCard: (data: { target: string; cardType: number }) => {
           console.log('DiscardCard event:', data);
-          showNotification(`${getPlayerDisplayName(data.target)} discarded ${getCardName(data.cardType)}`, 'info');
+          const targetName = getPlayerDisplayName(data.target);
+          const cardName = getCardName(data.cardType);
+          showNotification(`${targetName} discarded ${cardName}`, 'info');
           
           // Add the discarded card to the player's played cards display
           if (gameStatus) {
@@ -572,7 +617,8 @@
         },
         onCardReturnedToDeck: (data: { player: string; cardCount: number }) => {
           console.log('CardReturnedToDeck event:', data);
-          showNotification(`${getPlayerDisplayName(data.player)} returned ${data.cardCount} card(s) to the deck`, 'info');
+          const playerName = getPlayerDisplayName(data.player);
+          showNotification(`${playerName} returned ${data.cardCount} card(s) to the deck`, 'info');
           // Increase deck count when cards are returned to deck
           if (gameStatus) {
             gameStatus.cardsRemainingInDeck = (gameStatus.cardsRemainingInDeck || 0) + data.cardCount;
@@ -596,19 +642,23 @@
         },
         onSwitchCards: (data: { invoker: string; target: string }) => {
           console.log('SwitchCards event:', data);
-          showNotification(`${getPlayerDisplayName(data.invoker)} switched cards with ${getPlayerDisplayName(data.target)}`, 'info');
+          const invokerName = getPlayerDisplayName(data.invoker);
+          const targetName = getPlayerDisplayName(data.target);
+          showNotification(`${invokerName} switched cards with ${targetName}`, 'info');
         },
         onPlayerProtected: (data: { player: string }) => {
           console.log('PlayerProtected event:', data);
-          showNotification(`${getPlayerDisplayName(data.player)} is now protected for 1 turn`, 'info');
+          const playerName = getPlayerDisplayName(data.player);
+          showNotification(`${playerName} is now protected for 1 turn`, 'info');
         },
         onChooseCard: (data: { player: string }) => {
           console.log('ChooseCard event:', data);
           // This indicates the player needs to choose cards (like Chancellor effect)
+          const playerName = getPlayerDisplayName(data.player);
           if (data.player === userEmail) {
             showNotification('You need to choose which cards to keep', 'info');
           } else {
-            showNotification(`${getPlayerDisplayName(data.player)} needs to choose cards`, 'info');
+            showNotification(`${playerName} needs to choose cards`, 'info');
           }
         },
         onPublicPlayerUpdate: (data: PublicPlayerUpdateDto) => {
@@ -624,10 +674,12 @@
         onCardChoiceError: (error: string) => {
           console.error('Card choice error:', error);
           showError(`Failed to submit card choice: ${error}`);
+          showNotification(`Card choice failed: ${error}`, 'error');
         },
         onMandatoryCardPlay: (message: string, requiredCardType: number) => {
           console.log('Mandatory card play:', message, requiredCardType);
           showError(`You must play the ${getCardName(requiredCardType)} card! ${message}`);
+          showNotification(`You must play ${getCardName(requiredCardType)}! ${message}`, 'warning');
         },
         onRoundWinners: (winners: string[]) => {
           console.log('Round winners:', winners);
@@ -716,16 +768,24 @@
     {#if !gameStatus}
       <GameLobby {players} {userEmail} />
     {:else}
-      <GameTable 
-        bind:this={gameTableComponent}
-        gameStatus={gameStatus} 
-        currentUserEmail={userEmail} 
-        currentTurnPlayerEmail={currentTurnPlayerEmail} 
-        localPlayerPlayedCards={localPlayerPlayedCards}
-        {hiddenCardType}
-        {animatingPlayerEmail}
-        {isAnimationPlaying}
-      />
+      <div class="game-layout">
+        <GameTable 
+          bind:this={gameTableComponent}
+          gameStatus={gameStatus} 
+          currentUserEmail={userEmail} 
+          currentTurnPlayerEmail={currentTurnPlayerEmail} 
+          localPlayerPlayedCards={localPlayerPlayedCards}
+          {hiddenCardType}
+          {animatingPlayerEmail}
+          {isAnimationPlaying}
+        />
+        <GameLog 
+          {logEntries}
+          isCollapsed={isLogCollapsed}
+          on:toggle={handleLogToggle}
+          on:clear={handleLogClear}
+        />
+      </div>
     {/if}
 
     <!-- Animation Manager - handles all animations centrally -->
@@ -767,6 +827,30 @@
     max-width: 1200px;
     margin: 0 auto;
     padding: 1rem;
+    position: relative;
+  }
+  
+  .game-layout {
+    display: flex;
+    gap: 1.5rem;
+    justify-content: center;
+    align-items: stretch;
+    min-height: 80vh;
+    max-height: 80vh;
+  }
+  
+  @media (max-width: 1024px) {
+    .game-layout {
+      gap: 1rem;
+    }
+  }
+  
+  @media (max-width: 768px) {
+    .game-layout {
+      flex-direction: column;
+      gap: 1rem;
+      max-height: none;
+    }
   }
   
   .game-header {

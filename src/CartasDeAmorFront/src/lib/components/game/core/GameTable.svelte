@@ -486,13 +486,33 @@
 
 <style>
   .game-container {
-    width: 100%;
+    flex: 1;
+    min-width: 600px;
     height: 80vh;
+    min-height: 600px;
     display: flex;
     justify-content: center;
     align-items: center;
     background: linear-gradient(135deg, #3e2723 0%, #5d4037 50%, #3e2723 100%);
     border-radius: 12px;
     padding: 2rem;
+    position: relative;
+  }
+
+  @media (max-width: 1024px) {
+    .game-container {
+      min-width: 500px;
+      padding: 1.5rem;
+    }
+  }
+
+  @media (max-width: 768px) {
+    .game-container {
+      min-width: unset;
+      width: 100%;
+      height: 70vh;
+      min-height: 500px;
+      padding: 1rem;
+    }
   }
 </style>
