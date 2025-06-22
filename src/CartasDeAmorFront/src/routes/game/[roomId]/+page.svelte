@@ -288,13 +288,12 @@
           const status = initialGameStatus;
           if (status.allPlayersInOrder && status.firstPlayerIndex >= 0 && status.firstPlayerIndex < status.allPlayersInOrder.length) {
             currentTurnPlayerEmail = status.allPlayersInOrder[status.firstPlayerIndex];
-            console.log('Initial turn player:', currentTurnPlayerEmail);
           }
           
           // Add round started notification to log
           showNotification('New round started!', 'success');
           const firstPlayerName = getPlayerDisplayName(currentTurnPlayerEmail);
-          showNotification(`${firstPlayerName} goes first`, 'info');
+          showNotification(`${firstPlayerName} will go first`, 'info');
         },
         onNextTurn: (playerEmail: string) => {
           console.log('Next turn:', playerEmail);
@@ -306,6 +305,7 @@
           console.log('Player drew card:', playerEmail);
           
           const playerName = getPlayerDisplayName(playerEmail);
+          showNotification(`${playerName} drew a card`, 'info');
           
           // Get deck position and player position for animation
           let deckPosition = { x: window.innerWidth / 2, y: window.innerHeight / 2, width: 70, height: 98 };
@@ -330,10 +330,7 @@
             playerName,
             deckPosition,
             playerPosition
-          });
-          
-          // Update the visual representation to show the player now has an additional card (after animation starts)
-          setTimeout(() => {
+          }, () => {
             if (gameStatus && playerEmail !== userEmail) {
               // Find the player in otherPlayersPublicData and increment their cardsInHand
               const otherPlayers = gameStatus.otherPlayersPublicData || [];
@@ -343,7 +340,6 @@
                 playerToUpdate.cardsInHand = (playerToUpdate.cardsInHand || 1) + 1;
                 // Trigger reactivity by creating a new gameStatus object
                 gameStatus = { ...gameStatus, otherPlayersPublicData: [...otherPlayers] };
-                console.log(`Updated ${playerEmail} cards in hand to ${playerToUpdate.cardsInHand}`);
               }
             }
 
@@ -351,12 +347,7 @@
             if (gameStatus && gameStatus.cardsRemainingInDeck > 0) {
               gameStatus.cardsRemainingInDeck -= 1;
             }
-          }, 500); // Start updating after animation begins
-          
-          // Show notification after the animation completes
-          setTimeout(() => {
-            showNotification(`${playerName} drew a card`, 'info');
-          }, 800); // Total animation time is about 0.7s
+          });
         },
         onPrivatePlayerUpdate: (playerUpdate: PrivatePlayerUpdateDto) => {
           console.log('Private player update:', playerUpdate);
@@ -396,6 +387,8 @@
           const playedCard = data.cardType as CardType;
           const playerName = getPlayerDisplayName(playerEmail);
           
+          showNotification(`${playerName} played ${getCardName(playedCard)}`, 'info');
+          
           // Get card source position from player's hand
           let sourcePosition = { x: window.innerWidth / 2, y: window.innerHeight / 2, width: 50, height: 70 };
           
@@ -427,17 +420,9 @@
             sourcePosition,
             playedCardsPosition,
             tableCenterPosition: tableCenter
-          });
-          
-          // Handle the card play event logic after a delay to let animation start
-          setTimeout(() => {
+          }, () => {
             handleCardPlayed(data);
-          }, 200);
-          
-          // Show notification after the animation completes
-          setTimeout(() => {
-            showNotification(`${playerName} played ${getCardName(playedCard)}`, 'info');
-          }, 3500); // Total animation time is about 3.8s, show notification a bit before end
+          });
         },
         onGuessCard: (data: { invoker: string; cardType: number; target: string }) => {
           console.log('GuessCard event received:', data);
@@ -455,17 +440,14 @@
           const targetName = getPlayerDisplayName(data.target);
           const guessedCardType = data.cardType as CardType;
           
+          showNotification(`${invokerName} guessed ${targetName} has ${getCardName(data.cardType)}`, 'info');
+          
           // Queue guess card animation using animation manager
           animationManager.queueGuessCardAnimation({
             invokerName,
             targetName,
             guessedCardType
           });
-          
-          // Show notification after a short delay to let animation play
-          setTimeout(() => {
-            showNotification(`${invokerName} guessed ${targetName} has ${getCardName(data.cardType)}`, 'info');
-          }, 2000);
         },
         onPeekCard: (data: { invoker: string; target: string }) => {
           console.log('PeekCard event:', data);
@@ -473,6 +455,9 @@
           const targetName = getPlayerDisplayName(data.target);
 
           if (data.invoker === userEmail) return;
+          
+          // Show notification immediately to preserve event order
+          showNotification(`${invokerName} looked at ${targetName}'s card`, 'info');
           
           // Get positions for the animation
           let targetPosition = { x: window.innerWidth / 2, y: window.innerHeight / 2, width: 50, height: 70 };
@@ -499,57 +484,46 @@
             targetPosition,
             invokerPosition
           });
-          
-          // Show notification after the animation completes
-          setTimeout(() => {
-            showNotification(`${invokerName} looked at ${targetName}'s card`, 'info');
-          }, 2200); // Total animation time is 2.2s (0.6 + 1.0 + 0.6)
         },
         onShowCard: (data: { invoker: string; target: string, cardType: number }) => {
           console.log('ShowCard event:', data);
           
           // Only show animation if this is relevant to the current user
           // (i.e., the current user is the one who gets to see the card)
-          if (data.invoker === userEmail) {
-            const targetPlayerName = getPlayerDisplayName(data.target);
-            
-            // Get specific card position from GameTable
-            let sourcePosition = { x: window.innerWidth / 2, y: window.innerHeight / 2 };
-            
-            if (gameTableComponent) {
-              const cardPosition = gameTableComponent.getPlayerCardPosition(data.target, data.cardType);
-              if (cardPosition) {
-                sourcePosition = cardPosition;
-              } else {
-                // Fallback to general player position
-                const players = gameTableComponent.getProcessedPlayers();
-                const tableCenter = getGameTableCenter();
-                sourcePosition = getPlayerScreenPosition(data.target, players, tableCenter);
-              }
+          const targetPlayerName = getPlayerDisplayName(data.target);
+          showNotification(`${targetPlayerName}'s card is ${data.cardType}'`, 'info');
+          
+          // Get specific card position from GameTable
+          let sourcePosition = { x: window.innerWidth / 2, y: window.innerHeight / 2 };
+          
+          if (gameTableComponent) {
+            const cardPosition = gameTableComponent.getPlayerCardPosition(data.target, data.cardType);
+            if (cardPosition) {
+              sourcePosition = cardPosition;
             } else {
-              // Fallback to center when no game table component
-              sourcePosition = { x: window.innerWidth / 2, y: window.innerHeight / 2 };
+              // Fallback to general player position
+              const players = gameTableComponent.getProcessedPlayers();
+              const tableCenter = getGameTableCenter();
+              sourcePosition = getPlayerScreenPosition(data.target, players, tableCenter);
             }
-            
-            // Hide the card in the target player's hand
-            hiddenCardType = data.cardType as CardType;
-            animatingPlayerEmail = data.target;
-
-            let tableCenterPosition = getGameTableCenter();
-
-            // Queue show card animation using animation manager
-            animationManager.queueShowCardAnimation({
-              targetPlayerName: targetPlayerName,
-              cardType: data.cardType as CardType,
-              sourcePosition,
-              tableCenterPosition
-            });
           } else {
-            // For other players, just show the regular notification
-            const invokerName = getPlayerDisplayName(data.invoker);
-            const targetName = getPlayerDisplayName(data.target);
-            showNotification(`${invokerName} looked at ${targetName}'s card`, 'info');
+            // Fallback to center when no game table component
+            sourcePosition = { x: window.innerWidth / 2, y: window.innerHeight / 2 };
           }
+          
+          // Hide the card in the target player's hand
+          hiddenCardType = data.cardType as CardType;
+          animatingPlayerEmail = data.target;
+
+          let tableCenterPosition = getGameTableCenter();
+
+          // Queue show card animation using animation manager
+          animationManager.queueShowCardAnimation({
+            targetPlayerName: targetPlayerName,
+            cardType: data.cardType as CardType,
+            sourcePosition,
+            tableCenterPosition
+          });
         },
         onCompareCards: (data: { invoker: string; target: string }) => {
           console.log('CompareCards event:', data);
@@ -565,6 +539,7 @@
         },
         onDiscardCard: (data: { target: string; cardType: number }) => {
           console.log('DiscardCard event:', data);
+
           const targetName = getPlayerDisplayName(data.target);
           const cardName = getCardName(data.cardType);
           showNotification(`${targetName} discarded ${cardName}`, 'info');
@@ -588,8 +563,6 @@
                   playerToUpdate.playedCards = [];
                 }
                 playerToUpdate.playedCards.push(discardedCard);
-                
-                console.log(`Added discarded card to ${getPlayerDisplayName(playerEmail)}: ${getCardName(discardedCard)}`);
               }
             }
             
@@ -602,6 +575,9 @@
           
           const playerEmail = data.player;
           const playerName = getPlayerDisplayName(playerEmail);
+          
+          // Show notification immediately to preserve event order
+          showNotification(`${playerName} drew a card`, 'info');
           
           // Get deck position and player position for animation
           let deckPosition = { x: window.innerWidth / 2, y: window.innerHeight / 2, width: 70, height: 98 };
@@ -626,10 +602,7 @@
             playerName,
             deckPosition,
             playerPosition
-          });
-          
-          // Update the visual representation to show the player now has an additional card (after animation starts)
-          setTimeout(() => {
+          }, () => {
             if (gameStatus && playerEmail !== userEmail) {
               // Find the player in otherPlayersPublicData and increment their cardsInHand
               const otherPlayers = gameStatus.otherPlayersPublicData || [];
@@ -639,7 +612,6 @@
                 playerToUpdate.cardsInHand = (playerToUpdate.cardsInHand || 1) + 1;
                 // Trigger reactivity by creating a new gameStatus object
                 gameStatus = { ...gameStatus, otherPlayersPublicData: [...otherPlayers] };
-                console.log(`Updated ${playerEmail} cards in hand to ${playerToUpdate.cardsInHand}`);
               }
             }
 
@@ -647,18 +619,14 @@
             if (gameStatus && gameStatus.cardsRemainingInDeck > 0) {
               gameStatus.cardsRemainingInDeck -= 1;
             }
-          }, 500); // Start updating after animation begins
-          
-          // Show notification after the animation completes
-          setTimeout(() => {
-            showNotification(`${playerName} drew a card`, 'info');
-          }, 800); // Total animation time is about 0.7s
+          });
         },
         onCardReturnedToDeck: (data: { player: string; cardCount: number }) => {
           console.log('CardReturnedToDeck event:', data);
           const playerName = getPlayerDisplayName(data.player);
           showNotification(`${playerName} returned ${data.cardCount} card(s) to the deck`, 'info');
           // Increase deck count when cards are returned to deck
+          // TODO: visually remove cards from player's hand
           if (gameStatus) {
             gameStatus.cardsRemainingInDeck = (gameStatus.cardsRemainingInDeck || 0) + data.cardCount;
           }
@@ -668,6 +636,10 @@
           
           // Get player display name for animation
           const eliminatedPlayerName = getPlayerDisplayName(data.player);
+          
+          // Show notification immediately to preserve event order
+          showNotification(`${eliminatedPlayerName} was eliminated!`, 'warning');
+          
           const tableCenter = getGameTableCenter();
           
           // Queue elimination animation using animation manager
@@ -675,11 +647,6 @@
             playerName: eliminatedPlayerName,
             center: tableCenter
           });
-
-          // Show notification after a short delay to let animation play
-          setTimeout(() => {
-            showNotification(`${eliminatedPlayerName} was eliminated!`, 'warning');
-          }, 500);
         },
         onSwitchCards: (data: { invoker: string; target: string }) => {
           console.log('SwitchCards event:', data);
@@ -704,7 +671,6 @@
         },
         onPublicPlayerUpdate: (data: PublicPlayerUpdateDto) => {
           console.log('PublicPlayerUpdate event:', data);
-          // Update the UI based on public player information (without card type)
           updatePlayerDataFromPublicUpdate(data);
         },
         // Other game events
@@ -725,18 +691,13 @@
         onRoundWinners: (winners: string[]) => {
           console.log('Round winners:', winners);
           const winnerNames = winners.map(email => getPlayerDisplayName(email));
+          showNotification(`Round won by: ${winnerNames.join(', ')}`, 'success');
           
           // Queue round winners animation using animation manager
           animationManager.queueRoundWinnersAnimation({
             animationCenter: getGameTableCenter(),
             winnerNames
           });
-          
-          // Show notification after animation completes
-          setTimeout(() => {
-            const winnerNamesText = winnerNames.join(', ');
-            showNotification(`Round won by: ${winnerNamesText}`, 'success');
-          }, 3300); // Total animation time is 3.3s (0.3s + 2s + 1s)
         },
         onBonusPoints: (players: string[]) => {
           console.log('Bonus points awarded to:', players);
