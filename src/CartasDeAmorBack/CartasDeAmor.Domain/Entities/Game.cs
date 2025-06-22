@@ -32,16 +32,36 @@ public class Game
         return Players.ElementAt(CurrentPlayerIndex);
     }
 
+    private int GetNextPlayerIndex()
+    {
+        if (Players.Count == 0)
+            throw new InvalidOperationException("No players in the game.");
+
+        var nextIndex = (CurrentPlayerIndex + 1) % Players.Count;
+
+        // Skip eliminated players
+        while (nextIndex != CurrentPlayerIndex && Players.ElementAt(nextIndex).IsEliminated())
+        {
+            nextIndex = (nextIndex + 1) % Players.Count;
+        }
+
+        return nextIndex;
+    }
+
     /// <summary>
     /// Gets the next player in turn order
     /// </summary>
     public Player? GetNextPlayer()
     {
-        if (Players.Count == 0)
-            return null;
-
-        var nextIndex = (CurrentPlayerIndex + 1) % Players.Count;
-        return Players.ElementAt(nextIndex);
+        try
+        {
+            var nextIndex = GetNextPlayerIndex();
+            return Players.ElementAt(nextIndex);
+        }
+        catch (InvalidOperationException)
+        {
+            return null; // No players available
+        }
     }
 
     /// <summary>
@@ -49,10 +69,14 @@ public class Game
     /// </summary>
     public void AdvanceToNextPlayer()
     {
-        if (Players.Count > 0)
+        try
         {
-            CurrentPlayerIndex = (CurrentPlayerIndex + 1) % Players.Count;
+            CurrentPlayerIndex = GetNextPlayerIndex();
             UpdatedAt = DateTime.UtcNow;
+        }
+        catch (InvalidOperationException ex)
+        {
+            throw new GameException("Cannot advance to next player: " + ex.Message);
         }
     }
 
