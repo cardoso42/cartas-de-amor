@@ -391,23 +391,6 @@
             playerName,
             deckPosition,
             playerPosition
-          }, () => {
-            if (gameStatus && playerEmail !== userEmail) {
-              // Find the player in otherPlayersPublicData and increment their cardsInHand
-              const otherPlayers = gameStatus.otherPlayersPublicData || [];
-              const playerToUpdate = otherPlayers.find(p => p.userEmail === playerEmail);
-              
-              if (playerToUpdate) {
-                playerToUpdate.cardsInHand = (playerToUpdate.cardsInHand || 1) + 1;
-                // Trigger reactivity by creating a new gameStatus object
-                gameStatus = { ...gameStatus, otherPlayersPublicData: [...otherPlayers] };
-              }
-            }
-
-            // Decrease the deck count when any player draws a card
-            if (gameStatus && gameStatus.cardsRemainingInDeck > 0) {
-              gameStatus.cardsRemainingInDeck -= 1;
-            }
           });
         },
         onPrivatePlayerUpdate: (playerUpdate: PrivatePlayerUpdateDto) => {

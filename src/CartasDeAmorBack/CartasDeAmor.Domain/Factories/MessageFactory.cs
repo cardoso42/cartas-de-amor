@@ -218,4 +218,14 @@ public static class MessageFactory
             }
         };
     }
+
+    public static SpecialMessage PlayerDrewCard(string player)
+    {
+        return new SpecialMessage
+        {
+            Dest = "",
+            Message = "PlayerDrewCard",
+            ExtraData = player
+        };
+    }
 }
