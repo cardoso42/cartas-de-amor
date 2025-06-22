@@ -274,22 +274,93 @@
           showNotification(`Player joined: ${playerName}`, 'info');
         },
         onRoundStarted: (initialGameStatus: InitialGameStatusDto) => {
-          gameStatus = initialGameStatus;
-          localPlayerPlayedCards = []; // Reset played cards for new round
-          eliminatedPlayers.clear(); // Reset eliminated players for new round
-          eliminatedPlayers = new Set(eliminatedPlayers); // Trigger reactivity
-          isGameStarting = false;
+          // Store the current state before updating
+          const oldGameStatus = gameStatus;
           
-          // Set initial turn player from game status
-          const status = initialGameStatus;
-          if (status.allPlayersInOrder && status.firstPlayerIndex >= 0 && status.firstPlayerIndex < status.allPlayersInOrder.length) {
-            currentTurnPlayerEmail = status.allPlayersInOrder[status.firstPlayerIndex];
+          // Prepare animation data before updating game status
+          let animationPlayers: Array<{
+            email: string;
+            name: string;
+            position: { x: number; y: number; width?: number; height?: number };
+            hadCards: boolean;
+          }> = [];
+
+          // Get deck position
+          let deckPosition = { x: window.innerWidth / 2, y: window.innerHeight / 2, width: 70, height: 98 };
+          if (gameTableComponent) {
+            const deckPos = gameTableComponent.getDeckPosition();
+            if (deckPos) {
+              deckPosition = deckPos;
+            }
           }
-          
-          // Add round started notification to log
-          showNotification('New round started!', 'success');
-          const firstPlayerName = getPlayerDisplayName(currentTurnPlayerEmail);
-          showNotification(`${firstPlayerName} will go first`, 'info');
+
+          // Get table center
+          const tableCenter = { x: window.innerWidth / 2, y: window.innerHeight / 2 };
+
+          // Collect animation data for all players
+          if (oldGameStatus) {
+            // Add current user
+            const userHadCards = (oldGameStatus.yourCards || []).length > 0;
+            let userPosition = { x: window.innerWidth / 2, y: window.innerHeight / 2, width: 65, height: 90 };
+            if (gameTableComponent) {
+              const userPos = gameTableComponent.getPlayerHandPosition(userEmail);
+              if (userPos) {
+                userPosition = userPos;
+              }
+            }
+            
+            animationPlayers.push({
+              email: userEmail,
+              name: getPlayerDisplayName(userEmail),
+              position: userPosition,
+              hadCards: userHadCards
+            });
+
+            // Add other players
+            (oldGameStatus.otherPlayersPublicData || []).forEach(player => {
+              const playerHadCards = (player.cardsInHand || 0) > 0;
+              let playerPosition = { x: window.innerWidth / 2, y: window.innerHeight / 2, width: 65, height: 90 };
+              
+              if (gameTableComponent) {
+                const playerPos = gameTableComponent.getPlayerHandPosition(player.userEmail);
+                if (playerPos) {
+                  playerPosition = playerPos;
+                }
+              }
+
+              animationPlayers.push({
+                email: player.userEmail,
+                name: getPlayerDisplayName(player.userEmail),
+                position: playerPosition,
+                hadCards: playerHadCards
+              });
+            });
+          }
+
+          // Queue round start animation
+          animationManager.queueRoundStartAnimation({
+            players: animationPlayers,
+            deckPosition,
+            tableCenter
+          }, () => {
+            // Update game status after animation completes
+            gameStatus = initialGameStatus;
+            localPlayerPlayedCards = []; // Reset played cards for new round
+            eliminatedPlayers.clear(); // Reset eliminated players for new round
+            eliminatedPlayers = new Set(eliminatedPlayers); // Trigger reactivity
+            isGameStarting = false;
+            
+            // Set initial turn player from game status
+            const status = initialGameStatus;
+            if (status.allPlayersInOrder && status.firstPlayerIndex >= 0 && status.firstPlayerIndex < status.allPlayersInOrder.length) {
+              currentTurnPlayerEmail = status.allPlayersInOrder[status.firstPlayerIndex];
+            }
+            
+            // Add round started notification to log
+            showNotification('New round started!', 'success');
+            const firstPlayerName = getPlayerDisplayName(currentTurnPlayerEmail);
+            showNotification(`${firstPlayerName} will go first`, 'info');
+          });
         },
         onNextTurn: (playerEmail: string) => {
           currentTurnPlayerEmail = playerEmail;

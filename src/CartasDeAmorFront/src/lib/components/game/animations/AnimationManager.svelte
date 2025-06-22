@@ -5,7 +5,7 @@
   // Animation types
   export interface AnimationRequest {
     id: string;
-    type: 'elimination' | 'showCard' | 'guessCard' | 'cardPlay' | 'drawCard' | 'peekCard' | 'roundWinners' | 'gameOver' | 'custom';
+    type: 'elimination' | 'showCard' | 'guessCard' | 'cardPlay' | 'drawCard' | 'peekCard' | 'roundWinners' | 'gameOver' | 'roundStart' | 'custom';
     data: any;
     callback?: () => void;
   }
@@ -59,6 +59,17 @@
     winnerEmails: string[];
     currentUserEmail: string;
   }
+
+  export interface RoundStartAnimationData {
+    players: Array<{
+      email: string;
+      name: string;
+      position: { x: number; y: number; width?: number; height?: number };
+      hadCards: boolean;
+    }>;
+    deckPosition: { x: number; y: number; width?: number; height?: number };
+    tableCenter: { x: number; y: number };
+  }
 </script>
 
 <script lang="ts">
@@ -71,6 +82,7 @@
   import PeekCardAnimation from './PeekCardAnimation.svelte';
   import RoundWinnersAnimation from './RoundWinnersAnimation.svelte';
   import GameOverAnimation from './GameOverAnimation.svelte';
+  import RoundStartAnimation from './RoundStartAnimation.svelte';
   import settings from '$lib/stores/settingsStore';
 
   const dispatch = createEventDispatcher<{
@@ -334,6 +346,14 @@
       callback
     });
   }
+
+  export function queueRoundStartAnimation(data: RoundStartAnimationData, callback?: () => void): string {
+    return queueAnimation({
+      type: 'roundStart',
+      data,
+      callback
+    });
+  }
 </script>
 
 <!-- Render current animation based on type -->
@@ -402,6 +422,14 @@
         winnerNames={currentAnimation.data.winnerNames}
         winnerEmails={currentAnimation.data.winnerEmails}
         currentUserEmail={currentAnimation.data.currentUserEmail}
+        isVisible={true}
+        on:animationComplete={() => handleAnimationComplete(currentAnimation?.id || '')}
+      />
+    {:else if currentAnimation.type === 'roundStart'}
+      <RoundStartAnimation
+        players={currentAnimation.data.players}
+        deckPosition={currentAnimation.data.deckPosition}
+        tableCenter={currentAnimation.data.tableCenter}
         isVisible={true}
         on:animationComplete={() => handleAnimationComplete(currentAnimation?.id || '')}
       />
