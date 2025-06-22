@@ -182,10 +182,7 @@
       const otherPlayers = gameStatus.otherPlayersPublicData || [];
       const playerToUpdate = otherPlayers.find(p => p.userEmail === playerEmail);
       
-      if (playerToUpdate) {
-        // Reduce their cards in hand count
-        playerToUpdate.cardsInHand = Math.max(0, (playerToUpdate.cardsInHand || 1) - 1);
-        
+      if (playerToUpdate) {        
         // Add the played card to their played cards list
         if (!playerToUpdate.playedCards) {
           playerToUpdate.playedCards = [];
@@ -684,7 +681,6 @@
               const playerToUpdate = otherPlayers.find(p => p.userEmail === playerEmail);
               
               if (playerToUpdate) {
-                playerToUpdate.cardsInHand = (playerToUpdate.cardsInHand || 1) + 1;
                 // Trigger reactivity by creating a new gameStatus object
                 gameStatus = { ...gameStatus, otherPlayersPublicData: [...otherPlayers] };
               }
