@@ -4,6 +4,7 @@ using CartasDeAmor.Domain.Enums;
 using CartasDeAmor.Application.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using CartasDeAmor.Domain.Exceptions;
+using CartasDeAmor.Domain.Entities;
 
 namespace CartasDeAmor.Presentation.Hubs;
 
@@ -32,6 +33,26 @@ public class GameHub(
         await Groups.AddToGroupAsync(Context.ConnectionId, roomId.ToString());
         
         _logger.LogInformation("User {User} joined room {RoomId}", userEmail, roomId);
+    }
+
+    private async Task SendSpecialMessage(Guid roomId, SpecialMessage message)
+    {
+        if (string.IsNullOrEmpty(message.Dest))
+        {
+            await Clients.Group(roomId.ToString()).SendAsync(message.Message, message.ExtraData);
+        }
+        else
+        {
+            await Clients.User(message.Dest).SendAsync(message.Message, message.ExtraData);
+        }
+    }
+    
+    private async Task SendSpecialMessages(Guid roomId, List<SpecialMessage> messages)
+    {
+        foreach (var message in messages)
+        {
+            await SendSpecialMessage(roomId, message);
+        }
     }
 
     public async Task LeaveRoom(Guid roomId)
@@ -175,18 +196,7 @@ public class GameHub(
         {
             var result = await _gameService.PlayCardAsync(roomId, userEmail, cardPlayDto);
 
-            foreach (var message in result.SpecialMessages)
-            {
-                if (string.IsNullOrEmpty(message.Dest))
-                {
-                    await Clients.Group(roomId.ToString()).SendAsync(message.Message, message.ExtraData);
-                }
-                else
-                {
-                    await Clients.User(message.Dest).SendAsync(message.Message, message.ExtraData);
-                }
-            }
-
+            await SendSpecialMessages(roomId, result.SpecialMessages);
             _logger.LogInformation("User {User} played card {CardType} in room {RoomId}", userEmail, cardPlayDto.CardType, roomId);
 
             if (result.ShouldAdvanceTurn)
