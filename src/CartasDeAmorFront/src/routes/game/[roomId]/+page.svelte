@@ -471,7 +471,39 @@
           console.log('PeekCard event:', data);
           const invokerName = getPlayerDisplayName(data.invoker);
           const targetName = getPlayerDisplayName(data.target);
-          showNotification(`${invokerName} looked at ${targetName}'s card`, 'info');
+
+          if (data.invoker === userEmail) return;
+          
+          // Get positions for the animation
+          let targetPosition = { x: window.innerWidth / 2, y: window.innerHeight / 2, width: 50, height: 70 };
+          let invokerPosition = { x: window.innerWidth / 2, y: window.innerHeight / 2, width: 50, height: 70 };
+          
+          if (gameTableComponent) {
+            // Get target player hand position
+            const targetPos = gameTableComponent.getPlayerHandPosition(data.target);
+            if (targetPos) {
+              targetPosition = targetPos;
+            }
+            
+            // Get invoker player hand position
+            const invokerPos = gameTableComponent.getPlayerHandPosition(data.invoker);
+            if (invokerPos) {
+              invokerPosition = invokerPos;
+            }
+          }
+          
+          // Queue peek card animation using animation manager
+          animationManager.queuePeekCardAnimation({
+            invokerName,
+            targetName,
+            targetPosition,
+            invokerPosition
+          });
+          
+          // Show notification after the animation completes
+          setTimeout(() => {
+            showNotification(`${invokerName} looked at ${targetName}'s card`, 'info');
+          }, 2200); // Total animation time is 2.2s (0.6 + 1.0 + 0.6)
         },
         onShowCard: (data: { invoker: string; target: string, cardType: number }) => {
           console.log('ShowCard event:', data);

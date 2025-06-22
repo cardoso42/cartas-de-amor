@@ -5,7 +5,7 @@
   // Animation types
   export interface AnimationRequest {
     id: string;
-    type: 'elimination' | 'showCard' | 'guessCard' | 'cardPlay' | 'drawCard' | 'roundWinners' | 'gameOver' | 'custom';
+    type: 'elimination' | 'showCard' | 'guessCard' | 'cardPlay' | 'drawCard' | 'peekCard' | 'roundWinners' | 'gameOver' | 'custom';
     data: any;
   }
 
@@ -41,6 +41,13 @@
     playerPosition: { x: number; y: number; width?: number; height?: number };
   }
 
+  export interface PeekCardAnimationData {
+    invokerName: string;
+    targetName: string;
+    targetPosition: { x: number; y: number; width?: number; height?: number };
+    invokerPosition: { x: number; y: number; width?: number; height?: number };
+  }
+
   export interface RoundWinnersAnimationData {
     animationCenter: { x: number; y: number };
     winnerNames: string[];
@@ -60,6 +67,7 @@
   import GuessCardAnimation from './GuessCardAnimation.svelte';
   import CardPlayAnimation from './CardPlayAnimation.svelte';
   import DrawCardAnimation from './DrawCardAnimation.svelte';
+  import PeekCardAnimation from './PeekCardAnimation.svelte';
   import RoundWinnersAnimation from './RoundWinnersAnimation.svelte';
   import GameOverAnimation from './GameOverAnimation.svelte';
   import settings from '$lib/stores/settingsStore';
@@ -282,6 +290,13 @@
     });
   }
 
+  export function queuePeekCardAnimation(data: PeekCardAnimationData): string {
+    return queueAnimation({
+      type: 'peekCard',
+      data
+    });
+  }
+
   export function queueRoundWinnersAnimation(data: RoundWinnersAnimationData): string {
     return queueAnimation({
       type: 'roundWinners',
@@ -339,6 +354,15 @@
         playerName={currentAnimation.data.playerName}
         deckPosition={currentAnimation.data.deckPosition}
         playerPosition={currentAnimation.data.playerPosition}
+        isVisible={true}
+        on:animationComplete={() => handleAnimationComplete(currentAnimation?.id || '')}
+      />
+    {:else if currentAnimation.type === 'peekCard'}
+      <PeekCardAnimation
+        invokerName={currentAnimation.data.invokerName}
+        targetName={currentAnimation.data.targetName}
+        targetPosition={currentAnimation.data.targetPosition}
+        invokerPosition={currentAnimation.data.invokerPosition}
         isVisible={true}
         on:animationComplete={() => handleAnimationComplete(currentAnimation?.id || '')}
       />
