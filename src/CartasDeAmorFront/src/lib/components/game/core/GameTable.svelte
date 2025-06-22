@@ -497,7 +497,7 @@
   .game-container {
     flex: 1;
     min-width: 600px;
-    height: 80vh;
+    height: var(--game-table-height, 80vh);
     min-height: 600px;
     display: flex;
     justify-content: center;
@@ -519,7 +519,7 @@
     .game-container {
       min-width: unset;
       width: 100%;
-      height: 70vh;
+      height: var(--game-table-height, 70vh);
       min-height: 500px;
       padding: 1rem;
     }

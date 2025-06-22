@@ -8,7 +8,7 @@
 </script>
 
 <script lang="ts">
-  import { createEventDispatcher } from 'svelte';
+  import { createEventDispatcher, afterUpdate } from 'svelte';
 
   export let logEntries: LogEntry[] = [];
   export let isCollapsed: boolean = false;
@@ -19,13 +19,23 @@
   }>();
 
   let logContainer: HTMLElement;
+  let previousLogCount = 0;
 
-  // Auto-scroll to bottom when new entries are added
-  $: if (logContainer && logEntries.length > 0) {
-    setTimeout(() => {
-      logContainer.scrollTop = logContainer.scrollHeight;
-    }, 100);
-  }
+  // Auto-scroll to bottom when new entries are added (newest entries appear at bottom)
+  afterUpdate(() => {
+    if (logContainer && logEntries.length > previousLogCount && previousLogCount > 0) {
+      // Check if user is already at or near the bottom (within 50px tolerance)
+      const scrolledDistance = logContainer.scrollTop + logContainer.clientHeight;
+      const tolerance = logContainer.scrollHeight - logContainer.clientHeight * 0.1;
+
+      if (scrolledDistance >= tolerance) {
+        setTimeout(() => {
+          logContainer.scrollTop = logContainer.scrollHeight;
+        }, 10);
+      }
+    }
+    previousLogCount = logEntries.length;
+  });
 
   function toggleCollapse() {
     isCollapsed = !isCollapsed;
@@ -63,22 +73,26 @@
 
 <div class="game-log" class:collapsed={isCollapsed}>
   <div class="log-header">
-    <h3>Game Log</h3>
+    {#if !isCollapsed}
+      <h3>Game Log</h3>
+    {/if}
     <div class="log-controls">
-      <button 
-        class="log-control-btn" 
-        on:click={clearLog} 
-        title="Clear log"
-        disabled={logEntries.length === 0}
-      >
-        <span class="material-icons">delete</span>
-      </button>
+      {#if !isCollapsed}
+        <button 
+          class="log-control-btn" 
+          on:click={clearLog} 
+          title="Clear log"
+          disabled={logEntries.length === 0}
+        >
+          <span class="material-icons">delete</span>
+        </button>
+      {/if}
       <button 
         class="log-control-btn" 
         on:click={toggleCollapse} 
         title={isCollapsed ? 'Expand log' : 'Collapse log'}
       >
-        <span class="material-icons">{isCollapsed ? 'expand_more' : 'expand_less'}</span>
+        <span class="material-icons">{isCollapsed ? 'open_in_full' : 'close_fullscreen'}</span>
       </button>
     </div>
   </div>
@@ -90,7 +104,7 @@
           <p>No game events yet...</p>
         </div>
       {:else}
-        {#each logEntries as entry (entry.id)}
+        {#each logEntries.slice().reverse() as entry (entry.id)}
           <div class="log-entry {getLogTypeClass(entry.type)}">
             <span class="material-icons log-icon">{getLogTypeIcon(entry.type)}</span>
             <span class="log-time">{formatTime(entry.timestamp)}</span>
@@ -105,7 +119,7 @@
 <style>
   .game-log {
     width: 300px;
-    height: 100%;
+    max-height: var(--game-table-height, 80vh); /* Match GameTable height */
     background: rgba(0, 0, 0, 0.9);
     border: 2px solid #8b4513;
     border-radius: 8px;
@@ -119,6 +133,8 @@
   .game-log.collapsed {
     height: 50px;
     min-height: 50px;
+    width: 50px;
+    min-width: 50px;
   }
 
   .log-header {
@@ -133,6 +149,11 @@
     flex-shrink: 0;
   }
 
+  .game-log.collapsed .log-header {
+    justify-content: center;
+    padding: 0.75rem 0.5rem;
+  }
+
   .log-header h3 {
     margin: 0;
     font-size: 1rem;
@@ -143,6 +164,10 @@
   .log-controls {
     display: flex;
     gap: 0.5rem;
+  }
+
+  .game-log.collapsed .log-controls {
+    gap: 0;
   }
 
   .log-control-btn {
@@ -319,6 +344,8 @@
     .game-log.collapsed {
       height: 50px;
       max-height: 50px;
+      width: 50px;
+      min-width: 50px;
     }
 
     .log-header h3 {

@@ -847,11 +847,15 @@
     align-items: stretch;
     min-height: 80vh;
     max-height: 80vh;
+    
+    /* Set CSS custom property for both GameTable and GameLog to use */
+    --game-table-height: 80vh;
   }
   
   @media (max-width: 1024px) {
     .game-layout {
       gap: 1rem;
+      --game-table-height: 80vh;
     }
   }
   
@@ -860,6 +864,8 @@
       flex-direction: column;
       gap: 1rem;
       max-height: none;
+      min-height: 70vh;
+      --game-table-height: 70vh;
     }
   }
   
