@@ -62,6 +62,7 @@
   import DrawCardAnimation from './DrawCardAnimation.svelte';
   import RoundWinnersAnimation from './RoundWinnersAnimation.svelte';
   import GameOverAnimation from './GameOverAnimation.svelte';
+  import settings from '$lib/stores/settingsStore';
 
   const dispatch = createEventDispatcher<{
     animationComplete: { id: string; type: string };
@@ -77,6 +78,9 @@
   // Export animation state for reactive access
   export { isAnimating };
   export let currentAnimationType: string | null = null;
+  
+  // Subscribe to settings store for animations enabled state
+  $: animationsEnabled = $settings.animationsEnabled;
   
   // Update current animation type reactively
   $: currentAnimationType = currentAnimation?.type || null;
@@ -102,6 +106,18 @@
       id,
       ...animationRequest
     };
+
+    // If animations are disabled, immediately complete the animation without showing it
+    if (!animationsEnabled) {
+      // Dispatch completion event immediately
+      setTimeout(() => {
+        dispatch('animationComplete', {
+          id: animation.id,
+          type: animation.type
+        });
+      }, 0);
+      return id;
+    }
 
     // Add to end of queue (FIFO - first in, first out)
     animationQueue.push(animation);
@@ -282,7 +298,7 @@
 </script>
 
 <!-- Render current animation based on type -->
-{#if currentAnimation && isAnimating}
+{#if currentAnimation && isAnimating && animationsEnabled}
   <div class="animation-manager-overlay">
     {#if currentAnimation.type === 'elimination'}
       <EliminationAnimation
@@ -350,7 +366,7 @@
   <div class="animation-debug" class:visible={isAnimating || animationQueue.length > 0}>
     <div class="debug-content">
       <div class="debug-status">
-        🎬 Animations: {isAnimating ? '▶️' : '⏸️'} | Queue: {animationQueue.length}
+        🎬 Animations: {animationsEnabled ? (isAnimating ? '▶️' : '⏸️') : '🚫'} | Queue: {animationQueue.length}
       </div>
       
       {#if currentAnimation}

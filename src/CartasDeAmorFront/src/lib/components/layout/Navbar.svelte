@@ -3,6 +3,7 @@
   import { auth } from '$lib/stores/authStore';
   import { goto } from '$app/navigation';
   import { logout } from '$lib/services/authService';
+  import AnimationToggle from '$lib/components/ui/AnimationToggle.svelte';
 
   // Track authentication state
   let isAuthenticated = false;
@@ -32,6 +33,7 @@
         <a href="/rooms" class:active={$page.url.pathname === '/rooms'}>Game Lobby</a>
         <a href="/profile" class:active={$page.url.pathname === '/profile'}>My Profile</a>
         <a href="/rules" class:active={$page.url.pathname === '/rules'}>Game Rules</a>
+        <AnimationToggle />
         <button class="navbar-button" on:click={handleLogout}>Logout</button>
       {:else}
         <!-- Links for non-authenticated users -->

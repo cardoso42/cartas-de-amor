@@ -3,13 +3,15 @@
   import Navbar from '$lib/components/layout/Navbar.svelte';
   import auth from '$lib/stores/authStore';
   import { user } from '$lib/stores/userStore';
+  import settings from '$lib/stores/settingsStore';
   import '$lib/styles/index.css';
 
   // Initialize stores on app start
   onMount(() => {
-    // Synchronize both stores from localStorage
+    // Synchronize all stores from localStorage
     auth.synchronize();
     user.synchronize();
+    settings.synchronize();
   });
 </script>
 

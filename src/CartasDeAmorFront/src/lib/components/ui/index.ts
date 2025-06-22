@@ -8,6 +8,7 @@ export { default as Select } from './Select.svelte';
 export { default as Checkbox } from './Checkbox.svelte';
 export { default as LoadingSpinner } from './LoadingSpinner.svelte';
 export { default as Card } from './Card.svelte';
+export { default as AnimationToggle } from './AnimationToggle.svelte';
 
 // Types for component props (can be expanded as needed)
 export interface ButtonProps {
