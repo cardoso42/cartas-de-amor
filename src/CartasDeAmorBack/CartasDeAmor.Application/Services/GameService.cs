@@ -285,6 +285,7 @@ public class GameService : IGameService
         {
             requirementsDto.Requirements.Add(CardActionRequirements.SelectPlayer);
             requirementsDto.PossibleTargets = gameRoom.Players
+                .Where(p => p.IsInGame())
                 .Select(p => p.UserEmail)
                 .ToList();
 

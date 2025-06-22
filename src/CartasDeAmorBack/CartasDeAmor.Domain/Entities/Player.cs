@@ -29,6 +29,9 @@ public class Player
         return HoldingCards.Count > 0;
     }
 
+    /// <summary>
+    ///  Marks the player as eliminated, transferring all their cards to played cards
+    /// </summary>
     public void Eliminate()
     {
         foreach (var card in HoldingCards)
@@ -37,10 +40,15 @@ public class Player
         }
 
         HoldingCards.Clear();
-        
+
         Status = PlayerStatus.Eliminated;
     }
 
+    /// <summary>
+    /// Gets the first card from the player's hand
+    /// </summary>
+    /// <exception cref="InvalidOperationException">Thrown if the player has no cards in hand</exception>
+    /// <returns>The first card in the player's hand</returns>
     public CardType GetCard()
     {
         if (HoldingCards.Count == 0)
@@ -130,6 +138,11 @@ public class Player
     {
         return Status == PlayerStatus.Protected;
     }
+    
+    public bool IsInGame()
+    {
+        return Status == PlayerStatus.Active || Status == PlayerStatus.Protected;
+    }
 
     /// <summary>
     /// Sets the player's protection status
@@ -138,7 +151,7 @@ public class Player
     {
         if (Status != PlayerStatus.Active && Status != PlayerStatus.Protected)
             throw new InvalidOperationException("Cannot change protection status of an eliminated or disconnected player.");
-        
+
         Status = isProtected ? PlayerStatus.Protected : PlayerStatus.Active;
     }
 
