@@ -18,6 +18,7 @@
     playedCards: number[];
     isProtected: boolean;
     isCurrentTurn: boolean;
+    isEliminated: boolean;
   };
   export let position: { angle: number; distance: number };
   export let isValidTarget: boolean = false;
@@ -77,6 +78,7 @@
   class:clickable-target={isValidTarget}
   class:invalid-target={gameFlowState === 'selecting_player' && !isValidTarget}
   class:selected-target={isSelectedTarget}
+  class:eliminated={player.isEliminated}
   style="
     left: 50%;
     top: 50%;
@@ -90,9 +92,11 @@
     : undefined}
 >
   <!-- Player name -->
-  <div class="player-name" class:protected={player.isProtected} class:current-turn={player.isCurrentTurn}>
+  <div class="player-name" class:protected={player.isProtected} class:current-turn={player.isCurrentTurn} class:eliminated={player.isEliminated}>
     {player.name}
-    {#if player.isProtected}
+    {#if player.isEliminated}
+      <span class="elimination-icon">💀</span>
+    {:else if player.isProtected}
       <span class="protection-icon">🛡️</span>
     {/if}
     {#if gameFlowState === 'selecting_player'}
@@ -112,18 +116,20 @@
   </div>
   
   <!-- Player's hand -->
-  <PlayerHand 
-    bind:this={playerHandComponent}
-    cards={player.cards}
-    isLocalPlayer={player.isLocalPlayer}
-    cardsInHand={player.cardsInHand}
-    {isMyTurn}
-    {selectedCard}
-    {hiddenCardType}
-    {animatingPlayerEmail}
-    {isAnimationPlaying}
-    on:cardClick={handleCardClick}
-  />
+  {#if !player.isEliminated}
+    <PlayerHand 
+      bind:this={playerHandComponent}
+      cards={player.cards}
+      isLocalPlayer={player.isLocalPlayer}
+      cardsInHand={player.cardsInHand}
+      {isMyTurn}
+      {selectedCard}
+      {hiddenCardType}
+      {animatingPlayerEmail}
+      {isAnimationPlaying}
+      on:cardClick={handleCardClick}
+    />
+  {/if}
 </div>
 
 <!-- Played cards positioned on the table surface in front of the player -->
@@ -178,6 +184,22 @@
     cursor: not-allowed;
   }
   
+  .player-area.eliminated {
+    opacity: 0.6;
+    filter: grayscale(0.7);
+  }
+  
+  .player-area.eliminated .player-name {
+    background: rgba(139, 0, 0, 0.8);
+    color: #ffcccc;
+    text-decoration: line-through;
+  }
+  
+  .player-area.eliminated.local-player .player-name {
+    background: rgba(139, 0, 0, 0.8);
+    color: #ffcccc;
+  }
+  
   .player-area.clickable-target:focus {
     outline: 2px solid #00ff00;
     outline-offset: 4px;
@@ -215,6 +237,17 @@
   .protection-icon {
     margin-left: 0.25rem;
     font-size: 0.8rem;
+  }
+  
+  .elimination-icon {
+    margin-left: 0.25rem;
+    font-size: 0.8rem;
+    animation: eliminationBlink 2s ease-in-out infinite;
+  }
+  
+  @keyframes eliminationBlink {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.3; }
   }
   
   .target-icon {

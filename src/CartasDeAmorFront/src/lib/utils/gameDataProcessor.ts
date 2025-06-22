@@ -18,6 +18,13 @@ export function isPlayerProtected(status: number): boolean {
   return status === PlayerStatus.Protected;
 }
 
+/**
+ * Derive elimination status from PlayerStatus enum
+ */
+export function isPlayerEliminated(status: number): boolean {
+  return status === PlayerStatus.Eliminated;
+}
+
 export interface ProcessedPlayer {
   id: number;
   name: string;
@@ -30,6 +37,7 @@ export interface ProcessedPlayer {
   playedCards: number[];
   isProtected: boolean;
   isCurrentTurn: boolean;
+  isEliminated: boolean;
 }
 
 /**
@@ -40,7 +48,8 @@ export function processGameData(
   userEmail: string, 
   turnPlayer: string,
   localPlayerName: string,
-  localPlayerPlayedCards: number[]
+  localPlayerPlayedCards: number[],
+  eliminatedPlayers: Set<string> = new Set()
 ): ProcessedPlayer[] {
   const processedPlayers: ProcessedPlayer[] = [];
   
@@ -56,7 +65,8 @@ export function processGameData(
     cardsInHand: (status.yourCards || []).length,
     playedCards: localPlayerPlayedCards, // Use the tracked local player played cards
     isProtected: status.isProtected !== undefined ? status.isProtected : false,
-    isCurrentTurn: userEmail === turnPlayer
+    isCurrentTurn: userEmail === turnPlayer,
+    isEliminated: eliminatedPlayers.has(userEmail) // Check local elimination state
   });
   
   // Add other players in order around the table
@@ -72,7 +82,8 @@ export function processGameData(
       cardsInHand: player.cardsInHand || 1,
       playedCards: player.playedCards || [], // Include played cards for display
       isProtected: player.isProtected !== undefined ? player.isProtected : isPlayerProtected(player.status || 0),
-      isCurrentTurn: player.userEmail === turnPlayer
+      isCurrentTurn: player.userEmail === turnPlayer,
+      isEliminated: eliminatedPlayers.has(player.userEmail) || isPlayerEliminated(player.status || 0)
     });
   });
   

@@ -24,6 +24,8 @@
   export let hiddenCardType: CardType | null = null;
   export let animatingPlayerEmail: string = '';
   export let isAnimationPlaying: boolean = false;
+  // Eliminated players tracking
+  export let eliminatedPlayers: Set<string> = new Set();
   
   // Get room ID from URL params
   const roomId = $page.params.roomId;
@@ -53,7 +55,7 @@
   let totalSteps = 0;
 
   // Process the game data into display format (depends on currentTurnPlayer for turn indicator)
-  $: players = gameStatus ? processGameData(gameStatus, currentUserEmail, currentTurnPlayer, localPlayerName, localPlayerPlayedCards) : [];
+  $: players = gameStatus ? processGameData(gameStatus, currentUserEmail, currentTurnPlayer, localPlayerName, localPlayerPlayedCards, eliminatedPlayers) : [];
   $: totalPlayers = players.length;
   
   // Determine whose turn it is

@@ -65,6 +65,9 @@
   // Game log state
   let logEntries: LogEntry[] = [];
   let isLogCollapsed: boolean = false;
+  
+  // Track eliminated players locally until game state updates
+  let eliminatedPlayers = new Set<string>();
 
   // Get initial game data from gameStore
   const initialGameData = getStore(gameStore);
@@ -273,6 +276,8 @@
         onRoundStarted: (initialGameStatus: InitialGameStatusDto) => {
           gameStatus = initialGameStatus;
           localPlayerPlayedCards = []; // Reset played cards for new round
+          eliminatedPlayers.clear(); // Reset eliminated players for new round
+          eliminatedPlayers = new Set(eliminatedPlayers); // Trigger reactivity
           isGameStarting = false;
           
           // Set initial turn player from game status
@@ -616,6 +621,28 @@
           animationManager.queueEliminationAnimation({
             playerName: eliminatedPlayerName,
             center: tableCenter
+          }, () => {
+            // After animation completes, mark player as eliminated and remove their cards
+            eliminatedPlayers.add(data.player);
+            eliminatedPlayers = new Set(eliminatedPlayers); // Trigger reactivity
+            
+            // Clear the player's cards from the game status
+            if (gameStatus) {
+              if (data.player === userEmail) {
+                // Clear local player's cards
+                gameStatus.yourCards = [];
+              } else {
+                // Clear other player's cards
+                const otherPlayers = gameStatus.otherPlayersPublicData || [];
+                const playerToUpdate = otherPlayers.find(p => p.userEmail === data.player);
+                if (playerToUpdate) {
+                  playerToUpdate.cardsInHand = 0;
+                }
+              }
+              
+              // Trigger reactivity
+              gameStatus = { ...gameStatus };
+            }
           });
         },
         onSwitchCards: (data: { invoker: string; target: string }) => {
@@ -742,6 +769,7 @@
           {hiddenCardType}
           {animatingPlayerEmail}
           {isAnimationPlaying}
+          {eliminatedPlayers}
         />
         <GameLog 
           {logEntries}
