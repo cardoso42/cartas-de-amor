@@ -193,10 +193,45 @@ export const signalR = {
     }
   },
   
+  async disconnect() {
+    const state = get(signalRStore);
+    
+    if (state.connection) {
+      try {
+        console.log('Disconnecting SignalR connection');
+        await state.connection.stop();
+        signalRStore.update(s => ({ 
+          ...s, 
+          connection: null, 
+          status: 'disconnected',
+          currentRoomId: null,
+          error: null
+        }));
+        return true;
+      } catch (error) {
+        console.error('Error disconnecting SignalR:', error);
+        return false;
+      }
+    }
+    
+    return true;
+  },
+  
   async initialize() {
     if (!browser) return null;
 
     try {
+      // First, close any existing connection
+      const currentState = get(signalRStore);
+      if (currentState.connection) {
+        console.log('Closing existing SignalR connection before creating new one');
+        try {
+          await currentState.connection.stop();
+        } catch (error) {
+          console.warn('Error stopping existing connection:', error);
+        }
+      }
+
       signalRStore.update(state => ({ ...state, status: 'connecting' }));
       const token = auth.getToken();
       
@@ -222,6 +257,16 @@ export const signalR = {
           error: error ? `Connection closed: ${error.message}` : 'Connection closed'
         }));
       });
+
+      // Clean up connection when page is unloaded
+      if (browser) {
+        const handleBeforeUnload = () => {
+          if (connection && connection.state === SignalR.HubConnectionState.Connected) {
+            connection.stop();
+          }
+        };
+        window.addEventListener('beforeunload', handleBeforeUnload);
+      }
 
       // Attach event handlers
       attachEventHandlers(connection);
@@ -270,7 +315,11 @@ export const signalR = {
     const state = get(signalRStore);
     let connection = state.connection;
     
-    if (!connection) {
+    // If we already have a connection, ensure it's properly connected
+    if (connection && connection.state === SignalR.HubConnectionState.Connected) {
+      // Use existing connection
+    } else {
+      // Need to create new connection (either no connection or connection is not connected)
       connection = await this.initialize();
     }
     
@@ -309,7 +358,11 @@ export const signalR = {
     const state = get(signalRStore);
     let connection = state.connection;
     
-    if (!connection) {
+    // If we already have a connected connection, use it
+    if (connection && connection.state === SignalR.HubConnectionState.Connected) {
+      // Use existing connection
+    } else {
+      // Need to create new connection (either no connection or connection is not connected)
       connection = await this.initialize();
     }
     
@@ -330,7 +383,7 @@ export const signalR = {
   async startGame(roomId: string) {
     const state = get(signalRStore);
     
-    if (state.connection) {
+    if (state.connection && state.connection.state === SignalR.HubConnectionState.Connected) {
       try {
         await state.connection.invoke('StartGame', roomId);
         return true;
@@ -346,7 +399,7 @@ export const signalR = {
   async drawCard(roomId: string) {
     const state = get(signalRStore);
     
-    if (state.connection) {
+    if (state.connection && state.connection.state === SignalR.HubConnectionState.Connected) {
       try {
         await state.connection.invoke('DrawCard', roomId);
         return true;
@@ -362,7 +415,7 @@ export const signalR = {
   async getCardRequirements(roomId: string, cardType: number) {
     const state = get(signalRStore);
     
-    if (state.connection) {
+    if (state.connection && state.connection.state === SignalR.HubConnectionState.Connected) {
       try {
         await state.connection.invoke('GetCardRequirements', roomId, cardType);
         return true;
@@ -378,7 +431,7 @@ export const signalR = {
   async playCard(roomId: string, cardPlayDto: { cardType: number; targetPlayerEmail?: string | null; targetCardType?: number | null }) {
     const state = get(signalRStore);
     
-    if (state.connection) {
+    if (state.connection && state.connection.state === SignalR.HubConnectionState.Connected) {
       try {
         await state.connection.invoke('PlayCard', roomId, cardPlayDto);
         return true;
@@ -394,7 +447,7 @@ export const signalR = {
   async submitCardChoice(roomId: string, keepCardType: number, returnCardTypes: number[]) {
     const state = get(signalRStore);
     
-    if (state.connection) {
+    if (state.connection && state.connection.state === SignalR.HubConnectionState.Connected) {
       try {
         await state.connection.invoke('SubmitCardChoice', roomId, keepCardType, returnCardTypes);
         return true;

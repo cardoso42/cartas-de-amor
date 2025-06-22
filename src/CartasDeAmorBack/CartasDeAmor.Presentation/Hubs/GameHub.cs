@@ -87,11 +87,7 @@ public class GameHub(
             // Send each player the initial game status
             for (int i = 0; i < players.Count; i++)
             {
-                var connectionIds = GetUserConnectionIds(players[i].UserEmail, roomId);
-                foreach (var connectionId in connectionIds)
-                {
-                    await Clients.Client(connectionId).SendAsync("RoundStarted", gameStatus[i]);
-                }
+                await Clients.User(players[i].UserEmail).SendAsync("RoundStarted", gameStatus[i]);
             }
 
             // Prepare the game for the first player
@@ -187,11 +183,7 @@ public class GameHub(
                 }
                 else
                 {
-                    var connectionIds = GetUserConnectionIds(message.Dest, roomId);
-                    foreach (var connectionId in connectionIds)
-                    {
-                        await Clients.Client(connectionId).SendAsync(message.Message, message.ExtraData);
-                    }
+                    await Clients.User(message.Dest).SendAsync(message.Message, message.ExtraData);
                 }
             }
 
