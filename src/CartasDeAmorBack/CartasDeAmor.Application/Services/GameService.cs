@@ -126,7 +126,7 @@ public class GameService : IGameService
         return players[game.CurrentPlayerIndex].UserEmail == userEmail;
     }
 
-    public async Task<PrivatePlayerUpdateDto> DrawCardAsync(Guid roomId, string userEmail)
+    public async Task<List<SpecialMessage>> DrawCardAsync(Guid roomId, string userEmail)
     {
         var game = await _roomRepository.GetByIdAsync(roomId) ?? throw new InvalidOperationException("Room not found");
 
@@ -155,7 +155,12 @@ public class GameService : IGameService
 
         await _roomRepository.UpdateAsync(game);
 
-        return new PrivatePlayerUpdateDto(currentPlayer);
+        return
+        [
+            MessageFactory.PlayerDrewCard(currentPlayer.UserEmail),
+            MessageFactory.PlayerUpdatePublic(currentPlayer),
+            MessageFactory.PlayerUpdatePrivate(currentPlayer)
+        ];
     }
 
     public async Task<string> NextPlayerAsync(Guid roomId)

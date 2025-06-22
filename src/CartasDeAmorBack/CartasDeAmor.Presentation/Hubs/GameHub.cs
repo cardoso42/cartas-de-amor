@@ -59,9 +59,11 @@ public class GameHub(
     {
         var userEmail = _accountService.GetEmailFromToken(Context.User);
         _connectionMapping.RemoveConnection(userEmail, Context.ConnectionId);
-        
+
         await Groups.RemoveFromGroupAsync(Context.ConnectionId, roomId.ToString());
         await _gameRoomService.RemoveUserFromRoomAsync(roomId, userEmail);
+
+        // TODO: Warn users that the user has left the room
 
         _logger.LogInformation("User {User} left room {RoomId}", userEmail, roomId);
     }
@@ -73,12 +75,8 @@ public class GameHub(
 
         try
         {
-            var playerStatus = await _gameService.DrawCardAsync(roomId, userEmail);
-
-            // Notify all players about the drawn card
-            await Clients.Client(Context.ConnectionId).SendAsync("PlayerUpdatePrivate", playerStatus);
-            await Clients.Group(roomId.ToString()).SendAsync("PlayerDrewCard", userEmail);
-
+            var messages = await _gameService.DrawCardAsync(roomId, userEmail);
+            await SendSpecialMessages(roomId, messages);
             _logger.LogInformation("User {User} drew a card in room {RoomId}", userEmail, roomId);
         }
         catch (InvalidOperationException ex)
@@ -245,6 +243,7 @@ public class GameHub(
 
             var invokerPrivateUpdate = await _gameService.GetPlayerStatusAsync(roomId, userEmail);
             await Clients.Client(Context.ConnectionId).SendAsync("PlayerUpdatePrivate", invokerPrivateUpdate);
+            // TODO: await Clients.Group(roomId.ToString()).SendAsync("PlayerUpdatePublic", _gameService.GetPublicPlayerStatus(roomId, userEmail));
 
             await AdvanceGame(roomId);
         }
