@@ -651,8 +651,14 @@
         },
         onGameOver: (winners: string[]) => {
           console.log('Game over, winners:', winners);
-          const winnerNames = winners.map(email => getPlayerDisplayName(email)).join(', ');
-          showNotification(`🎉 Game Over! Winners: ${winnerNames}`, 'success');
+          const winnerNames = winners.map(email => getPlayerDisplayName(email));
+          
+          // Queue game over animation using animation manager
+          animationManager.queueGameOverAnimation({
+            winnerNames,
+            winnerEmails: winners,
+            currentUserEmail: userEmail
+          });
         }
       });
     } catch (err) {
@@ -729,6 +735,8 @@
         if (event.detail.type === 'showCard') {
           hiddenCardType = null;
           animatingPlayerEmail = '';
+        } else if (event.detail.type === 'gameOver') {
+          goto('/rooms');
         }
         // Card play animations don't need special cleanup
       }}

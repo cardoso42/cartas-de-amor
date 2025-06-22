@@ -5,7 +5,7 @@
   // Animation types
   export interface AnimationRequest {
     id: string;
-    type: 'elimination' | 'showCard' | 'guessCard' | 'cardPlay' | 'drawCard' | 'roundWinners' | 'custom';
+    type: 'elimination' | 'showCard' | 'guessCard' | 'cardPlay' | 'drawCard' | 'roundWinners' | 'gameOver' | 'custom';
     data: any;
   }
 
@@ -41,6 +41,12 @@
   export interface RoundWinnersAnimationData {
     winnerNames: string[];
   }
+
+  export interface GameOverAnimationData {
+    winnerNames: string[];
+    winnerEmails: string[];
+    currentUserEmail: string;
+  }
 </script>
 
 <script lang="ts">
@@ -51,6 +57,7 @@
   import CardPlayAnimation from './CardPlayAnimation.svelte';
   import DrawCardAnimation from './DrawCardAnimation.svelte';
   import RoundWinnersAnimation from './RoundWinnersAnimation.svelte';
+  import GameOverAnimation from './GameOverAnimation.svelte';
 
   const dispatch = createEventDispatcher<{
     animationComplete: { id: string; type: string };
@@ -261,6 +268,13 @@
       data
     });
   }
+
+  export function queueGameOverAnimation(data: GameOverAnimationData): string {
+    return queueAnimation({
+      type: 'gameOver',
+      data
+    });
+  }
 </script>
 
 <!-- Render current animation based on type -->
@@ -308,6 +322,14 @@
     {:else if currentAnimation.type === 'roundWinners'}
       <RoundWinnersAnimation
         winnerNames={currentAnimation.data.winnerNames}
+        isVisible={true}
+        on:animationComplete={() => handleAnimationComplete(currentAnimation?.id || '')}
+      />
+    {:else if currentAnimation.type === 'gameOver'}
+      <GameOverAnimation
+        winnerNames={currentAnimation.data.winnerNames}
+        winnerEmails={currentAnimation.data.winnerEmails}
+        currentUserEmail={currentAnimation.data.currentUserEmail}
         isVisible={true}
         on:animationComplete={() => handleAnimationComplete(currentAnimation?.id || '')}
       />
