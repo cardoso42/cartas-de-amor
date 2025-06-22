@@ -584,6 +584,32 @@
           const invokerName = getPlayerDisplayName(data.invoker);
           const targetName = getPlayerDisplayName(data.target);
           showNotification(`${invokerName} compared cards with ${targetName}`, 'info');
+          
+          // Get positions for the animation
+          let targetPosition = { x: window.innerWidth / 2, y: window.innerHeight / 2, width: 50, height: 70 };
+          let invokerPosition = { x: window.innerWidth / 2, y: window.innerHeight / 2, width: 50, height: 70 };
+          
+          if (gameTableComponent) {
+            // Get target player hand position
+            const targetPos = gameTableComponent.getPlayerHandPosition(data.target);
+            if (targetPos) {
+              targetPosition = targetPos;
+            }
+            
+            // Get invoker player hand position
+            const invokerPos = gameTableComponent.getPlayerHandPosition(data.invoker);
+            if (invokerPos) {
+              invokerPosition = invokerPos;
+            }
+          }
+          
+          // Queue peek card animation using animation manager (reusing peek animation for compare)
+          animationManager.queuePeekCardAnimation({
+            invokerName,
+            targetName,
+            targetPosition,
+            invokerPosition
+          });
         },
         onComparisonTie: (data: { invoker: string; target: string }) => {
           const invokerName = getPlayerDisplayName(data.invoker);
