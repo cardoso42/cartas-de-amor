@@ -631,8 +631,18 @@
         },
         onRoundWinners: (winners: string[]) => {
           console.log('Round winners:', winners);
-          const winnerNames = winners.map(email => getPlayerDisplayName(email)).join(', ');
-          showNotification(`Round won by: ${winnerNames}`, 'success');
+          const winnerNames = winners.map(email => getPlayerDisplayName(email));
+          
+          // Queue round winners animation using animation manager
+          animationManager.queueRoundWinnersAnimation({
+            winnerNames
+          });
+          
+          // Show notification after animation completes
+          setTimeout(() => {
+            const winnerNamesText = winnerNames.join(', ');
+            showNotification(`Round won by: ${winnerNamesText}`, 'success');
+          }, 3300); // Total animation time is 3.3s (0.3s + 2s + 1s)
         },
         onBonusPoints: (players: string[]) => {
           console.log('Bonus points awarded to:', players);

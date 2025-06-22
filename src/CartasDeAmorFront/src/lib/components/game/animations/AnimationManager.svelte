@@ -5,7 +5,7 @@
   // Animation types
   export interface AnimationRequest {
     id: string;
-    type: 'elimination' | 'showCard' | 'guessCard' | 'cardPlay' | 'drawCard' | 'custom';
+    type: 'elimination' | 'showCard' | 'guessCard' | 'cardPlay' | 'drawCard' | 'roundWinners' | 'custom';
     data: any;
   }
 
@@ -37,6 +37,10 @@
     deckPosition: { x: number; y: number; width?: number; height?: number };
     playerPosition: { x: number; y: number; width?: number; height?: number };
   }
+
+  export interface RoundWinnersAnimationData {
+    winnerNames: string[];
+  }
 </script>
 
 <script lang="ts">
@@ -46,6 +50,7 @@
   import GuessCardAnimation from './GuessCardAnimation.svelte';
   import CardPlayAnimation from './CardPlayAnimation.svelte';
   import DrawCardAnimation from './DrawCardAnimation.svelte';
+  import RoundWinnersAnimation from './RoundWinnersAnimation.svelte';
 
   const dispatch = createEventDispatcher<{
     animationComplete: { id: string; type: string };
@@ -249,6 +254,13 @@
       data
     });
   }
+
+  export function queueRoundWinnersAnimation(data: RoundWinnersAnimationData): string {
+    return queueAnimation({
+      type: 'roundWinners',
+      data
+    });
+  }
 </script>
 
 <!-- Render current animation based on type -->
@@ -290,6 +302,12 @@
         playerName={currentAnimation.data.playerName}
         deckPosition={currentAnimation.data.deckPosition}
         playerPosition={currentAnimation.data.playerPosition}
+        isVisible={true}
+        on:animationComplete={() => handleAnimationComplete(currentAnimation?.id || '')}
+      />
+    {:else if currentAnimation.type === 'roundWinners'}
+      <RoundWinnersAnimation
+        winnerNames={currentAnimation.data.winnerNames}
         isVisible={true}
         on:animationComplete={() => handleAnimationComplete(currentAnimation?.id || '')}
       />
