@@ -8,6 +8,7 @@
   export let cardType: CardType;
   export let sourcePosition: { x: number; y: number; width?: number; height?: number };
   export let playedCardsPosition: { x: number; y: number; width?: number; height?: number };
+  export let tableCenterPosition: { x: number; y: number };
   export let isVisible: boolean = false;
 
   const dispatch = createEventDispatcher<{
@@ -64,7 +65,22 @@
 </script>
 
 {#if isVisible && !animationComplete}
-  <div class="animation-overlay" bind:this={animationContainer}>
+  <div 
+    class="animation-overlay" 
+    bind:this={animationContainer}
+    style="
+      --source-x: {sourcePosition.x}px; 
+      --source-y: {sourcePosition.y}px; 
+      --source-width: {sourcePosition.width || 50}px; 
+      --source-height: {sourcePosition.height || 70}px;
+      --played-x: {playedCardsPosition.x}px; 
+      --played-y: {playedCardsPosition.y}px; 
+      --played-width: {playedCardsPosition.width || 32}px; 
+      --played-height: {playedCardsPosition.height || 45}px;
+      --center-x: {tableCenterPosition.x}px;
+      --center-y: {tableCenterPosition.y}px;
+    "
+  >
     <!-- Animated card -->
     <div 
       class="animated-card" 
@@ -73,16 +89,6 @@
       class:displaying={phase === 'displaying'}
       class:moving={phase === 'moving'}
       class:fading={phase === 'fading'}
-      style="
-        --source-x: {sourcePosition.x}px; 
-        --source-y: {sourcePosition.y}px; 
-        --source-width: {sourcePosition.width || 50}px; 
-        --source-height: {sourcePosition.height || 70}px;
-        --played-x: {playedCardsPosition.x}px; 
-        --played-y: {playedCardsPosition.y}px; 
-        --played-width: {playedCardsPosition.width || 32}px; 
-        --played-height: {playedCardsPosition.height || 45}px;
-      "
     >
       <!-- Card face -->
       <div class="card-face">
@@ -139,8 +145,8 @@
 
   /* Growing phase: card grows larger in center */
   .animated-card.growing {
-    left: 50%;
-    top: 50%;
+    left: var(--center-x);
+    top:  var(--center-y);
     width: 120px;
     height: 170px;
     transform: translate(-50%, -50%) scale(1);
@@ -149,8 +155,8 @@
 
   /* Displaying phase: card is prominently displayed */
   .animated-card.displaying {
-    left: 50%;
-    top: 50%;
+    left: var(--center-x);
+    top: var(--center-y);
     width: 160px;
     height: 224px;
     transform: translate(-50%, -50%) scale(1);
@@ -159,8 +165,8 @@
 
   /* Moving phase: card moves to played cards area */
   .animated-card.moving {
-    left: 50%;
-    top: 50%;
+    left: var(--center-x);
+    top: var(--center-y);
     width: 160px;
     height: 224px;
     transform: translate(-50%, -50%);
@@ -232,8 +238,8 @@
 
   .action-text {
     position: absolute;
-    top: 70%;
-    left: 50%;
+    top: calc(var(--center-y) * 1.4);
+    left: var(--center-x);
     transform: translateX(-50%);
     text-align: center;
     color: white;
@@ -267,8 +273,8 @@
       transform: translate(-50%, -50%) scale(1);
     }
     to {
-      left: 50%;
-      top: 50%;
+      left: var(--center-x);
+      top: var(--center-y);
       width: 120px;
       height: 170px;
       transform: translate(-50%, -50%) scale(1);
@@ -297,8 +303,8 @@
 
   @keyframes moveToPlayedCards {
     from {
-      left: 50%;
-      top: 50%;
+      left: var(--center-x);
+      top: var(--center-y);
       width: 160px;
       height: 224px;
       transform: translate(-50%, -50%) scale(1);

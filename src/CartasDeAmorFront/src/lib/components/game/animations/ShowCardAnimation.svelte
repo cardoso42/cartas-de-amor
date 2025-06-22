@@ -7,6 +7,7 @@
   export let targetPlayerName: string = '';
   export let cardType: CardType;
   export let sourcePosition: { x: number; y: number; width?: number; height?: number };
+  export let tableCenterPosition: { x: number; y: number };
   export let isVisible: boolean = false;
 
   const dispatch = createEventDispatcher<{
@@ -18,7 +19,7 @@
   let hasStarted = false;
 
   // Animation phases
-  let phase: 'moving' | 'flipping' | 'revealed' | 'fading' = 'moving';
+  let phase: 'moving' | 'flipping' | 'revealed' | 'returning' = 'moving';
   
   onMount(() => {
     if (isVisible) {
@@ -45,10 +46,10 @@
     
     await new Promise(resolve => setTimeout(resolve, 2000));
     
-    // Phase 4: Fade out (0.25s)
-    phase = 'fading';
+    // Phase 4: Return to original position (0.8s)
+    phase = 'returning';
     
-    await new Promise(resolve => setTimeout(resolve, 250));
+    await new Promise(resolve => setTimeout(resolve, 800));
     
     // Mark animation as complete and dispatch event
     if (!animationComplete) {
@@ -70,16 +71,23 @@
       class:moving={phase === 'moving'}
       class:flipping={phase === 'flipping'}
       class:revealed={phase === 'revealed'}
-      class:fading={phase === 'fading'}
-      style="--source-x: {sourcePosition.x}px; --source-y: {sourcePosition.y}px; --source-width: {sourcePosition.width || 50}px; --source-height: {sourcePosition.height || 70}px;"
+      class:returning={phase === 'returning'}
+      style="
+        --source-x: {sourcePosition.x}px; 
+        --source-y: {sourcePosition.y}px; 
+        --source-width: {sourcePosition.width || 50}px; 
+        --source-height: {sourcePosition.height || 70}px;
+        --center-x: {tableCenterPosition.x}px;
+        --center-y: {tableCenterPosition.y}px;
+"
     >
       <!-- Card back (visible during moving and first half of flipping) -->
-      <div class="card-face card-back" class:hidden={phase === 'revealed' || phase === 'fading'}>
+      <div class="card-face card-back" class:hidden={phase === 'revealed' || phase === 'returning'}>
         <div class="card-back-pattern"></div>
       </div>
       
       <!-- Card front (visible during second half of flipping and revealed) -->
-      <div class="card-face card-front" class:visible={phase === 'revealed' || phase === 'fading'}>
+      <div class="card-face card-front" class:visible={phase === 'revealed' || phase === 'returning'}>
         <div class="card-content">
           <div class="card-number">{getCardName(cardType)}</div>
           <div class="card-name">Card {cardType}</div>
@@ -88,8 +96,8 @@
     </div>
 
     <!-- Information text -->
-    {#if phase === 'revealed' || phase === 'fading'}
-      <div class="info-text" class:fading={phase === 'fading'}>
+    {#if phase === 'revealed'}
+      <div class="info-text">
         You saw {targetPlayerName}'s card!
       </div>
     {/if}
@@ -129,26 +137,26 @@
 
   /* Flipping phase: card rotates to reveal front */
   .animated-card.flipping {
-    left: 50%;
-    top: 50%;
+    left: var(--center-x);
+    top: var(--center-y);
     transform: translate(-50%, -50%);
     animation: flipCard 0.5s ease-in-out forwards;
   }
 
   /* Revealed phase: card is stable in center */
   .animated-card.revealed {
-    left: 50%;
-    top: 50%;
+    left: var(--center-x);
+    top: var(--center-y);
     transform: translate(-50%, -50%) scale(1.2);
     animation: pulseGlow 2s ease-in-out infinite;
   }
 
-  /* Fading phase: card disappears */
-  .animated-card.fading {
-    left: 50%;
-    top: 50%;
+  /* Returning phase: card moves back to original position */
+  .animated-card.returning {
+    left: var(--center-x);
+    top: var(--center-y);
     transform: translate(-50%, -50%) scale(1.2);
-    animation: fadeOut 0.5s ease-out forwards;
+    animation: returnToSource 0.8s ease-in-out forwards;
   }
 
   .card-face {
@@ -232,10 +240,6 @@
     animation: slideInFromBottom 0.3s ease-out;
   }
 
-  .info-text.fading {
-    animation: fadeOut 0.5s ease-out forwards;
-  }
-
   /* Animation keyframes */
   @keyframes moveToCenter {
     from {
@@ -246,8 +250,8 @@
       transform: translate(-50%, -50%);
     }
     to {
-      left: 50%;
-      top: 50%;
+      left: var(--center-x);
+      top: var(--center-y);
       width: 120px;
       height: 170px;
       transform: translate(-50%, -50%);
@@ -275,14 +279,20 @@
     }
   }
 
-  @keyframes fadeOut {
+  @keyframes returnToSource {
     from {
-      opacity: 1;
+      left: var(--center-x);
+      top: var(--center-y);
+      width: 120px;
+      height: 170px;
       transform: translate(-50%, -50%) scale(1.2);
     }
     to {
-      opacity: 0;
-      transform: translate(-50%, -50%) scale(0.8);
+      left: var(--source-x);
+      top: var(--source-y);
+      width: var(--source-width);
+      height: var(--source-height);
+      transform: translate(-50%, -50%) scale(1);
     }
   }
 

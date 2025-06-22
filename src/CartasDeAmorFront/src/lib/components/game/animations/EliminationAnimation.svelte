@@ -3,6 +3,7 @@
   import { onMount, createEventDispatcher } from 'svelte';
 
   export let playerName: string = '';
+  export let center: { x: number; y: number };
   export let isVisible: boolean = false;
 
   const dispatch = createEventDispatcher<{
@@ -14,7 +15,7 @@
   let hasStarted = false;
 
   // Animation phases
-  let phase: 'shake' | 'crack' | 'shatter' | 'fade' = 'shake';
+  let phase: 'shake' | 'fade' = 'shake';
   
   onMount(() => {
     if (isVisible) {
@@ -28,25 +29,15 @@
     }
     hasStarted = true;
     
-    // Phase 1: Shake the warning circle (0.8s)
+    // Phase 1: Shake the warning circle (1s)
     phase = 'shake';
     
-    await new Promise(resolve => setTimeout(resolve, 800));
-    
-    // Phase 2: Show crack effect (0.6s)
-    phase = 'crack';
-    
-    await new Promise(resolve => setTimeout(resolve, 600));
-    
-    // Phase 3: Shatter effect (0.8s) - player name starts showing
-    phase = 'shatter';
-    
-    await new Promise(resolve => setTimeout(resolve, 800));
-    
-    // Phase 4: Fade out (2.8s) - extended time to show player name
+    await new Promise(resolve => setTimeout(resolve, 1000));
+
+    // Phase 4: Fade out (3s)
     phase = 'fade';
     
-    await new Promise(resolve => setTimeout(resolve, 2800));
+    await new Promise(resolve => setTimeout(resolve, 3000));
     
     // Mark animation as complete and dispatch event
     if (!animationComplete) {
@@ -61,55 +52,36 @@
 </script>
 
 {#if isVisible && !animationComplete}
-  <div class="animation-overlay" bind:this={animationContainer}>
+  <div 
+    class="animation-container" 
+    bind:this={animationContainer} 
+    style="--center-x: {center.x}px; --center-y: {center.y}px;"
+  >
     <!-- Player elimination effect -->
     <div 
       class="elimination-effect" 
       class:shaking={phase === 'shake'}
-      class:cracking={phase === 'crack'}
-      class:shattering={phase === 'shatter'}
       class:fading={phase === 'fade'}
     >
       <!-- Red warning circle -->
       <div class="warning-circle">
         <div class="warning-icon">⚠</div>
       </div>
-      
-      <!-- Crack lines -->
-      {#if phase === 'crack' || phase === 'shatter' || phase === 'fade'}
-        <div class="crack-lines">
-          <div class="crack crack-1"></div>
-          <div class="crack crack-2"></div>
-          <div class="crack crack-3"></div>
-          <div class="crack crack-4"></div>
-        </div>
-      {/if}
-      
-      <!-- Shatter fragments -->
-      {#if phase === 'shatter' || phase === 'fade'}
-        <div class="shatter-fragments">
-          {#each Array(8) as _, i}
-            <div class="fragment fragment-{i + 1}"></div>
-          {/each}
-        </div>
-      {/if}
     </div>
 
     <!-- Elimination text -->
-    {#if phase === 'shatter' || phase === 'fade'}
+    {#if phase === 'fade'}
       <div class="elimination-text" class:fading={phase === 'fade'}>
         <div class="eliminated-label">ELIMINATED!</div>
         <div class="player-name">{playerName}</div>
       </div>
     {/if}
 
-    <!-- Dark overlay for dramatic effect -->
-    <div class="dark-overlay" class:visible={phase === 'crack' || phase === 'shatter'} class:fading={phase === 'fade'}></div>
   </div>
 {/if}
 
 <style>
-  .animation-overlay {
+  .animation-container {
     position: fixed;
     top: 0;
     left: 0;
@@ -117,13 +89,12 @@
     height: 100vh;
     pointer-events: none;
     z-index: 1000;
-    background: rgba(0, 0, 0, 0.1);
   }
 
   .elimination-effect {
     position: absolute;
-    left: 50%;
-    top: 50%;
+    left: var(--center-x);
+    top: var(--center-y);
     width: 120px;
     height: 120px;
     transform: translate(-50%, -50%);
@@ -132,22 +103,12 @@
 
   /* Shaking phase */
   .elimination-effect.shaking {
-    animation: violentShake 0.8s ease-in-out;
-  }
-
-  /* Cracking phase */
-  .elimination-effect.cracking .warning-circle {
-    animation: pulseRed 0.6s ease-in-out;
-  }
-
-  /* Shattering phase */
-  .elimination-effect.shattering .warning-circle {
-    animation: explode 0.8s ease-out forwards;
+    animation: violentShake 1s ease-in-out;
   }
 
   /* Fading phase */
   .elimination-effect.fading {
-    animation: fadeOut 2.8s ease-out forwards;
+    animation: fadeOut 3s ease-out forwards;
   }
 
   .warning-circle {
@@ -171,127 +132,10 @@
     animation: pulse 0.5s ease-in-out infinite alternate;
   }
 
-  .crack-lines {
-    position: absolute;
-    width: 100%;
-    height: 100%;
-    top: 0;
-    left: 0;
-  }
-
-  .crack {
-    position: absolute;
-    background: #333;
-    border-radius: 1px;
-    opacity: 0;
-    animation: crackAppear 0.6s ease-out forwards;
-  }
-
-  .crack-1 {
-    width: 2px;
-    height: 60px;
-    top: 50%;
-    left: 30%;
-    transform: translate(-50%, -50%) rotate(45deg);
-    animation-delay: 0.05s;
-  }
-
-  .crack-2 {
-    width: 2px;
-    height: 50px;
-    top: 30%;
-    left: 70%;
-    transform: translate(-50%, -50%) rotate(-30deg);
-    animation-delay: 0.1s;
-  }
-
-  .crack-3 {
-    width: 2px;
-    height: 45px;
-    top: 70%;
-    left: 20%;
-    transform: translate(-50%, -50%) rotate(60deg);
-    animation-delay: 0.15s;
-  }
-
-  .crack-4 {
-    width: 2px;
-    height: 55px;
-    top: 60%;
-    left: 80%;
-    transform: translate(-50%, -50%) rotate(-45deg);
-    animation-delay: 0.2s;
-  }
-
-  .shatter-fragments {
-    position: absolute;
-    width: 100%;
-    height: 100%;
-    top: 0;
-    left: 0;
-  }
-
-  .fragment {
-    position: absolute;
-    width: 20px;
-    height: 20px;
-    background: radial-gradient(circle, #ff6666 0%, #cc0000 100%);
-    border: 1px solid #990000;
-    opacity: 0;
-  }
-
-  .fragment-1 {
-    top: 20%;
-    left: 20%;
-    animation: shatterFly1 0.8s ease-out forwards;
-  }
-
-  .fragment-2 {
-    top: 20%;
-    right: 20%;
-    animation: shatterFly2 0.8s ease-out forwards;
-  }
-
-  .fragment-3 {
-    top: 50%;
-    left: 10%;
-    animation: shatterFly3 0.8s ease-out forwards;
-  }
-
-  .fragment-4 {
-    top: 50%;
-    right: 10%;
-    animation: shatterFly4 0.8s ease-out forwards;
-  }
-
-  .fragment-5 {
-    bottom: 20%;
-    left: 20%;
-    animation: shatterFly5 0.8s ease-out forwards;
-  }
-
-  .fragment-6 {
-    bottom: 20%;
-    right: 20%;
-    animation: shatterFly6 0.8s ease-out forwards;
-  }
-
-  .fragment-7 {
-    top: 40%;
-    left: 50%;
-    animation: shatterFly7 0.8s ease-out forwards;
-  }
-
-  .fragment-8 {
-    bottom: 40%;
-    left: 50%;
-    animation: shatterFly8 0.8s ease-out forwards;
-  }
-
   .elimination-text {
     position: absolute;
-    top: 30%;
-    left: 50%;
+    top: calc(var(--center-y) * 0.6);
+    left: var(--center-x);
     transform: translateX(-50%);
     text-align: center;
     color: white;
@@ -300,7 +144,7 @@
   }
 
   .elimination-text.fading {
-    animation: fadeOut 2.8s ease-out forwards;
+    animation: fadeOut 3s ease-out forwards;
   }
 
   .eliminated-label {
@@ -321,27 +165,6 @@
     padding: 0.5rem 1rem;
     border-radius: 8px;
     border: 2px solid #ff4444;
-  }
-
-  .dark-overlay {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: rgba(0, 0, 0, 0.7);
-    opacity: 0;
-    z-index: 999;
-  }
-
-  .dark-overlay.visible {
-    opacity: 1;
-    transition: opacity 0.3s ease-in;
-  }
-
-  .dark-overlay.fading {
-    opacity: 0;
-    transition: opacity 2.8s ease-out;
   }
 
   /* Animation keyframes */

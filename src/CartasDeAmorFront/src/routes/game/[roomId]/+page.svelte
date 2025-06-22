@@ -10,7 +10,7 @@
   import { gameStore } from '$lib/stores/gameStore';
   import { getCardName } from '$lib/utils/cardUtils';
   import { get as getStore } from 'svelte/store';
-  import { getPlayerPlayedCardsPosition, getPlayerScreenPosition } from '$lib/utils/gameUtils';
+  import { getPlayerPlayedCardsPosition, getPlayerScreenPosition, getGameTableCenter } from '$lib/utils/gameUtils';
   import { isPlayerProtected } from '$lib/utils/gameDataProcessor';
   import GameTable from '$lib/components/game/core/GameTable.svelte';
   import AnimationManager from '$lib/components/game/animations/AnimationManager.svelte';
@@ -406,7 +406,8 @@
             } else {
               // Fallback to general player position
               const players = gameTableComponent.getProcessedPlayers();
-              const playerPos = getPlayerScreenPosition(playerEmail, players);
+              const tableCenter = getGameTableCenter();
+              const playerPos = getPlayerScreenPosition(playerEmail, players, tableCenter);
               sourcePosition = { ...playerPos, width: 65, height: 90 };
             }
           } else {
@@ -416,14 +417,16 @@
           
           // Get played cards destination position
           const players = gameTableComponent?.getProcessedPlayers() || [];
-          const playedCardsPosition = getPlayerPlayedCardsPosition(playerEmail, players);
+          const tableCenter = getGameTableCenter();
+          const playedCardsPosition = getPlayerPlayedCardsPosition(playerEmail, players, tableCenter);
           
           // Queue card play animation using animation manager
           animationManager.queueCardPlayAnimation({
             playerName,
             cardType: playedCard,
             sourcePosition,
-            playedCardsPosition
+            playedCardsPosition,
+            tableCenterPosition: tableCenter
           });
           
           // Handle the card play event logic after a delay to let animation start
@@ -488,7 +491,8 @@
               } else {
                 // Fallback to general player position
                 const players = gameTableComponent.getProcessedPlayers();
-                sourcePosition = getPlayerScreenPosition(data.target, players);
+                const tableCenter = getGameTableCenter();
+                sourcePosition = getPlayerScreenPosition(data.target, players, tableCenter);
               }
             } else {
               // Fallback to center when no game table component
@@ -498,12 +502,15 @@
             // Hide the card in the target player's hand
             hiddenCardType = data.cardType as CardType;
             animatingPlayerEmail = data.target;
-            
+
+            let tableCenterPosition = getGameTableCenter();
+
             // Queue show card animation using animation manager
             animationManager.queueShowCardAnimation({
               targetPlayerName: targetPlayerName,
               cardType: data.cardType as CardType,
-              sourcePosition
+              sourcePosition,
+              tableCenterPosition
             });
           } else {
             // For other players, just show the regular notification
@@ -629,12 +636,14 @@
           
           // Get player display name for animation
           const eliminatedPlayerName = getPlayerDisplayName(data.player);
+          const tableCenter = getGameTableCenter();
           
           // Queue elimination animation using animation manager
           animationManager.queueEliminationAnimation({
-            playerName: eliminatedPlayerName
+            playerName: eliminatedPlayerName,
+            center: tableCenter
           });
-          
+
           // Show notification after a short delay to let animation play
           setTimeout(() => {
             showNotification(`${eliminatedPlayerName} was eliminated!`, 'warning');
@@ -687,6 +696,7 @@
           
           // Queue round winners animation using animation manager
           animationManager.queueRoundWinnersAnimation({
+            animationCenter: getGameTableCenter(),
             winnerNames
           });
           

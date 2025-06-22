@@ -11,12 +11,14 @@
 
   export interface EliminationAnimationData {
     playerName: string;
+    center:  { x: number; y: number };
   }
 
   export interface ShowCardAnimationData {
     targetPlayerName: string;
     cardType: CardType;
     sourcePosition: { x: number; y: number; width?: number; height?: number };
+    tableCenterPosition: { x: number; y: number };
   }
 
   export interface GuessCardAnimationData {
@@ -30,6 +32,7 @@
     cardType: CardType;
     sourcePosition: { x: number; y: number; width?: number; height?: number };
     playedCardsPosition: { x: number; y: number; width?: number; height?: number };
+    tableCenterPosition: { x: number; y: number };
   }
 
   export interface DrawCardAnimationData {
@@ -39,6 +42,7 @@
   }
 
   export interface RoundWinnersAnimationData {
+    animationCenter: { x: number; y: number };
     winnerNames: string[];
   }
 
@@ -283,6 +287,7 @@
     {#if currentAnimation.type === 'elimination'}
       <EliminationAnimation
         playerName={currentAnimation.data.playerName}
+        center={currentAnimation.data.center}
         isVisible={true}
         on:animationComplete={() => handleAnimationComplete(currentAnimation?.id || '')}
       />
@@ -291,6 +296,7 @@
         targetPlayerName={currentAnimation.data.targetPlayerName}
         cardType={currentAnimation.data.cardType}
         sourcePosition={currentAnimation.data.sourcePosition}
+        tableCenterPosition={currentAnimation.data.tableCenterPosition}
         isVisible={true}
         on:animationComplete={() => handleAnimationComplete(currentAnimation?.id || '')}
       />
@@ -308,6 +314,7 @@
         cardType={currentAnimation.data.cardType}
         sourcePosition={currentAnimation.data.sourcePosition}
         playedCardsPosition={currentAnimation.data.playedCardsPosition}
+        tableCenterPosition={currentAnimation.data.tableCenterPosition}
         isVisible={true}
         on:animationComplete={() => handleAnimationComplete(currentAnimation?.id || '')}
       />
@@ -321,6 +328,7 @@
       />
     {:else if currentAnimation.type === 'roundWinners'}
       <RoundWinnersAnimation
+        center={currentAnimation.data.animationCenter}
         winnerNames={currentAnimation.data.winnerNames}
         isVisible={true}
         on:animationComplete={() => handleAnimationComplete(currentAnimation?.id || '')}

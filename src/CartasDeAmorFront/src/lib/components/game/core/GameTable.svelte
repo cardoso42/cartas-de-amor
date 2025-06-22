@@ -117,9 +117,18 @@
           const angle = (baseAngle + (playerPosition * angleStep)) % 360;
           const distance = 320;
           
-          // Convert to screen coordinates
-          const centerX = window.innerWidth / 2;
-          const centerY = window.innerHeight / 2;
+          // Get the center coordinates of the game table instead of window
+          let centerX = window.innerWidth / 2; // fallback
+          let centerY = window.innerHeight / 2; // fallback
+          
+          // Find the table element and get its center position
+          const tableElement = document.querySelector('.table');
+          if (tableElement) {
+            const tableRect = tableElement.getBoundingClientRect();
+            centerX = tableRect.left + tableRect.width / 2;
+            centerY = tableRect.top + tableRect.height / 2;
+          }
+          
           const radians = (angle - 90) * Math.PI / 180;
           
           return {

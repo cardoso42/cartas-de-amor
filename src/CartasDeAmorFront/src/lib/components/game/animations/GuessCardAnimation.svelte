@@ -79,7 +79,7 @@
               </div>
               
               <p class="decree-line">
-                guesses
+                acused
               </p>
               
               <div class="player-declaration">
@@ -87,7 +87,7 @@
               </div>
               
               <p class="decree-line">
-                has
+                of corrupting
               </p>
               
               <!-- Elegant card reveal -->
