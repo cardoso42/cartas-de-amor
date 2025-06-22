@@ -5,7 +5,7 @@
   // Animation types
   export interface AnimationRequest {
     id: string;
-    type: 'elimination' | 'showCard' | 'guessCard' | 'cardPlay' | 'drawCard' | 'peekCard' | 'roundWinners' | 'gameOver' | 'roundStart' | 'custom';
+    type: 'elimination' | 'showCard' | 'guessCard' | 'cardPlay' | 'drawCard' | 'returnCardToDeck' | 'peekCard' | 'roundWinners' | 'gameOver' | 'roundStart' | 'custom';
     data: any;
     callback?: () => void;
   }
@@ -40,6 +40,13 @@
     playerName: string;
     deckPosition: { x: number; y: number; width?: number; height?: number };
     playerPosition: { x: number; y: number; width?: number; height?: number };
+  }
+
+  export interface ReturnCardToDeckAnimationData {
+    playerName: string;
+    cardCount: number;
+    playerPosition: { x: number; y: number; width?: number; height?: number };
+    deckPosition: { x: number; y: number; width?: number; height?: number };
   }
 
   export interface PeekCardAnimationData {
@@ -79,6 +86,7 @@
   import GuessCardAnimation from './GuessCardAnimation.svelte';
   import CardPlayAnimation from './CardPlayAnimation.svelte';
   import DrawCardAnimation from './DrawCardAnimation.svelte';
+  import ReturnCardToDeckAnimation from './ReturnCardToDeckAnimation.svelte';
   import PeekCardAnimation from './PeekCardAnimation.svelte';
   import RoundWinnersAnimation from './RoundWinnersAnimation.svelte';
   import GameOverAnimation from './GameOverAnimation.svelte';
@@ -323,6 +331,14 @@
     });
   }
 
+  export function queueReturnCardToDeckAnimation(data: ReturnCardToDeckAnimationData, callback?: () => void): string {
+    return queueAnimation({
+      type: 'returnCardToDeck',
+      data,
+      callback
+    });
+  }
+
   export function queuePeekCardAnimation(data: PeekCardAnimationData, callback?: () => void): string {
     return queueAnimation({
       type: 'peekCard',
@@ -398,6 +414,15 @@
         playerName={currentAnimation.data.playerName}
         deckPosition={currentAnimation.data.deckPosition}
         playerPosition={currentAnimation.data.playerPosition}
+        isVisible={true}
+        on:animationComplete={() => handleAnimationComplete(currentAnimation?.id || '')}
+      />
+    {:else if currentAnimation.type === 'returnCardToDeck'}
+      <ReturnCardToDeckAnimation
+        playerName={currentAnimation.data.playerName}
+        cardCount={currentAnimation.data.cardCount}
+        playerPosition={currentAnimation.data.playerPosition}
+        deckPosition={currentAnimation.data.deckPosition}
         isVisible={true}
         on:animationComplete={() => handleAnimationComplete(currentAnimation?.id || '')}
       />

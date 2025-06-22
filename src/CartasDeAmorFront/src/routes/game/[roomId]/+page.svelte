@@ -699,11 +699,54 @@
         onCardReturnedToDeck: (data: { player: string; cardCount: number }) => {
           const playerName = getPlayerDisplayName(data.player);
           showNotification(`${playerName} returned ${data.cardCount} card(s) to the deck`, 'info');
-          // Increase deck count when cards are returned to deck
-          // TODO: visually remove cards from player's hand
-          if (gameStatus) {
-            gameStatus.cardsRemainingInDeck = (gameStatus.cardsRemainingInDeck || 0) + data.cardCount;
+          
+          // Get player position and deck position for animation
+          let playerPosition = { x: window.innerWidth / 2, y: window.innerHeight / 2, width: 65, height: 90 };
+          let deckPosition = { x: window.innerWidth / 2, y: window.innerHeight / 2, width: 70, height: 98 };
+          
+          if (gameTableComponent) {
+            // Get player hand position
+            const playerPos = gameTableComponent.getPlayerHandPosition(data.player);
+            if (playerPos) {
+              playerPosition = playerPos;
+            }
+            
+            // Get deck position
+            const deckPos = gameTableComponent.getDeckPosition();
+            if (deckPos) {
+              deckPosition = deckPos;
+            }
           }
+          
+          // Queue return card to deck animation using animation manager
+          animationManager.queueReturnCardToDeckAnimation({
+            playerName,
+            cardCount: data.cardCount,
+            playerPosition,
+            deckPosition
+          }, () => {
+            // After animation completes, update game state
+            if (gameStatus) {
+              // Increase deck count when cards are returned to deck
+              gameStatus.cardsRemainingInDeck = (gameStatus.cardsRemainingInDeck || 0) + data.cardCount;
+              
+              // Visually remove cards from player's hand
+              const playerEmail = data.player;
+              if (playerEmail !== userEmail) {
+                // Update other players' card count
+                const otherPlayers = gameStatus.otherPlayersPublicData || [];
+                const playerToUpdate = otherPlayers.find(p => p.userEmail === playerEmail);
+                
+                if (playerToUpdate) {
+                  // Reduce their cards in hand count by the number of cards returned
+                  playerToUpdate.cardsInHand = Math.max(0, (playerToUpdate.cardsInHand || 0) - data.cardCount);
+                  // Trigger reactivity by creating a new gameStatus object
+                  gameStatus = { ...gameStatus, otherPlayersPublicData: [...otherPlayers] };
+                }
+              }
+              // Note: For local player, the card removal will be handled by subsequent PrivatePlayerUpdate events
+            }
+          });
         },
         onPlayerEliminated: (data: { player: string }) => {
           // Get player display name for animation
