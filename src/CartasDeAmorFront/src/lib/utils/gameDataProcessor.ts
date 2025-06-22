@@ -1,5 +1,23 @@
 import type { InitialGameStatusDto, CardType } from '$lib/types/game-types';
 
+/**
+ * PlayerStatus enum values (must match backend)
+ */
+export enum PlayerStatus {
+  Active = 0,
+  Protected = 1,
+  Eliminated = 2,
+  Disconnected = 3,
+  Abandoned = 4
+}
+
+/**
+ * Derive protection status from PlayerStatus enum
+ */
+export function isPlayerProtected(status: number): boolean {
+  return status === PlayerStatus.Protected;
+}
+
 export interface ProcessedPlayer {
   id: number;
   name: string;
@@ -37,7 +55,7 @@ export function processGameData(
     cards: status.yourCards || [],
     cardsInHand: (status.yourCards || []).length,
     playedCards: localPlayerPlayedCards, // Use the tracked local player played cards
-    isProtected: status.isProtected || false,
+    isProtected: status.isProtected !== undefined ? status.isProtected : false,
     isCurrentTurn: userEmail === turnPlayer
   });
   
@@ -53,7 +71,7 @@ export function processGameData(
       cards: [], // Other players' cards are hidden
       cardsInHand: player.cardsInHand || 1,
       playedCards: player.playedCards || [], // Include played cards for display
-      isProtected: player.isProtected || false,
+      isProtected: player.isProtected !== undefined ? player.isProtected : isPlayerProtected(player.status || 0),
       isCurrentTurn: player.userEmail === turnPlayer
     });
   });

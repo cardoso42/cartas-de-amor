@@ -11,6 +11,7 @@
   import { getCardName } from '$lib/utils/cardUtils';
   import { get as getStore } from 'svelte/store';
   import { getPlayerPlayedCardsPosition, getPlayerScreenPosition } from '$lib/utils/gameUtils';
+  import { isPlayerProtected } from '$lib/utils/gameDataProcessor';
   import GameTable from '$lib/components/game/core/GameTable.svelte';
   import AnimationManager from '$lib/components/game/animations/AnimationManager.svelte';
   import { InteractionBlocker } from '$lib/components/game/ui';
@@ -185,21 +186,23 @@
     
     // Handle any additional player data updates that don't involve card playing
     // For example, status changes, protection status, etc.
-    const invokerEmail = playerPublicData.userEmail;
+    const playerEmail = playerPublicData.userEmail;
     
-    // Update invoker's data
-    if (invokerEmail === userEmail) {
-      // Update current player's status if needed
-      // (This might include protection status, elimination status, etc.)
-    } else {
+    // Update player's data
+    if (playerEmail !== userEmail) {
       // Update other players' public data
       const otherPlayers = gameStatus.otherPlayersPublicData || [];
-      const playerToUpdate = otherPlayers.find(p => p.userEmail === invokerEmail);
+      const playerToUpdate = otherPlayers.find(p => p.userEmail === playerEmail);
       
       if (playerToUpdate) {
-        // Update any public player data from the CardActionResultDto
-        // This could include status changes, card counts, etc.
-        console.log(`Updated public data for ${getPlayerDisplayName(invokerEmail)}`);
+        // Update player's status, which includes protection status
+        playerToUpdate.status = playerPublicData.status;
+        playerToUpdate.score = playerPublicData.score;
+        playerToUpdate.cardsInHand = playerPublicData.holdingCardsCount;
+        playerToUpdate.playedCards = playerPublicData.playedCards;
+        
+        // Since PlayerStatusDto has both status and isProtected, we need to derive isProtected from status
+        playerToUpdate.isProtected = isPlayerProtected(playerPublicData.status);
       }
     }
     
@@ -324,9 +327,20 @@
         },
         onPrivatePlayerUpdate: (playerUpdate: PrivatePlayerUpdateDto) => {
           console.log('Private player update:', playerUpdate);
-          // Update the game status with the player's new cards
-          if (gameStatus && playerUpdate.holdingCards) {
-            gameStatus.yourCards = playerUpdate.holdingCards;
+          // Update the game status with the player's new cards and status
+          if (gameStatus) {
+            if (playerUpdate.holdingCards) {
+              gameStatus.yourCards = playerUpdate.holdingCards;
+            }
+            
+            // Update protection status derived from player status
+            gameStatus.isProtected = isPlayerProtected(playerUpdate.status);
+            
+            // Update score if provided
+            if (playerUpdate.score !== undefined) {
+              gameStatus.score = playerUpdate.score;
+            }
+            
             gameStatus = { ...gameStatus }; // Trigger reactivity
           }
         },
