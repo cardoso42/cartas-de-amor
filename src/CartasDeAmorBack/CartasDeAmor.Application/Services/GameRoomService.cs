@@ -111,9 +111,11 @@ public class GameRoomService : IGameRoomService
         await _playerRepository.DeleteAsync(roomId, userEmail);
     }
 
-    public async Task<IEnumerable<GameRoomDto>> GetAllRoomsAsync()
+    public async Task<IEnumerable<GameRoomDto>> GetAvailableRooms()
     {
         var rooms = await _roomRepository.GetAllAsync();
-        return rooms.Select(room => new GameRoomDto(room));
+        return rooms
+            .Where(room => !room.HasStarted())
+            .Select(room => new GameRoomDto(room));
     }
 }

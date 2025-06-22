@@ -5,10 +5,13 @@ namespace CartasDeAmor.Domain.Services;
 public interface IGameRoomService
 {
     /// <summary>
-    /// Retrieves all game rooms.
+    /// Retrieves all available game rooms.
     /// </summary>
+    /// <remarks>
+    /// An available room are rooms that has not started the game yet.
+    /// </remarks>
     /// <returns>A task representing the asynchronous operation, containing a collection of game room DTOs</returns>
-    Task<IEnumerable<GameRoomDto>> GetAllRoomsAsync();
+    Task<IEnumerable<GameRoomDto>> GetAvailableRooms();
 
     /// <summary>
     /// Creates a new room with the specified name and adds the creator as the first player.
