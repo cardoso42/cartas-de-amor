@@ -23,15 +23,12 @@
   async function startAnimation() {
     if (hasStarted) return;
     hasStarted = true;
-    
-    console.log('🎉 Starting GameOver animation with winners:', winnerNames);
-    
+        
     // Wait for the full animation duration (12 seconds)
     await new Promise(resolve => setTimeout(resolve, 12000));
     
     if (!animationComplete) {
       animationComplete = true;
-      console.log('🏁 GameOver animation completed');
       dispatch('animationComplete');
     }
   }

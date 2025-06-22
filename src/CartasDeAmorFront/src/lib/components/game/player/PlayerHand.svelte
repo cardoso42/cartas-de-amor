@@ -24,7 +24,6 @@
   function handleCardClick(cardType: CardType) {
     // Prevent interactions during animations
     if (isAnimationPlaying) {
-      console.log('🚫 Card click blocked: animation in progress');
       return;
     }
     dispatch('cardClick', { cardType });

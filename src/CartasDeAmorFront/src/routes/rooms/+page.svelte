@@ -45,7 +45,6 @@
   let userEmail = '';
   const unsubscribeUser = user.subscribe(state => {
     userEmail = state.email || '';
-    console.log('User email from userStore:', userEmail);
   });
 
   // Function to refresh room list
@@ -154,8 +153,6 @@
 
     signalR.registerHandlers({
       onJoinedRoom: (joinRoomResult: JoinRoomResultDto) => {
-        console.log('Joined room:', joinRoomResult);
-
         // Set game state in store before navigating
         gameStore.set({
           roomId: joinRoomResult.roomId,

@@ -171,10 +171,6 @@
     // Check if the card has requirements
     if (cardRequirements.requirements && cardRequirements.requirements.length > 0 && 
         cardRequirements.requirements[0] !== CardActionRequirements.None) {
-      
-      console.log(`Card ${getCardName(cardRequirements.cardType)} has requirements:`, 
-        cardRequirements.requirements.map(req => getRequirementName(req)).join(', '));
-      
       // Calculate steps needed
       const needsPlayer = cardRequirements.requirements.includes(CardActionRequirements.SelectPlayer);
       const needsCardType = cardRequirements.requirements.includes(CardActionRequirements.SelectCardType);
@@ -184,10 +180,7 @@
       // Show modal with rules first
       gameFlowState = 'showing_rules';
       showRequirementsModal = true;
-      
-      console.log(`Starting ${totalSteps}-step card playing process`);
     } else {
-      console.log(`Card ${getCardName(cardRequirements.cardType)} has no special requirements - can be played immediately`);
       // For cards with no requirements, we can play them directly
       playCard(cardRequirements.cardType, null, null);
     }
@@ -228,7 +221,6 @@
   
   // Handle modal events
   function handleModalClose() {
-    console.log('Modal closed - starting card playing flow');
     showRequirementsModal = false;
     startNextStep();
   }
@@ -263,16 +255,11 @@
     // Always do player selection first, then card type selection
     if (currentStep === 0 && needsPlayer) {
       gameFlowState = 'selecting_player';
-      console.log('Step 1: Select a target player');
-      console.log('Possible targets:', cardRequirements.possibleTargets.map(email => getPlayerDisplayName(email, players)));
     } else if ((currentStep === 0 && !needsPlayer && needsCardType) || 
                (currentStep === 1 && needsCardType)) {
       gameFlowState = 'selecting_card_type';
-      console.log('Step 2: Select a card type');
-      console.log('Possible card types:', cardRequirements.possibleCardTypes.map(ct => getCardName(ct)));
     } else {
       // All steps completed
-      console.log('All requirements fulfilled, playing card');
       playCard(cardRequirements.cardType, selectedTargetEmail, selectedCardType);
       resetCardPlayingState();
     }
@@ -282,7 +269,6 @@
   function handlePlayerClick(playerEmail: string) {
     // Prevent interactions during animations
     if (isAnimationPlaying) {
-      console.log('🚫 Player click blocked: animation in progress');
       return;
     }
     
@@ -292,13 +278,11 @@
     
     // Check if this player is a valid target
     if (!cardRequirements.possibleTargets.includes(playerEmail)) {
-      console.log('Invalid target player selected');
       return;
     }
     
     selectedTargetEmail = playerEmail;
     currentStep++;
-    console.log('✅ Selected target player:', getPlayerDisplayName(playerEmail, players));
     
     // Move to next step
     startNextStep();
@@ -308,7 +292,6 @@
   function handleCardTypeClick(cardType: CardType) {
     // Prevent interactions during animations
     if (isAnimationPlaying) {
-      console.log('🚫 Card type click blocked: animation in progress');
       return;
     }
     
@@ -318,13 +301,11 @@
     
     // Check if this card type is valid
     if (!cardRequirements.possibleCardTypes.includes(cardType)) {
-      console.log('Invalid card type selected');
       return;
     }
     
     selectedCardType = cardType;
     currentStep++;
-    console.log('✅ Selected card type:', getCardName(cardType));
     
     // Move to next step
     startNextStep();
@@ -343,12 +324,6 @@
   
   // Placeholder function for actually playing a card
   async function playCard(cardType: CardType, targetPlayerEmail: string | null, targetCardType: CardType | null) {
-    console.log('🎮 Playing card:', {
-      card: getCardName(cardType),
-      target: targetPlayerEmail ? getPlayerDisplayName(targetPlayerEmail, players) : 'none',
-      guessedCard: targetCardType ? getCardName(targetCardType) : 'none'
-    });
-    
     try {
       // Create the card play DTO
       const cardPlayDto = {
@@ -359,7 +334,6 @@
       
       // Send play card request to server
       await signalR.playCard(roomId, cardPlayDto);
-      console.log('✅ Card play request sent successfully');
       
       // Reset the card playing state after successful send
       // Note: The actual game state will be updated via SignalR events
@@ -376,23 +350,19 @@
   async function handleCardClick(cardType: CardType) {
     // Prevent interactions during animations
     if (isAnimationPlaying) {
-      console.log('🚫 Card click blocked: animation in progress');
       return;
     }
     
     if (!isMyTurn) {
-      console.log('Not your turn - cannot play cards');
       return;
     }
     
     // Check if the local player actually has this card
     const localPlayer = players.find(p => p.isLocalPlayer);
     if (!localPlayer || !localPlayer.cards.includes(cardType)) {
-      console.log('You do not have this card');
       return;
     }
     
-    console.log(`Attempting to play card: ${getCardName(cardType)}`);
     selectedCard = cardType;
     
     try {
@@ -407,7 +377,6 @@
   async function handleDrawCard() {
     // Prevent interactions during animations
     if (isAnimationPlaying) {
-      console.log('🚫 Draw card blocked: animation in progress');
       return;
     }
     
@@ -417,7 +386,6 @@
     
     try {
       await signalR.drawCard(roomId);
-      console.log('Draw card request sent');
     } catch (error) {
       console.error('Error drawing card:', error);
     }

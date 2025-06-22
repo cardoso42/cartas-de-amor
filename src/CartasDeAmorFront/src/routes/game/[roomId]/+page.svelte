@@ -30,7 +30,6 @@
   let userEmail = '';
   const unsubscribeUser = user.subscribe(state => {
     userEmail = state.email || '';
-    console.log('User email from userStore:', userEmail);
   });
   
   // Game state
@@ -171,8 +170,6 @@
     const playerEmail = data.player;
     const playedCard = data.cardType;
     
-    console.log(`Handling card play: ${getPlayerDisplayName(playerEmail)} played ${getCardName(playedCard)}`);
-    
     // If the player is the current user, update their cards in hand and played cards
     if (playerEmail === userEmail && gameStatus.yourCards) {    
       // Add to local player's played cards
@@ -191,8 +188,6 @@
           playerToUpdate.playedCards = [];
         }
         playerToUpdate.playedCards.push(playedCard);
-        
-        console.log(`Updated ${getPlayerDisplayName(playerEmail)} - cards in hand: ${playerToUpdate.cardsInHand}, played card: ${getCardName(playedCard)}`);
       }
     }
     
@@ -205,8 +200,6 @@
     if (!gameStatus || !playerPublicData) {
       return;
     }
-    
-    console.log('Updating player data from public update:', playerPublicData);
     
     // Handle any additional player data updates that don't involve card playing
     // For example, status changes, protection status, etc.
@@ -271,7 +264,6 @@
 
       signalR.registerHandlers({
         onUserJoined: (playerEmail: string) => {
-          console.log('Player joined:', playerEmail);
           if (!players.includes(playerEmail)) {
             players = [...players, playerEmail];
           }
@@ -279,7 +271,6 @@
           showNotification(`Player joined: ${playerName}`, 'info');
         },
         onRoundStarted: (initialGameStatus: InitialGameStatusDto) => {
-          console.log('Round started:', initialGameStatus);
           gameStatus = initialGameStatus;
           localPlayerPlayedCards = []; // Reset played cards for new round
           isGameStarting = false;
@@ -296,14 +287,11 @@
           showNotification(`${firstPlayerName} will go first`, 'info');
         },
         onNextTurn: (playerEmail: string) => {
-          console.log('Next turn:', playerEmail);
           currentTurnPlayerEmail = playerEmail;
           const playerName = getPlayerDisplayName(playerEmail);
           showNotification(`${playerName}'s turn`, 'info');
         },
         onPlayerDrewCard: (playerEmail: string) => {
-          console.log('Player drew card:', playerEmail);
-          
           const playerName = getPlayerDisplayName(playerEmail);
           showNotification(`${playerName} drew a card`, 'info');
           
@@ -350,7 +338,6 @@
           });
         },
         onPrivatePlayerUpdate: (playerUpdate: PrivatePlayerUpdateDto) => {
-          console.log('Private player update:', playerUpdate);
           // Update the game status with the player's new cards and status
           if (gameStatus) {
             if (playerUpdate.holdingCards) {
@@ -381,8 +368,6 @@
         },
         // New MessageFactory events replace old CardResult events
         onPlayCard: (data: { player: string; cardType: number }) => {
-          console.log('PlayCard event:', data);
-          
           const playerEmail = data.player;
           const playedCard = data.cardType as CardType;
           const playerName = getPlayerDisplayName(playerEmail);
@@ -425,9 +410,6 @@
           });
         },
         onGuessCard: (data: { invoker: string; cardType: number; target: string }) => {
-          console.log('GuessCard event received:', data);
-          console.log('Invoker:', data.invoker, 'Target:', data.target, 'CardType:', data.cardType);
-          
           // Validate data before using it
           if (!data.invoker || !data.target || data.cardType === undefined) {
             console.error('GuessCard event received with invalid data:', data);
@@ -450,7 +432,6 @@
           });
         },
         onPeekCard: (data: { invoker: string; target: string }) => {
-          console.log('PeekCard event:', data);
           const invokerName = getPlayerDisplayName(data.invoker);
           const targetName = getPlayerDisplayName(data.target);
 
@@ -486,8 +467,6 @@
           });
         },
         onShowCard: (data: { invoker: string; target: string, cardType: number }) => {
-          console.log('ShowCard event:', data);
-          
           // Only show animation if this is relevant to the current user
           // (i.e., the current user is the one who gets to see the card)
           const targetPlayerName = getPlayerDisplayName(data.target);
@@ -526,20 +505,16 @@
           });
         },
         onCompareCards: (data: { invoker: string; target: string }) => {
-          console.log('CompareCards event:', data);
           const invokerName = getPlayerDisplayName(data.invoker);
           const targetName = getPlayerDisplayName(data.target);
           showNotification(`${invokerName} compared cards with ${targetName}`, 'info');
         },
         onComparisonTie: (data: { invoker: string; target: string }) => {
-          console.log('ComparisonTie event:', data);
           const invokerName = getPlayerDisplayName(data.invoker);
           const targetName = getPlayerDisplayName(data.target);
           showNotification(`${invokerName} and ${targetName} tied in comparison`, 'info');
         },
         onDiscardCard: (data: { target: string; cardType: number }) => {
-          console.log('DiscardCard event:', data);
-
           const targetName = getPlayerDisplayName(data.target);
           const cardName = getCardName(data.cardType);
           showNotification(`${targetName} discarded ${cardName}`, 'info');
@@ -571,8 +546,6 @@
           }
         },
         onDrawCard: (data: { player: string }) => {
-          console.log('DrawCard event:', data);
-          
           const playerEmail = data.player;
           const playerName = getPlayerDisplayName(playerEmail);
           
@@ -622,7 +595,6 @@
           });
         },
         onCardReturnedToDeck: (data: { player: string; cardCount: number }) => {
-          console.log('CardReturnedToDeck event:', data);
           const playerName = getPlayerDisplayName(data.player);
           showNotification(`${playerName} returned ${data.cardCount} card(s) to the deck`, 'info');
           // Increase deck count when cards are returned to deck
@@ -632,8 +604,6 @@
           }
         },
         onPlayerEliminated: (data: { player: string }) => {
-          console.log('PlayerEliminated event:', data);
-          
           // Get player display name for animation
           const eliminatedPlayerName = getPlayerDisplayName(data.player);
           
@@ -649,18 +619,15 @@
           });
         },
         onSwitchCards: (data: { invoker: string; target: string }) => {
-          console.log('SwitchCards event:', data);
           const invokerName = getPlayerDisplayName(data.invoker);
           const targetName = getPlayerDisplayName(data.target);
           showNotification(`${invokerName} switched cards with ${targetName}`, 'info');
         },
         onPlayerProtected: (data: { player: string }) => {
-          console.log('PlayerProtected event:', data);
           const playerName = getPlayerDisplayName(data.player);
           showNotification(`${playerName} is now protected for 1 turn`, 'info');
         },
         onChooseCard: (data: { player: string }) => {
-          console.log('ChooseCard event:', data);
           // This indicates the player needs to choose cards (like Chancellor effect)
           const playerName = getPlayerDisplayName(data.player);
           if (data.player === userEmail) {
@@ -670,12 +637,10 @@
           }
         },
         onPublicPlayerUpdate: (data: PublicPlayerUpdateDto) => {
-          console.log('PublicPlayerUpdate event:', data);
           updatePlayerDataFromPublicUpdate(data);
         },
         // Other game events
         onCardChoiceSubmitted: (playerUpdate: PublicPlayerUpdateDto) => {
-          console.log('Card choice submitted:', playerUpdate);
           showNotification(`${getPlayerDisplayName(playerUpdate.userEmail)} submitted their card choice`, 'info');
         },
         onCardChoiceError: (error: string) => {
@@ -684,12 +649,10 @@
           showNotification(`Card choice failed: ${error}`, 'error');
         },
         onMandatoryCardPlay: (message: string, requiredCardType: number) => {
-          console.log('Mandatory card play:', message, requiredCardType);
           showError(`You must play the ${getCardName(requiredCardType)} card! ${message}`);
           showNotification(`You must play ${getCardName(requiredCardType)}! ${message}`, 'warning');
         },
         onRoundWinners: (winners: string[]) => {
-          console.log('Round winners:', winners);
           const winnerNames = winners.map(email => getPlayerDisplayName(email));
           showNotification(`Round won by: ${winnerNames.join(', ')}`, 'success');
           
@@ -700,12 +663,10 @@
           });
         },
         onBonusPoints: (players: string[]) => {
-          console.log('Bonus points awarded to:', players);
           const playerNames = players.map(email => getPlayerDisplayName(email)).join(', ');
           showNotification(`Bonus points awarded to: ${playerNames}`, 'success');
         },
         onGameOver: (winners: string[]) => {
-          console.log('Game over, winners:', winners);
           const winnerNames = winners.map(email => getPlayerDisplayName(email));
           
           // Queue game over animation using animation manager
@@ -806,7 +767,6 @@
       on:animationStateChange={(event) => {
         isAnimationPlaying = event.detail.isAnimating;
         currentAnimationType = event.detail.currentAnimation;
-        console.log(`🎬 Animation state changed: ${isAnimationPlaying ? 'PLAYING' : 'STOPPED'} (${currentAnimationType || 'none'})`);
       }}
     />
     
@@ -818,9 +778,6 @@
       blockPointerEvents={true}
       preventScrolling={false}
       zIndex={1500}
-      on:blocked={(event) => {
-        console.log(`🚫 Interaction blocked during animation: ${event.detail.event} (current: ${currentAnimationType})`);
-      }}
     />
   </div>
 </AuthGuard>

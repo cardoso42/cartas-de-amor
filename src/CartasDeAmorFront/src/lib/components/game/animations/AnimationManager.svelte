@@ -154,7 +154,6 @@
   export function cancelAnimation(id: string): boolean {
     // Check if it's the current animation
     if (currentAnimation?.id === id) {
-      console.log(`🛑 Cancelling current animation: ${id}`);
       stopCurrentAnimation();
       processQueue();
       return true;
@@ -163,7 +162,6 @@
     // Check if it's in the queue
     const queueIndex = animationQueue.findIndex(a => a.id === id);
     if (queueIndex !== -1) {
-      console.log(`🗑️ Removing animation from queue: ${id}`);
       animationQueue.splice(queueIndex, 1);
       return true;
     }
@@ -175,7 +173,6 @@
    * Clear all animations
    */
   export function clearAllAnimations() {
-    console.log(`🧹 Clearing all animations`);
     stopCurrentAnimation();
     animationQueue = [];
   }
