@@ -7,8 +7,11 @@ WORKDIR /app
 # Install pnpm
 RUN npm install -g pnpm
 
-# Copy package files for dependency installation
-COPY package.json pnpm-lock.yaml .env ./
+# Copy package files and production environment for dependency installation
+COPY package.json pnpm-lock.yaml .env.production ./
+
+# Use production environment for build
+RUN mv .env.production .env
 
 # Install dependencies
 RUN pnpm install --frozen-lockfile
