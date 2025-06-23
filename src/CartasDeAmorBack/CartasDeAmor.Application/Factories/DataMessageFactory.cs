@@ -41,12 +41,22 @@ public static class DataMessageFactory
     }
 
     public static SpecialMessage RoundStart(Game game, Player player)
-    {        
+    {
         return new SpecialMessage
         {
             Dest = player.UserEmail,
             Message = "RoundStarted",
             ExtraData = new InitialGameStatusDto(game, player)
+        };
+    }
+
+    public static SpecialMessage JoinRoom(Game game, Player player)
+    {
+        return new SpecialMessage
+        {
+            Dest = player.UserEmail,
+            Message = "JoinedRoom",
+            ExtraData = new JoinRoomResultDto(game, player)
         };
     }
 }

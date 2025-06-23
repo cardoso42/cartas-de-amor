@@ -2,6 +2,8 @@ using CartasDeAmor.Domain.Repositories;
 using CartasDeAmor.Domain.Entities;
 using CartasDeAmor.Application.DTOs;
 using CartasDeAmor.Domain.Configuration;
+using CartasDeAmor.Application.Factories;
+using CartasDeAmor.Domain.Factories;
 
 namespace CartasDeAmor.Domain.Services;
 
@@ -66,7 +68,7 @@ public class GameRoomService : IGameRoomService
         await _roomRepository.DeleteAsync(roomId);
     }
 
-    public async Task<JoinRoomResultDto> AddUserToRoomAsync(Guid roomId, string userEmail, string? password)
+    public async Task<List<SpecialMessage>> AddUserToRoomAsync(Guid roomId, string userEmail, string? password)
     {
         var game = await _roomRepository.GetByIdAsync(roomId) ?? throw new InvalidOperationException("Room not found");
         if (game.Players.Any(p => p.UserEmail == userEmail))
@@ -89,7 +91,11 @@ public class GameRoomService : IGameRoomService
 
         await _roomRepository.UpdateAsync(game);
 
-        return new JoinRoomResultDto(game, player);
+        return
+        [
+            MessageFactory.UserJoined(player.UserEmail),
+            DataMessageFactory.JoinRoom(game, player)
+        ];
     }
 
     public async Task RemoveUserFromRoomAsync(Guid roomId, string userEmail)

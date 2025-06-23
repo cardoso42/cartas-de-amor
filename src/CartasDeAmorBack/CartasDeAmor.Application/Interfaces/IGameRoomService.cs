@@ -1,4 +1,5 @@
 using CartasDeAmor.Application.DTOs;
+using CartasDeAmor.Domain.Entities;
 
 namespace CartasDeAmor.Domain.Services;
 
@@ -37,7 +38,7 @@ public interface IGameRoomService
     /// <param name="userEmail">The ID of the user to add to the room.</param>
     /// <param name="password">An optional password for the room. If provided, the user must enter the correct password to join.</param>
     /// <returns>A task representing the asynchronous operation.</returns>
-    Task<JoinRoomResultDto> AddUserToRoomAsync(Guid roomId, string userEmail, string? password);
+    Task<List<SpecialMessage>> AddUserToRoomAsync(Guid roomId, string userEmail, string? password);
 
     /// <summary>
     /// Removes a user from a room.
