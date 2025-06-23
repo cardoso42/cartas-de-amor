@@ -204,4 +204,14 @@ public static class EventMessageFactory
             ExtraData = player
         };
     }
+
+    public static SpecialMessage UserLeft(string player)
+    {
+        return new SpecialMessage
+        {
+            Dest = "",
+            Message = "UserLeft",
+            ExtraData = player
+        };
+    }
 }

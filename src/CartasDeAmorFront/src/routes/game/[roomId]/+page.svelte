@@ -270,6 +270,12 @@
           const playerName = getPlayerDisplayName(playerEmail);
           showNotification(`Player joined: ${playerName}`, 'info');
         },
+        onUserLeft: (playerEmail: string) => {
+          players = players.filter(p => p !== playerEmail);
+          eliminatedPlayers.delete(playerEmail); // Remove from eliminated players
+          const playerName = getPlayerDisplayName(playerEmail);
+          showNotification(`Player left: ${playerName}`, 'info');
+        },
         onRoundStarted: (initialGameStatus: InitialGameStatusDto) => {
           // Store the current state before updating
           const oldGameStatus = gameStatus;

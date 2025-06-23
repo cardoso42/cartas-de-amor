@@ -46,5 +46,5 @@ public interface IGameRoomService
     /// <param name="roomId">The ID of the room from which the user will be removed.</param>
     /// <param name="userEmail">The ID of the user to remove from the room.</param>
     /// <returns>A task representing the asynchronous operation.</returns>
-    Task RemoveUserFromRoomAsync(Guid roomId, string userEmail);
+    Task<List<SpecialMessage>> RemoveUserFromRoomAsync(Guid roomId, string userEmail);
 }

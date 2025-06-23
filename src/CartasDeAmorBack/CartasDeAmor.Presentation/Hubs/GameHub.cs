@@ -60,9 +60,9 @@ public class GameHub(
         _connectionMapping.RemoveConnection(userEmail, Context.ConnectionId);
 
         await Groups.RemoveFromGroupAsync(Context.ConnectionId, roomId.ToString());
-        await _gameRoomService.RemoveUserFromRoomAsync(roomId, userEmail);
+        var messages = await _gameRoomService.RemoveUserFromRoomAsync(roomId, userEmail);
 
-        // TODO: Warn users that the user has left the room
+        await SendSpecialMessages(roomId, messages);
 
         _logger.LogInformation("User {User} left room {RoomId}", userEmail, roomId);
     }

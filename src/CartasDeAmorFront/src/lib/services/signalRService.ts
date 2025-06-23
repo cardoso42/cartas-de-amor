@@ -38,6 +38,7 @@ const signalRStore = writable<SignalRState>(initialState);
 interface SignalRHandlers {
   onJoinedRoom?: (joinRoomResult: JoinRoomResultDto) => void;
   onUserJoined?: (playerEmail: string) => void;
+  onUserLeft?: (playerEmail: string) => void;
   onRoundStarted?: (initialGameStatus: InitialGameStatusDto) => void;
   onNextTurn?: (playerEmail: string) => void;
   onPlayerDrewCard?: (playerEmail: string) => void;
@@ -77,6 +78,7 @@ interface SignalRHandlers {
 let registeredHandlers: SignalRHandlers = {
   onJoinedRoom: undefined,
   onUserJoined: undefined,
+  onUserLeft: undefined,
   onRoundStarted: undefined,
   onNextTurn: undefined,
   onPlayerDrewCard: undefined,
@@ -113,6 +115,7 @@ function attachEventHandlers(connection: SignalR.HubConnection) {
   // Remove existing handlers to prevent duplicates
   connection.off('JoinedRoom');
   connection.off('UserJoined');
+  connection.off('UserLeft');
   connection.off('RoundStarted');
   connection.off('NextTurn');
   connection.off('PlayerDrewCard');
@@ -148,6 +151,7 @@ function attachEventHandlers(connection: SignalR.HubConnection) {
   // Add new handlers
   connection.on('JoinedRoom', (joinRoomResult: JoinRoomResultDto) => registeredHandlers.onJoinedRoom?.(joinRoomResult));
   connection.on('UserJoined', (playerEmail: string) => registeredHandlers.onUserJoined?.(playerEmail));
+  connection.on('UserLeft', (playerEmail: string) => registeredHandlers.onUserLeft?.(playerEmail));
   connection.on('RoundStarted', (initialGameStatus: InitialGameStatusDto) => registeredHandlers.onRoundStarted?.(initialGameStatus));
   connection.on('NextTurn', (playerEmail: string) => registeredHandlers.onNextTurn?.(playerEmail));
   connection.on('PlayerDrewCard', (playerEmail: string) => registeredHandlers.onPlayerDrewCard?.(playerEmail));

@@ -98,23 +98,22 @@ public class GameRoomService : IGameRoomService
         ];
     }
 
-    public async Task RemoveUserFromRoomAsync(Guid roomId, string userEmail)
+    public async Task<List<SpecialMessage>> RemoveUserFromRoomAsync(Guid roomId, string userEmail)
     {
-        var game = await _roomRepository.GetByIdAsync(roomId);
-        if (game == null)
-        {
-            throw new InvalidOperationException("Room not found");
-        }
-
-        var player = game.Players.FirstOrDefault(p => p.UserEmail == userEmail);
-        if (player == null)
-        {
-            throw new InvalidOperationException("User is not in the room");
-        }
+        var game = await _roomRepository.GetByIdAsync(roomId)
+            ?? throw new InvalidOperationException("Room not found");
+        var player = game.Players.FirstOrDefault(p => p.UserEmail == userEmail)
+            ?? throw new InvalidOperationException("User is not in the room");
 
         game.Players.Remove(player);
+
         await _roomRepository.UpdateAsync(game);
         await _playerRepository.DeleteAsync(roomId, userEmail);
+
+        return
+        [
+            EventMessageFactory.UserLeft(player.UserEmail),
+        ];
     }
 
     public async Task<IEnumerable<GameRoomDto>> GetAvailableRooms()
