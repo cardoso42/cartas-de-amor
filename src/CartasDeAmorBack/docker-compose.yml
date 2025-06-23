@@ -1,0 +1,55 @@
+services:
+  # PostgreSQL Database
+  postgres:
+    image: postgres:15-alpine
+    container_name: love_letter_db
+    environment:
+      POSTGRES_DB: love_letter
+      POSTGRES_USER: princess
+      POSTGRES_PASSWORD: "9"
+      POSTGRES_HOST_AUTH_METHOD: trust
+    ports:
+      - "5433:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - love_letter_network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U princess -d love_letter"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # .NET Application
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: love_letter_api
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Production
+      - ASPNETCORE_URLS=http://+:8080
+      - ConnectionStrings__DefaultConnection=Host=postgres;Database=love_letter;Username=princess;Password=9
+    ports:
+      - "8080:8080"
+    networks:
+      - love_letter_network
+    volumes:
+      - ./logs:/app/Logs
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+volumes:
+  postgres_data:
+
+networks:
+  love_letter_network:
+    driver: bridge
