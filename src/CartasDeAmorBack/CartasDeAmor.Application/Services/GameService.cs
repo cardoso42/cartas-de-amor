@@ -312,7 +312,7 @@ public class GameService : IGameService
         return game.IsGameOver();
     }
 
-    public async Task<IList<string>> FinishRoundAsync(Guid roomId)
+    public async Task<List<SpecialMessage>> FinishRoundAsync(Guid roomId)
     {
         var game = await _roomRepository.GetByIdAsync(roomId)
             ?? throw new InvalidOperationException("Room not found");
@@ -322,46 +322,40 @@ public class GameService : IGameService
             throw new InvalidOperationException("Cannot finish round while it is still ongoing");
         }
 
+        // Get game winners (usually just one, but may be more)
         var winners = game.GetRoundWinners();
         foreach (var winner in winners)
         {
             winner.AddScore(1);
         }
 
-        await _roomRepository.UpdateAsync(game);
-
-        return winners.Select(w => w.UserEmail).ToList();
-    }
-
-    public async Task<IList<string>> AddBonusPointsAsync(Guid roomId)
-    {
-        var game = await _roomRepository.GetByIdAsync(roomId)
-            ?? throw new InvalidOperationException("Room not found");
-
+        // Get users with bonus points from cards that have bonus point conditions
         var bonusReceivers = new List<string>();
-
         foreach (var cardType in Enum.GetValues<CardType>())
         {
             var card = CardFactory.Create(cardType);
-            if (card.ConditionForExtraPoint != null)
+            if (card.ConditionForExtraPoint == null) continue;
+
+            foreach (var player in game.Players)
             {
-                foreach (var player in game.Players)
+                if (card.ConditionForExtraPoint(game, player))
                 {
-                    if (card.ConditionForExtraPoint(game, player))
-                    {
-                        player.AddScore(1);
-                        bonusReceivers.Add(player.UserEmail);
-                    }
+                    player.AddScore(1);
+                    bonusReceivers.Add(player.UserEmail);
                 }
             }
         }
 
         await _roomRepository.UpdateAsync(game);
 
-        return bonusReceivers;
+        return
+        [
+            EventMessageFactory.RoundWinners(winners.Select(w => w.UserEmail).ToList()),
+            EventMessageFactory.BonusPoints(bonusReceivers)
+        ];
     }
 
-    public async Task<IList<string>> FinishGameAsync(Guid roomdId)
+    public async Task<SpecialMessage> FinishGameAsync(Guid roomdId)
     {
         var game = await _roomRepository.GetByIdAsync(roomdId)
             ?? throw new InvalidOperationException("Room not found");
@@ -369,7 +363,25 @@ public class GameService : IGameService
         game.TransitionToState(GameStateEnum.Finished);
         await _roomRepository.UpdateAsync(game);
 
-        return game.GetGameWinner().Select(p => p.UserEmail).ToList();
+        return EventMessageFactory.GameOver(game.GetGameWinner().Select(p => p.UserEmail).ToList());
+    }
+
+    public async Task<string> GetPlayerTurnAsync(Guid roomId)
+    {
+        var game = await _roomRepository.GetByIdAsync(roomId)
+            ?? throw new InvalidOperationException("Room not found");
+
+        if (game.HasStarted() == false)
+        {
+            throw new InvalidOperationException("Game has not started yet");
+        }
+
+        if (game.CurrentPlayerIndex >= game.Players.Count)
+        {
+            throw new InvalidOperationException("Current player index is out of bounds");
+        }
+
+        return game.Players[game.CurrentPlayerIndex].UserEmail;
     }
 
     public async Task<List<SpecialMessage>> StartNewRoundAsync(Guid roomId)

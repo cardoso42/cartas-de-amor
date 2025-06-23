@@ -5,6 +5,7 @@ using CartasDeAmor.Application.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using CartasDeAmor.Domain.Exceptions;
 using CartasDeAmor.Domain.Entities;
+using CartasDeAmor.Domain.Factories;
 
 namespace CartasDeAmor.Presentation.Hubs;
 
@@ -140,31 +141,34 @@ public class GameHub(
     {
         if (await _gameService.IsRoundOverAsync(roomId))
         {
-            var roundWinners = await _gameService.FinishRoundAsync(roomId);
-            _logger.LogInformation("Round winner in room {RoomId} is {Winner}", roomId, roundWinners);
-            await Clients.Group(roomId.ToString()).SendAsync("RoundWinners", roundWinners);
-
-            var bonusPointsReceivers = await _gameService.AddBonusPointsAsync(roomId);
-            _logger.LogInformation("Bonus points awarded to players in room {RoomId}: {Receivers}", roomId, bonusPointsReceivers);
-            await Clients.Group(roomId.ToString()).SendAsync("BonusPoints", bonusPointsReceivers);
-
-            if (await _gameService.IsGameOverAsync(roomId))
-            {
-                var gameWinners = await _gameService.FinishGameAsync(roomId);
-
-                _logger.LogInformation("Game winner in room {RoomId} is {Winner}", roomId, gameWinners);
-                await Clients.Group(roomId.ToString()).SendAsync("GameOver", gameWinners);
-
-                return; // No need to start a new round if the game is over
-            }
-
-            var messages = await _gameService.StartNewRoundAsync(roomId);
-            await SendSpecialMessages(roomId, messages);
+            await HandleRoundEnd(roomId);
+            return;
         }
 
-        // TODO: Calling NextPlayerAsync after StartNewRoundAsync makes the next round start with the after the one who won (it should be the one who just won)
         var nextTurnPlayer = await _gameService.NextPlayerAsync(roomId);
-        await Clients.Group(roomId.ToString()).SendAsync("NextTurn", nextTurnPlayer);
+        await SendSpecialMessage(roomId, EventMessageFactory.NextTurn(nextTurnPlayer));
+    }
+
+    private async Task HandleRoundEnd(Guid roomId)
+    {
+        _logger.LogInformation("Round in room {RoomId} is over", roomId);
+
+        var roundEndMessages = await _gameService.FinishRoundAsync(roomId);
+        await SendSpecialMessages(roomId, roundEndMessages);
+
+        if (await _gameService.IsGameOverAsync(roomId))
+        {
+            _logger.LogInformation("Game in room {RoomId} is over", roomId);
+            var gameEndMessage = await _gameService.FinishGameAsync(roomId);
+            await SendSpecialMessage(roomId, gameEndMessage);
+            return;
+        }
+
+        var newRoundMessages = await _gameService.StartNewRoundAsync(roomId);
+        await SendSpecialMessages(roomId, newRoundMessages);
+
+        var nextTurnPlayer = await _gameService.GetPlayerTurnAsync(roomId);
+        await SendSpecialMessage(roomId, EventMessageFactory.NextTurn(nextTurnPlayer));
     }
 
     public async Task PlayCard(Guid roomId, CardPlayDto cardPlayDto)
