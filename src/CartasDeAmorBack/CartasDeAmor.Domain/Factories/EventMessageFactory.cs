@@ -5,40 +5,6 @@ namespace CartasDeAmor.Domain.Factories;
 
 public static class MessageFactory
 {
-    public static SpecialMessage PlayerUpdatePublic(Player player)
-    {
-        return new SpecialMessage
-        {
-            Dest = "",
-            Message = "PublicPlayerUpdate",
-            ExtraData = new
-            {
-                UserEmail = player.UserEmail,
-                Status = player.Status,
-                HoldingCardsCount = player.HoldingCards.Count,
-                PlayedCards = player.PlayedCards.ToList(),
-                Score = player.Score
-            }
-        };
-    }
-
-    public static SpecialMessage PlayerUpdatePrivate(Player player)
-    {
-        return new SpecialMessage
-        {
-            Dest = player.UserEmail,
-            Message = "PlayerUpdatePrivate",
-            ExtraData = new
-            {
-                UserEmail = player.UserEmail,
-                Status = player.Status,
-                HoldingCards = player.HoldingCards.ToList(),
-                PlayedCards = player.PlayedCards.ToList(),
-                Score = player.Score,
-            }
-        };
-    }
-
     public static SpecialMessage PlayCard(string player, CardType cardType)
     {
         return new SpecialMessage
