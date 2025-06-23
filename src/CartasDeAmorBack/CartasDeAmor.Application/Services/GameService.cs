@@ -405,7 +405,7 @@ public class GameService : IGameService
         return GetGameStatusDtos(game);
     }
 
-    public async Task<PublicPlayerUpdateDto> SubmitCardChoiceAsync(Guid roomId, string userEmail, CardType keepCardType, List<CardType> returnCardsType)
+    public async Task<List<SpecialMessage>> SubmitCardChoiceAsync(Guid roomId, string userEmail, CardType keepCardType, List<CardType> returnCardsType)
     {
         var game = _roomRepository.GetByIdAsync(roomId).Result ?? throw new InvalidOperationException("Room not found");
 
@@ -447,6 +447,18 @@ public class GameService : IGameService
         _logger.LogInformation("Player {UserEmail} has submitted card choice: keep {KeepCardType}, return {ReturnCardsType} in room {RoomId}",
             userEmail, keepCardType, string.Join(", ", returnCardsType), roomId);
 
-        return new PublicPlayerUpdateDto(player);
+        var messages = new List<SpecialMessage> { DataMessageFactory.PlayerUpdatePublic(player) };
+        
+        if (returnCardsType.Count > 0)
+        {
+            messages.Add(EventMessageFactory.ReturnCards(userEmail, returnCardsType.Count));
+        }
+
+        messages.AddRange([
+            DataMessageFactory.PlayerUpdatePrivate(player),
+            DataMessageFactory.PlayerUpdatePublic(player)
+        ]);
+
+        return messages;
     }
 }
