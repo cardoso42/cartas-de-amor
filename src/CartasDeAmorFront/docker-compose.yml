@@ -1,0 +1,21 @@
+services:
+  # Frontend only
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: love_letter_frontend
+    ports:
+      - "3000:80"
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+
+networks:
+  default:
+    name: love_letter_network
+    external: true
