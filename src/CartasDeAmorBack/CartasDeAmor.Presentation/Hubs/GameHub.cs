@@ -100,14 +100,8 @@ public class GameHub(
         try
         {
             // Start the game through the game service
-            var gameStatus = await _gameService.StartGameAsync(roomId, userEmail);
-            var players = await _gameService.GetPlayersAsync(roomId);
-
-            // Send each player the initial game status
-            for (int i = 0; i < players.Count; i++)
-            {
-                await Clients.User(players[i].UserEmail).SendAsync("RoundStarted", gameStatus[i]);
-            }
+            var messages = await _gameService.StartGameAsync(roomId, userEmail);
+            await SendSpecialMessages(roomId, messages);
 
             // Prepare the game for the first player
             await _gameService.NextPlayerAsync(roomId);
@@ -166,18 +160,8 @@ public class GameHub(
                 return; // No need to start a new round if the game is over
             }
 
-            var newRoundData = await _gameService.StartNewRoundAsync(roomId);
-            var players = await _gameService.GetPlayersAsync(roomId);
-
-            // Send each player their personalized game status
-            for (int i = 0; i < players.Count; i++)
-            {
-                var connectionIds = GetUserConnectionIds(players[i].UserEmail, roomId);
-                foreach (var connectionId in connectionIds)
-                {
-                    await Clients.Client(connectionId).SendAsync("RoundStarted", newRoundData[i]);
-                }
-            }
+            var messages = await _gameService.StartNewRoundAsync(roomId);
+            await SendSpecialMessages(roomId, messages);
         }
 
         // TODO: Calling NextPlayerAsync after StartNewRoundAsync makes the next round start with the after the one who won (it should be the one who just won)

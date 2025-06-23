@@ -133,7 +133,7 @@ public class Game
     /// </summary>
     public int GetActivePlayerCount()
     {
-        return Players.Count(p => p.Status == PlayerStatus.Active || p.Status == PlayerStatus.Protected);
+        return Players.Count(p => p.IsInGame());
     }
 
     /// <summary>
@@ -141,7 +141,7 @@ public class Game
     /// </summary>
     public IEnumerable<Player> GetActivePlayers()
     {
-        return Players.Where(p => p.Status == PlayerStatus.Active || p.Status == PlayerStatus.Protected);
+        return Players.Where(p => p.IsInGame());
     }
 
     /// <summary>

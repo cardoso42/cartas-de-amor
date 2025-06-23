@@ -7,6 +7,7 @@ using CartasDeAmor.Domain.Entities;
 using Microsoft.Extensions.Logging;
 using CartasDeAmor.Domain.Exceptions;
 using CartasDeAmor.Domain.Configuration;
+using CartasDeAmor.Application.Factories;
 
 namespace CartasDeAmor.Application.Services;
 
@@ -23,38 +24,19 @@ public class GameService : IGameService
         _logger = logger;
     }
 
-    private List<InitialGameStatusDto> GetGameStatusDtos(Game game)
+    private static List<SpecialMessage> GetGameStatusDtos(Game game)
     {
-        List<InitialGameStatusDto> startGameDtos = [];
+        List<SpecialMessage> messages = [];
 
-        // Create a personalized GameStatusDto for each player
         foreach (var player in game.Players)
         {
-            var playersStatuses = new List<PlayerStatusDto>();
-            var players = game.Players.ToList();
-            players.RemoveAll(p => p.UserEmail == player.UserEmail); // Exclude the current player
-
-            playersStatuses.AddRange(
-                players.Select(p => new PlayerStatusDto(p))
-            );
-
-            // Add the current player's private information
-            startGameDtos.Add(new InitialGameStatusDto
-            {
-                OtherPlayersPublicData = playersStatuses,
-                YourCards = player.HoldingCards,
-                AllPlayersInOrder = game.Players.Select(p => p.UserEmail).ToList(),
-                FirstPlayerIndex = game.CurrentPlayerIndex + 1,
-                IsProtected = player.IsProtected(),
-                Score = player.Score,
-                CardsRemainingInDeck = game.CardsDeck.Count
-            });
+            messages.Add(DataMessageFactory.RoundStart(game, player));
         }
 
-        return startGameDtos;
+        return messages;
     }
 
-    public async Task<IList<InitialGameStatusDto>> StartGameAsync(Guid roomId, string hostEmail)
+    public async Task<List<SpecialMessage>> StartGameAsync(Guid roomId, string hostEmail)
     {
         // Get the game room
         var game = await _roomRepository.GetByIdAsync(roomId)
@@ -158,8 +140,8 @@ public class GameService : IGameService
         return
         [
             MessageFactory.PlayerDrewCard(currentPlayer.UserEmail),
-            MessageFactory.PlayerUpdatePublic(currentPlayer),
-            MessageFactory.PlayerUpdatePrivate(currentPlayer)
+            DataMessageFactory.PlayerUpdatePublic(currentPlayer),
+            DataMessageFactory.PlayerUpdatePrivate(currentPlayer)
         ];
     }
 
@@ -256,13 +238,13 @@ public class GameService : IGameService
 
         await _roomRepository.UpdateAsync(game);
 
-        result.SpecialMessages.Insert(0, MessageFactory.PlayerUpdatePublic(currentPlayer));
-        result.SpecialMessages.Insert(1, MessageFactory.PlayerUpdatePrivate(currentPlayer));
+        result.SpecialMessages.Insert(0, DataMessageFactory.PlayerUpdatePublic(currentPlayer));
+        result.SpecialMessages.Insert(1, DataMessageFactory.PlayerUpdatePrivate(currentPlayer));
 
         if (targetPlayer != null)
         {
-            result.SpecialMessages.Insert(2, MessageFactory.PlayerUpdatePublic(targetPlayer));
-            result.SpecialMessages.Insert(3, MessageFactory.PlayerUpdatePrivate(targetPlayer));
+            result.SpecialMessages.Insert(2, DataMessageFactory.PlayerUpdatePublic(targetPlayer));
+            result.SpecialMessages.Insert(3, DataMessageFactory.PlayerUpdatePrivate(targetPlayer));
         }
 
         return result;
@@ -390,7 +372,7 @@ public class GameService : IGameService
         return game.GetGameWinner().Select(p => p.UserEmail).ToList();
     }
 
-    public async Task<IList<InitialGameStatusDto>> StartNewRoundAsync(Guid roomId)
+    public async Task<List<SpecialMessage>> StartNewRoundAsync(Guid roomId)
     {
         var game = await _roomRepository.GetByIdAsync(roomId)
             ?? throw new InvalidOperationException("Room not found");
