@@ -218,19 +218,8 @@ public class GameHub(
 
         try
         {
-            var playerUpdate = await _gameService.SubmitCardChoiceAsync(roomId, userEmail, keepCardType, returnCardTypes);
-            await Clients.Group(roomId.ToString()).SendAsync("CardChoiceSubmitted", playerUpdate);
-
-            // Send CardReturnedToDeck event when cards are returned to deck
-            if (returnCardTypes.Count > 0)
-            {
-                await Clients.Group(roomId.ToString()).SendAsync("CardReturnedToDeck", new { Player = userEmail, CardCount = returnCardTypes.Count });
-            }
-
-            var invokerPrivateUpdate = await _gameService.GetPlayerStatusAsync(roomId, userEmail);
-            await Clients.Client(Context.ConnectionId).SendAsync("PlayerUpdatePrivate", invokerPrivateUpdate);
-            // TODO: await Clients.Group(roomId.ToString()).SendAsync("PlayerUpdatePublic", _gameService.GetPublicPlayerStatus(roomId, userEmail));
-
+            var messages = await _gameService.SubmitCardChoiceAsync(roomId, userEmail, keepCardType, returnCardTypes);
+            await SendSpecialMessages(roomId, messages);
             await AdvanceGame(roomId);
         }
         catch (InvalidOperationException ex)
@@ -243,12 +232,6 @@ public class GameHub(
             _logger.LogError(ex, "Error submitting card choice for user {User} in room {RoomId}", userEmail, roomId);
             throw new HubException("Failed to submit card choice");
         }
-    }
-
-    private List<string> GetUserConnectionIds(string userEmail, Guid roomId)
-    {
-        var connections = _connectionMapping.GetConnections(userEmail).ToList();
-        return connections;
     }
 
     public async Task ReconnectToRoom(Guid roomId)
