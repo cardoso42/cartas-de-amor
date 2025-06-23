@@ -48,7 +48,6 @@ public class GameHub(
         var messages = await _gameRoomService.AddUserToRoomAsync(roomId, userEmail, password);
 
         await SendSpecialMessages(roomId, messages);
-
         await Groups.AddToGroupAsync(Context.ConnectionId, roomId.ToString());
         
         _logger.LogInformation("User {User} joined room {RoomId}", userEmail, roomId);
@@ -127,8 +126,8 @@ public class GameHub(
 
         try
         {
-            var requirements = await _gameService.GetCardActionRequirementsAsync(roomId, userEmail, cardType);
-            await Clients.Caller.SendAsync("CardRequirements", requirements);
+            var messages = await _gameService.GetCardActionRequirementsAsync(roomId, userEmail, cardType);
+            await SendSpecialMessages(roomId, messages);
         }
         catch (Exception ex)
         {
@@ -193,8 +192,8 @@ public class GameHub(
         catch (CardRequirementsNotMetException ex)
         {
             _logger.LogWarning(ex, "Card requirements not met for user {User} in room {RoomId}. Resending them", userEmail, roomId);
-            var requirements = await _gameService.GetCardActionRequirementsAsync(roomId, userEmail, cardPlayDto.CardType);
-            await Clients.Caller.SendAsync("CardRequirements", requirements);
+            var messages = await _gameService.GetCardActionRequirementsAsync(roomId, userEmail, cardPlayDto.CardType);
+            await SendSpecialMessages(roomId, messages);
         }
         catch (InvalidOperationException ex)
         {

@@ -17,7 +17,7 @@ public class GameService : IGameService
     private readonly ILogger<GameService> _logger;
 
     public GameService(
-        IGameRoomRepository roomRepository, 
+        IGameRoomRepository roomRepository,
         ILogger<GameService> logger)
     {
         _roomRepository = roomRepository;
@@ -53,7 +53,7 @@ public class GameService : IGameService
         {
             throw new InvalidOperationException("At least 2 players are required to start the game");
         }
-        
+
         if (game.Players.Count > GameSettings.MaxPlayers)
         {
             throw new InvalidOperationException($"A maximum of {GameSettings.MaxPlayers} players are allowed in a game");
@@ -250,7 +250,7 @@ public class GameService : IGameService
         return result;
     }
 
-    public async Task<CardRequirementsDto> GetCardActionRequirementsAsync(Guid roomId, string currentPlayer, CardType cardType)
+    public async Task<List<SpecialMessage>> GetCardActionRequirementsAsync(Guid roomId, string currentPlayer, CardType cardType)
     {
         var gameRoom = await _roomRepository.GetByIdAsync(roomId) ?? throw new ArgumentException("Game room not found.");
         var card = CardFactory.Create(cardType);
@@ -259,11 +259,11 @@ public class GameService : IGameService
 
         if (requirements == null)
         {
-            return new CardRequirementsDto
-            {
-                CardType = cardType,
-                Message = "No specific requirements for this card type."
-            };
+            return
+            [
+                DataMessageFactory.CardRequirements(
+                    currentPlayer, new CardRequirementsDto { CardType = cardType })
+            ];
         }
 
         var requirementsDto = new CardRequirementsDto { CardType = cardType };
@@ -293,7 +293,7 @@ public class GameService : IGameService
             }
         }
 
-        return requirementsDto;
+        return [ DataMessageFactory.CardRequirements(currentPlayer, requirementsDto) ];
     }
 
     public async Task<bool> IsRoundOverAsync(Guid roomId)
