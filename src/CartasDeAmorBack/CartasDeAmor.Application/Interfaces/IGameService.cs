@@ -9,7 +9,7 @@ public interface IGameService
     Task<List<SpecialMessage>> StartGameAsync(Guid roomId, string hostEmail);
     Task<List<SpecialMessage>> StartNewRoundAsync(Guid roomId);
     Task<List<SpecialMessage>> DrawCardAsync(Guid roomId, string userEmail);
-    Task<CardRequirementsDto> GetCardActionRequirementsAsync(Guid roomId, string currentPlayer, CardType cardType);
+    Task<List<SpecialMessage>> GetCardActionRequirementsAsync(Guid roomId, string currentPlayer, CardType cardType);
     Task<CardResult> PlayCardAsync(Guid roomId, string userEmail, CardPlayDto cardPlay);
     Task<PublicPlayerUpdateDto> SubmitCardChoiceAsync(Guid roomId, string userEmail, CardType keepCardType, List<CardType> returnCardsType);
     Task<IList<Player>> GetPlayersAsync(Guid roomId);

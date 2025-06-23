@@ -1,5 +1,6 @@
 using CartasDeAmor.Application.DTOs;
 using CartasDeAmor.Domain.Entities;
+using CartasDeAmor.Domain.Enums;
 
 namespace CartasDeAmor.Application.Factories;
 
@@ -57,6 +58,16 @@ public static class DataMessageFactory
             Dest = player.UserEmail,
             Message = "JoinedRoom",
             ExtraData = new JoinRoomResultDto(game, player)
+        };
+    }
+
+    public static SpecialMessage CardRequirements(string player, CardRequirementsDto requirements)
+    {
+        return new SpecialMessage
+        {
+            Dest = player,
+            Message = "CardRequirements",
+            ExtraData = requirements
         };
     }
 }

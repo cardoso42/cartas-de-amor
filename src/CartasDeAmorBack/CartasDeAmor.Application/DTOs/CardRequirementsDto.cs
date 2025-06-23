@@ -9,7 +9,6 @@ public class CardRequirementsDto
     public List<CardActionRequirements> Requirements { get; set; } = [];
     public List<string> PossibleTargets { get; set; } = [];
     public List<CardType> PossibleCardTypes { get; set; } = [];
-    public string? Message { get; set; }
 
     public CardRequirementsDto() { }
 }
