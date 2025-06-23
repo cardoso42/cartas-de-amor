@@ -67,7 +67,7 @@
         />
       </div>
       
-      <button type="submit" class="login-button" disabled={loading}>
+      <button type="submit" disabled={loading}>
         {loading ? 'Logging in...' : 'Login'}
       </button>
     </form>
@@ -122,29 +122,6 @@
     outline: none;
     border-color: #4a90e2;
     box-shadow: 0 0 0 2px rgba(74, 144, 226, 0.2);
-  }
-  
-  .login-button {
-    width: 100%;
-    padding: 0.75rem;
-    background-color: #4a90e2;
-    color: white;
-    border: none;
-    border-radius: 4px;
-    font-size: 1rem;
-    font-weight: 500;
-    cursor: pointer;
-    margin-top: 1rem;
-    transition: background-color 0.2s;
-  }
-  
-  .login-button:hover {
-    background-color: #3a7fcf;
-  }
-  
-  .login-button:disabled {
-    background-color: #a0a0a0;
-    cursor: not-allowed;
   }
   
   .error-message {

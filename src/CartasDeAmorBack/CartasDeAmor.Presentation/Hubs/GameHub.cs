@@ -4,6 +4,8 @@ using CartasDeAmor.Domain.Enums;
 using CartasDeAmor.Application.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using CartasDeAmor.Domain.Exceptions;
+using CartasDeAmor.Domain.Entities;
+using CartasDeAmor.Domain.Factories;
 
 namespace CartasDeAmor.Presentation.Hubs;
 
@@ -19,13 +21,35 @@ public class GameHub(
     private readonly IAccountService _accountService = accountService;
     private readonly IConnectionMappingService _connectionMapping = connectionMapping;
 
+    private async Task SendSpecialMessage(Guid roomId, SpecialMessage message)
+    {
+        if (string.IsNullOrEmpty(message.Dest))
+        {
+            await Clients.Group(roomId.ToString()).SendAsync(message.Message, message.ExtraData);
+        }
+        else
+        {
+            await Clients.User(message.Dest).SendAsync(message.Message, message.ExtraData);
+        }
+    }
+    
+    private async Task SendSpecialMessages(Guid roomId, List<SpecialMessage> messages)
+    {
+        foreach (var message in messages)
+        {
+            await SendSpecialMessage(roomId, message);
+        }
+    }
+
     public async Task JoinRoom(Guid roomId, string? password)
     {
         var userEmail = _accountService.GetEmailFromToken(Context.User);
         _connectionMapping.AddConnection(userEmail, Context.ConnectionId);
 
+        var messages = await _gameRoomService.AddUserToRoomAsync(roomId, userEmail, password);
+
+        await SendSpecialMessages(roomId, messages);
         await Groups.AddToGroupAsync(Context.ConnectionId, roomId.ToString());
-        await _gameRoomService.AddUserToRoomAsync(roomId, userEmail, password);
         
         _logger.LogInformation("User {User} joined room {RoomId}", userEmail, roomId);
     }
@@ -34,9 +58,11 @@ public class GameHub(
     {
         var userEmail = _accountService.GetEmailFromToken(Context.User);
         _connectionMapping.RemoveConnection(userEmail, Context.ConnectionId);
-        
+
         await Groups.RemoveFromGroupAsync(Context.ConnectionId, roomId.ToString());
-        await _gameRoomService.RemoveUserFromRoomAsync(roomId, userEmail);
+        var messages = await _gameRoomService.RemoveUserFromRoomAsync(roomId, userEmail);
+
+        await SendSpecialMessages(roomId, messages);
 
         _logger.LogInformation("User {User} left room {RoomId}", userEmail, roomId);
     }
@@ -48,12 +74,8 @@ public class GameHub(
 
         try
         {
-            var playerStatus = await _gameService.DrawCardAsync(roomId, userEmail);
-
-            // Notify all players about the drawn card
-            await Clients.Client(Context.ConnectionId).SendAsync("PrivatePlayerUpdate", playerStatus);
-            await Clients.Group(roomId.ToString()).SendAsync("PlayerDrewCard", userEmail);
-
+            var messages = await _gameService.DrawCardAsync(roomId, userEmail);
+            await SendSpecialMessages(roomId, messages);
             _logger.LogInformation("User {User} drew a card in room {RoomId}", userEmail, roomId);
         }
         catch (InvalidOperationException ex)
@@ -77,18 +99,8 @@ public class GameHub(
         try
         {
             // Start the game through the game service
-            var gameStatus = await _gameService.StartGameAsync(roomId, userEmail);
-            var players = await _gameService.GetPlayersAsync(roomId);
-
-            // Send each player the initial game status
-            for (int i = 0; i < players.Count; i++)
-            {
-                var connectionIds = GetUserConnectionIds(players[i].UserEmail, roomId);
-                foreach (var connectionId in connectionIds)
-                {
-                    await Clients.Client(connectionId).SendAsync("RoundStarted", gameStatus[i]);
-                }
-            }
+            var messages = await _gameService.StartGameAsync(roomId, userEmail);
+            await SendSpecialMessages(roomId, messages);
 
             // Prepare the game for the first player
             await _gameService.NextPlayerAsync(roomId);
@@ -115,8 +127,8 @@ public class GameHub(
 
         try
         {
-            var requirements = await _gameService.GetCardActionRequirementsAsync(roomId, userEmail, cardType);
-            await Clients.Caller.SendAsync("CardRequirements", requirements);
+            var messages = await _gameService.GetCardActionRequirementsAsync(roomId, userEmail, cardType);
+            await SendSpecialMessages(roomId, messages);
         }
         catch (Exception ex)
         {
@@ -129,40 +141,34 @@ public class GameHub(
     {
         if (await _gameService.IsRoundOverAsync(roomId))
         {
-            var roundWinners = await _gameService.FinishRoundAsync(roomId);
-            _logger.LogInformation("Round winner in room {RoomId} is {Winner}", roomId, roundWinners);
-            await Clients.Group(roomId.ToString()).SendAsync("RoundWinners", roundWinners);
-
-            var bonusPointsReceivers = await _gameService.AddBonusPointsAsync(roomId);
-            _logger.LogInformation("Bonus points awarded to players in room {RoomId}: {Receivers}", roomId, bonusPointsReceivers);
-            await Clients.Group(roomId.ToString()).SendAsync("BonusPoints", bonusPointsReceivers);
-
-            if (await _gameService.IsGameOverAsync(roomId))
-            {
-                var gameWinners = await _gameService.FinishGameAsync(roomId);
-
-                _logger.LogInformation("Game winner in room {RoomId} is {Winner}", roomId, gameWinners);
-                await Clients.Group(roomId.ToString()).SendAsync("GameOver", gameWinners);
-
-                return; // No need to start a new round if the game is over
-            }
-
-            var newRoundData = await _gameService.StartNewRoundAsync(roomId);
-
-            var players = (await _gameService.GetPlayersAsync(roomId)).Select(p => p.UserEmail).ToList();
-            foreach (var playerEmail in players)
-            {
-                var connectionIds = GetUserConnectionIds(playerEmail, roomId);
-                foreach (var connectionId in connectionIds)
-                {
-                    await Clients.Client(connectionId).SendAsync("RoundStarted", newRoundData);
-                }
-            }
+            await HandleRoundEnd(roomId);
+            return;
         }
 
-        // TODO: Calling NextPlayerAsync after StartNewRoundAsync makes the next round start with the after the one who won (it should be the one who just won)
         var nextTurnPlayer = await _gameService.NextPlayerAsync(roomId);
-        await Clients.Group(roomId.ToString()).SendAsync("NextTurn", nextTurnPlayer);
+        await SendSpecialMessage(roomId, EventMessageFactory.NextTurn(nextTurnPlayer));
+    }
+
+    private async Task HandleRoundEnd(Guid roomId)
+    {
+        _logger.LogInformation("Round in room {RoomId} is over", roomId);
+
+        var roundEndMessages = await _gameService.FinishRoundAsync(roomId);
+        await SendSpecialMessages(roomId, roundEndMessages);
+
+        if (await _gameService.IsGameOverAsync(roomId))
+        {
+            _logger.LogInformation("Game in room {RoomId} is over", roomId);
+            var gameEndMessage = await _gameService.FinishGameAsync(roomId);
+            await SendSpecialMessage(roomId, gameEndMessage);
+            return;
+        }
+
+        var newRoundMessages = await _gameService.StartNewRoundAsync(roomId);
+        await SendSpecialMessages(roomId, newRoundMessages);
+
+        var nextTurnPlayer = await _gameService.GetPlayerTurnAsync(roomId);
+        await SendSpecialMessage(roomId, EventMessageFactory.NextTurn(nextTurnPlayer));
     }
 
     public async Task PlayCard(Guid roomId, CardPlayDto cardPlayDto)
@@ -173,31 +179,14 @@ public class GameHub(
         try
         {
             var result = await _gameService.PlayCardAsync(roomId, userEmail, cardPlayDto);
-            await Clients.Group(roomId.ToString()).SendAsync($"CardResult-{result.Result}", result);
 
-            var invokerPrivateUpdate = await _gameService.GetPlayerStatusAsync(roomId, userEmail);
-            await Clients.Client(Context.ConnectionId).SendAsync("PrivatePlayerUpdate", invokerPrivateUpdate);
-
-            if (result.Target != null)
-            {
-                var targetConnectionIds = GetUserConnectionIds(result.Target.UserEmail, roomId);
-                var targetPrivateUpdate = await _gameService.GetPlayerStatusAsync(roomId, result.Target.UserEmail);
-
-                foreach (var connectionId in targetConnectionIds)
-                {
-                    await Clients.Client(connectionId).SendAsync("PrivatePlayerUpdate", targetPrivateUpdate);
-                }
-            }
-
+            await SendSpecialMessages(roomId, result.SpecialMessages);
             _logger.LogInformation("User {User} played card {CardType} in room {RoomId}", userEmail, cardPlayDto.CardType, roomId);
 
-            if (result.Result == CardActionResults.ChooseCard)
+            if (result.ShouldAdvanceTurn)
             {
-                await Clients.Client(Context.ConnectionId).SendAsync("ChooseCard", result.CardType);
-                return; // Do not advance the game until the user chooses a card
+                await AdvanceGame(roomId);
             }
-
-            await AdvanceGame(roomId);
         }
         catch (MandatoryCardPlayViolationException ex)
         {
@@ -207,8 +196,8 @@ public class GameHub(
         catch (CardRequirementsNotMetException ex)
         {
             _logger.LogWarning(ex, "Card requirements not met for user {User} in room {RoomId}. Resending them", userEmail, roomId);
-            var requirements = await _gameService.GetCardActionRequirementsAsync(roomId, userEmail, cardPlayDto.CardType);
-            await Clients.Caller.SendAsync("CardRequirements", requirements);
+            var messages = await _gameService.GetCardActionRequirementsAsync(roomId, userEmail, cardPlayDto.CardType);
+            await SendSpecialMessages(roomId, messages);
         }
         catch (InvalidOperationException ex)
         {
@@ -229,12 +218,8 @@ public class GameHub(
 
         try
         {
-            var playerUpdate = await _gameService.SubmitCardChoiceAsync(roomId, userEmail, keepCardType, returnCardTypes);
-            await Clients.Group(roomId.ToString()).SendAsync("CardChoiceSubmitted", playerUpdate);
-
-            var invokerPrivateUpdate = await _gameService.GetPlayerStatusAsync(roomId, userEmail);
-            await Clients.Client(Context.ConnectionId).SendAsync("PrivatePlayerUpdate", invokerPrivateUpdate);
-
+            var messages = await _gameService.SubmitCardChoiceAsync(roomId, userEmail, keepCardType, returnCardTypes);
+            await SendSpecialMessages(roomId, messages);
             await AdvanceGame(roomId);
         }
         catch (InvalidOperationException ex)
@@ -247,12 +232,6 @@ public class GameHub(
             _logger.LogError(ex, "Error submitting card choice for user {User} in room {RoomId}", userEmail, roomId);
             throw new HubException("Failed to submit card choice");
         }
-    }
-
-    private List<string> GetUserConnectionIds(string userEmail, Guid roomId)
-    {
-        var connections = _connectionMapping.GetConnections(userEmail).ToList();
-        return connections;
     }
 
     public async Task ReconnectToRoom(Guid roomId)

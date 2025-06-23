@@ -1,9 +1,16 @@
 import auth from '$lib/stores/authStore';
+import { user } from '$lib/stores/userStore';
 import API_CONFIG from '$lib/config/api-config';
 import { apiPost } from '$lib/utils/apiUtils';
 
 interface LoginResponse {
   token: string;
+  success: boolean;
+  message?: string;
+}
+
+interface RegisterResponse {
+  accessToken?: string;
   success: boolean;
   message?: string;
 }
@@ -16,6 +23,11 @@ interface ApiLoginResponse {
   message: string;
 }
 
+interface ApiRegisterResponse {
+  accessToken: string;
+  message: string;
+}
+
 export async function login(email: string, password: string): Promise<LoginResponse> {
   try {
     // Using the centralized API configuration and utility function
@@ -24,6 +36,14 @@ export async function login(email: string, password: string): Promise<LoginRespo
     if (data.token) {
       // Store the token in the auth store
       auth.login(data.token);
+      
+      // Populate user store with user data from the response
+      user.setUser({
+        id: data.email, // Using email as ID since we don't have a separate ID field
+        email: data.email,
+        username: data.username
+      });
+      
       return { 
         token: data.token, 
         success: true 
@@ -45,6 +65,42 @@ export async function login(email: string, password: string): Promise<LoginRespo
   }
 }
 
+export async function register(username: string, email: string, password: string): Promise<RegisterResponse> {
+  try {
+    const data = await apiPost<ApiRegisterResponse>(API_CONFIG.auth.register, {
+      username,
+      email,
+      password
+    });
+
+    if (data.accessToken) {
+      // Store the access token in auth store
+      auth.login(data.accessToken);
+      
+      // Populate user store with user data from the registration parameters
+      user.setUser({
+        id: email, // Using email as ID since we don't have a separate ID field
+        email: email,
+        username: username
+      });
+    }
+    
+    return {
+      accessToken: data.accessToken,
+      success: true,
+      message: data.message || 'Account created successfully.'
+    };
+  } catch (error) {
+    console.error('Registration error:', error);
+    const errorMessage = error instanceof Error ? error.message : 'An error occurred during registration. Please try again.';
+    return {
+      success: false,
+      message: errorMessage
+    };
+  }
+}
+
 export function logout() {
   auth.logout();
+  user.clearUser();
 }

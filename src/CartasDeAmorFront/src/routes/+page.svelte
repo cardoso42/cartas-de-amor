@@ -1,60 +1,59 @@
 <script lang="ts">
-  import { logout } from '$lib/services/authService';
   import { auth } from '$lib/stores/authStore';
+  import { goto } from '$app/navigation';
+  import { onMount } from 'svelte';
+  import { browser } from '$app/environment';
 
-  function handleLogout() {
-    logout();
-  }
+  let isLoading = true;
+
+  onMount(() => {
+    // Only execute in browser
+    if (!browser) return;
+    
+    // Synchronize auth state with localStorage and redirect
+    const isAuthenticated = auth.synchronize();
+    
+    if (isAuthenticated) {
+      goto('/dashboard');
+    } else {
+      goto('/welcome');
+    }
+    isLoading = false;
+  });
 </script>
 
 <svelte:head>
-  <title>Home - Love Letter</title>
+  <title>Cartas de Amor | Redirecting...</title>
 </svelte:head>
 
-{#if $auth.isAuthenticated}
-  <div class="container">
-    <header>
-      <h1>Welcome to Love Letter</h1>
-      <button class="logout-button" on:click={handleLogout}>Logout</button>
-    </header>
-    
-    <main>
-      <p>You are successfully logged in. This is your dashboard.</p>
-    </main>
+{#if isLoading}
+  <div class="loading">
+    <p>Loading...</p>
+  </div>
+{:else}
+  <div class="loading">
+    <p>Redirecting...</p>
   </div>
 {/if}
 
 <style>
-  .container {
-    max-width: 1200px;
-    margin: 0 auto;
-    padding: 2rem;
-  }
-  
-  header {
+  .loading {
     display: flex;
-    justify-content: space-between;
+    justify-content: center;
     align-items: center;
-    margin-bottom: 2rem;
+    height: 100vh;
+    font-size: 1.2rem;
+    color: #666;
   }
   
-  h1 {
-    color: #333;
+  /* Add a simple loading animation */
+  .loading p {
+    animation: pulse 1.5s infinite;
   }
   
-  .logout-button {
-    background-color: #f44336;
-    color: white;
-    border: none;
-    padding: 0.5rem 1rem;
-    border-radius: 4px;
-    cursor: pointer;
-    font-size: 0.9rem;
-    font-weight: 500;
-    transition: background-color 0.2s;
-  }
-  
-  .logout-button:hover {
-    background-color: #d32f2f;
+  @keyframes pulse {
+    0% { opacity: 0.5; }
+    50% { opacity: 1; }
+    100% { opacity: 0.5; }
   }
 </style>

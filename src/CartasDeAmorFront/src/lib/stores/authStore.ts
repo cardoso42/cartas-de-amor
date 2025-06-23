@@ -7,10 +7,10 @@ interface AuthStore {
   isAuthenticated: boolean;
 }
 
-// Create initial state
+// Create initial state with default values
 const initialState: AuthStore = {
-  token: browser ? localStorage.getItem('authToken') : null,
-  isAuthenticated: browser ? !!localStorage.getItem('authToken') : false
+  token: null,
+  isAuthenticated: false
 };
 
 // Create the writable store
@@ -45,6 +45,19 @@ export const auth = {
       currentToken = state.token;
     })();
     return currentToken;
+  },
+  // New synchronize method to call at key navigation points
+  synchronize: () => {
+    if (browser) {
+      const token = localStorage.getItem('authToken');
+      authStore.update(state => ({
+        ...state,
+        token,
+        isAuthenticated: !!token
+      }));
+      return !!token;
+    }
+    return false;
   }
 };
 

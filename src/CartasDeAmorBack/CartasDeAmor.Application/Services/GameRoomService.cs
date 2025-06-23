@@ -2,6 +2,8 @@ using CartasDeAmor.Domain.Repositories;
 using CartasDeAmor.Domain.Entities;
 using CartasDeAmor.Application.DTOs;
 using CartasDeAmor.Domain.Configuration;
+using CartasDeAmor.Application.Factories;
+using CartasDeAmor.Domain.Factories;
 
 namespace CartasDeAmor.Domain.Services;
 
@@ -46,9 +48,6 @@ public class GameRoomService : IGameRoomService
             HostEmail = creatorEmail,
         };
 
-        var host = await CreatePlayer(game, creatorEmail);
-        game.Players.Add(host);
-
         await _roomRepository.CreateAsync(game);
         return game.Id;
     }
@@ -69,7 +68,7 @@ public class GameRoomService : IGameRoomService
         await _roomRepository.DeleteAsync(roomId);
     }
 
-    public async Task AddUserToRoomAsync(Guid roomId, string userEmail, string? password)
+    public async Task<List<SpecialMessage>> AddUserToRoomAsync(Guid roomId, string userEmail, string? password)
     {
         var game = await _roomRepository.GetByIdAsync(roomId) ?? throw new InvalidOperationException("Room not found");
         if (game.Players.Any(p => p.UserEmail == userEmail))
@@ -89,32 +88,39 @@ public class GameRoomService : IGameRoomService
 
         var player = await CreatePlayer(game, userEmail);
         game.Players.Add(player);
-        
+
         await _roomRepository.UpdateAsync(game);
+
+        return
+        [
+            EventMessageFactory.UserJoined(player.UserEmail),
+            DataMessageFactory.JoinRoom(game, player)
+        ];
     }
 
-    public async Task RemoveUserFromRoomAsync(Guid roomId, string userEmail)
+    public async Task<List<SpecialMessage>> RemoveUserFromRoomAsync(Guid roomId, string userEmail)
     {
-        var game = await _roomRepository.GetByIdAsync(roomId);
-        if (game == null)
-        {
-            throw new InvalidOperationException("Room not found");
-        }
-
-        var player = game.Players.FirstOrDefault(p => p.UserEmail == userEmail);
-        if (player == null)
-        {
-            throw new InvalidOperationException("User is not in the room");
-        }
+        var game = await _roomRepository.GetByIdAsync(roomId)
+            ?? throw new InvalidOperationException("Room not found");
+        var player = game.Players.FirstOrDefault(p => p.UserEmail == userEmail)
+            ?? throw new InvalidOperationException("User is not in the room");
 
         game.Players.Remove(player);
+
         await _roomRepository.UpdateAsync(game);
         await _playerRepository.DeleteAsync(roomId, userEmail);
+
+        return
+        [
+            EventMessageFactory.UserLeft(player.UserEmail),
+        ];
     }
 
-    public async Task<IEnumerable<GameRoomDto>> GetAllRoomsAsync()
+    public async Task<IEnumerable<GameRoomDto>> GetAvailableRooms()
     {
         var rooms = await _roomRepository.GetAllAsync();
-        return rooms.Select(room => new GameRoomDto(room));
+        return rooms
+            .Where(room => !room.HasStarted())
+            .Select(room => new GameRoomDto(room));
     }
 }

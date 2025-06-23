@@ -1,9 +1,25 @@
 <script lang="ts">
-  import { auth } from '$lib/stores/authStore';
+  import { onMount } from 'svelte';
+  import Navbar from '$lib/components/layout/Navbar.svelte';
+  import auth from '$lib/stores/authStore';
+  import { user } from '$lib/stores/userStore';
+  import settings from '$lib/stores/settingsStore';
+  import '$lib/styles/index.css';
+
+  // Initialize stores on app start
+  onMount(() => {
+    // Synchronize all stores from localStorage
+    auth.synchronize();
+    user.synchronize();
+    settings.synchronize();
+  });
 </script>
 
 <div class="app">
-  <slot />
+  <Navbar />
+  <main class="content">
+    <slot />
+  </main>
 </div>
 
 <style>
@@ -25,5 +41,13 @@
     min-height: 100vh;
     display: flex;
     flex-direction: column;
+  }
+  
+  .content {
+    flex: 1;
+    padding: 1rem;
+    max-width: 1200px;
+    width: 100%;
+    margin: 0 auto;
   }
 </style>

@@ -7,6 +7,7 @@ using CartasDeAmor.Domain.Entities;
 using Microsoft.Extensions.Logging;
 using CartasDeAmor.Domain.Exceptions;
 using CartasDeAmor.Domain.Configuration;
+using CartasDeAmor.Application.Factories;
 
 namespace CartasDeAmor.Application.Services;
 
@@ -16,43 +17,26 @@ public class GameService : IGameService
     private readonly ILogger<GameService> _logger;
 
     public GameService(
-        IGameRoomRepository roomRepository, 
+        IGameRoomRepository roomRepository,
         ILogger<GameService> logger)
     {
         _roomRepository = roomRepository;
         _logger = logger;
     }
 
-    private List<InitialGameStatusDto> GetGameStatusDtos(Game game)
+    private static List<SpecialMessage> GetGameStatusDtos(Game game)
     {
-        List<InitialGameStatusDto> startGameDtos = [];
+        List<SpecialMessage> messages = [];
 
-        // Create a personalized GameStatusDto for each player
         foreach (var player in game.Players)
         {
-            var playersStatuses = new List<PlayerStatusDto>();
-            var players = game.Players.ToList();
-            players.RemoveAll(p => p.UserEmail == player.UserEmail); // Exclude the current player
-
-            playersStatuses.AddRange(
-                players.Select(p => new PlayerStatusDto(p))
-            );
-
-            // Add the current player's private information
-            startGameDtos.Add(new InitialGameStatusDto
-            {
-                OtherPlayersPublicData = playersStatuses,
-                YourCards = player.HoldingCards,
-                AllPlayersInOrder = game.Players.Select(p => p.UserEmail).ToList(),
-                FirstPlayerIndex = game.CurrentPlayerIndex + 1,
-                IsProtected = player.IsProtected()
-            });
+            messages.Add(DataMessageFactory.RoundStart(game, player));
         }
 
-        return startGameDtos;
+        return messages;
     }
 
-    public async Task<IList<InitialGameStatusDto>> StartGameAsync(Guid roomId, string hostEmail)
+    public async Task<List<SpecialMessage>> StartGameAsync(Guid roomId, string hostEmail)
     {
         // Get the game room
         var game = await _roomRepository.GetByIdAsync(roomId)
@@ -69,7 +53,7 @@ public class GameService : IGameService
         {
             throw new InvalidOperationException("At least 2 players are required to start the game");
         }
-        
+
         if (game.Players.Count > GameSettings.MaxPlayers)
         {
             throw new InvalidOperationException($"A maximum of {GameSettings.MaxPlayers} players are allowed in a game");
@@ -124,7 +108,7 @@ public class GameService : IGameService
         return players[game.CurrentPlayerIndex].UserEmail == userEmail;
     }
 
-    public async Task<PrivatePlayerUpdateDto> DrawCardAsync(Guid roomId, string userEmail)
+    public async Task<List<SpecialMessage>> DrawCardAsync(Guid roomId, string userEmail)
     {
         var game = await _roomRepository.GetByIdAsync(roomId) ?? throw new InvalidOperationException("Room not found");
 
@@ -153,7 +137,12 @@ public class GameService : IGameService
 
         await _roomRepository.UpdateAsync(game);
 
-        return new PrivatePlayerUpdateDto(currentPlayer);
+        return
+        [
+            EventMessageFactory.PlayerDrewCard(currentPlayer.UserEmail),
+            DataMessageFactory.PlayerUpdatePublic(currentPlayer),
+            DataMessageFactory.PlayerUpdatePrivate(currentPlayer)
+        ];
     }
 
     public async Task<string> NextPlayerAsync(Guid roomId)
@@ -176,7 +165,7 @@ public class GameService : IGameService
         return newPlayer.UserEmail;
     }
 
-    public async Task<CardActionResultDto> PlayCardAsync(Guid roomId, string userEmail, CardPlayDto cardPlay)
+    public async Task<CardResult> PlayCardAsync(Guid roomId, string userEmail, CardPlayDto cardPlay)
     {
         var game = await _roomRepository.GetByIdAsync(roomId) ?? throw new InvalidOperationException("Room not found");
         if (game.HasStarted() == false)
@@ -199,6 +188,7 @@ public class GameService : IGameService
             throw new InvalidOperationException($"Cannot play a card in current state: {game.GameState}");
         }
 
+        // Player must have the card in hand
         var currentPlayer = game.GetPlayerByEmail(userEmail) ?? throw new InvalidOperationException("Player not found in the game");
         if (!currentPlayer.HoldingCards.Contains(cardPlay.CardType))
         {
@@ -222,12 +212,12 @@ public class GameService : IGameService
         }
 
         // Play the card
-            _logger.LogInformation("Player {UserEmail} is playing card {CardType} in room {RoomId}", userEmail, cardPlay.CardType, roomId);
+        _logger.LogInformation("Player {UserEmail} is playing card {CardType} in room {RoomId}", userEmail, cardPlay.CardType, roomId);
 
         var card = CardFactory.Create(cardPlay.CardType);
         var targetPlayer = game.GetPlayerByEmail(cardPlay.TargetPlayerEmail ?? string.Empty);
 
-        var result = CardActionResults.None;
+        var result = new CardResult();
         try
         {
             currentPlayer.PlayCard(cardPlay.CardType);
@@ -248,16 +238,19 @@ public class GameService : IGameService
 
         await _roomRepository.UpdateAsync(game);
 
-        return new CardActionResultDto
+        result.SpecialMessages.Insert(0, DataMessageFactory.PlayerUpdatePublic(currentPlayer));
+        result.SpecialMessages.Insert(1, DataMessageFactory.PlayerUpdatePrivate(currentPlayer));
+
+        if (targetPlayer != null)
         {
-            Result = result,
-            CardType = cardPlay.CardType,
-            Invoker = new PublicPlayerUpdateDto(currentPlayer),
-            Target = targetPlayer != null ? new PublicPlayerUpdateDto(targetPlayer) : null
-        };
+            result.SpecialMessages.Insert(2, DataMessageFactory.PlayerUpdatePublic(targetPlayer));
+            result.SpecialMessages.Insert(3, DataMessageFactory.PlayerUpdatePrivate(targetPlayer));
+        }
+
+        return result;
     }
 
-    public async Task<CardRequirementsDto> GetCardActionRequirementsAsync(Guid roomId, string currentPlayer, CardType cardType)
+    public async Task<List<SpecialMessage>> GetCardActionRequirementsAsync(Guid roomId, string currentPlayer, CardType cardType)
     {
         var gameRoom = await _roomRepository.GetByIdAsync(roomId) ?? throw new ArgumentException("Game room not found.");
         var card = CardFactory.Create(cardType);
@@ -266,11 +259,11 @@ public class GameService : IGameService
 
         if (requirements == null)
         {
-            return new CardRequirementsDto
-            {
-                CardType = cardType,
-                Message = "No specific requirements for this card type."
-            };
+            return
+            [
+                DataMessageFactory.CardRequirements(
+                    currentPlayer, new CardRequirementsDto { CardType = cardType })
+            ];
         }
 
         var requirementsDto = new CardRequirementsDto { CardType = cardType };
@@ -279,6 +272,7 @@ public class GameService : IGameService
         {
             requirementsDto.Requirements.Add(CardActionRequirements.SelectPlayer);
             requirementsDto.PossibleTargets = gameRoom.Players
+                .Where(p => p.IsInGame())
                 .Select(p => p.UserEmail)
                 .ToList();
 
@@ -299,7 +293,7 @@ public class GameService : IGameService
             }
         }
 
-        return requirementsDto;
+        return [ DataMessageFactory.CardRequirements(currentPlayer, requirementsDto) ];
     }
 
     public async Task<bool> IsRoundOverAsync(Guid roomId)
@@ -318,7 +312,7 @@ public class GameService : IGameService
         return game.IsGameOver();
     }
 
-    public async Task<IList<string>> FinishRoundAsync(Guid roomId)
+    public async Task<List<SpecialMessage>> FinishRoundAsync(Guid roomId)
     {
         var game = await _roomRepository.GetByIdAsync(roomId)
             ?? throw new InvalidOperationException("Room not found");
@@ -328,46 +322,40 @@ public class GameService : IGameService
             throw new InvalidOperationException("Cannot finish round while it is still ongoing");
         }
 
+        // Get game winners (usually just one, but may be more)
         var winners = game.GetRoundWinners();
         foreach (var winner in winners)
         {
             winner.AddScore(1);
         }
 
-        await _roomRepository.UpdateAsync(game);
-
-        return winners.Select(w => w.UserEmail).ToList();
-    }
-
-    public async Task<IList<string>> AddBonusPointsAsync(Guid roomId)
-    {
-        var game = await _roomRepository.GetByIdAsync(roomId)
-            ?? throw new InvalidOperationException("Room not found");
-
+        // Get users with bonus points from cards that have bonus point conditions
         var bonusReceivers = new List<string>();
-
         foreach (var cardType in Enum.GetValues<CardType>())
         {
             var card = CardFactory.Create(cardType);
-            if (card.ConditionForExtraPoint != null)
+            if (card.ConditionForExtraPoint == null) continue;
+
+            foreach (var player in game.Players)
             {
-                foreach (var player in game.Players)
+                if (card.ConditionForExtraPoint(game, player))
                 {
-                    if (card.ConditionForExtraPoint(game, player))
-                    {
-                        player.AddScore(1);
-                        bonusReceivers.Add(player.UserEmail);
-                    }
+                    player.AddScore(1);
+                    bonusReceivers.Add(player.UserEmail);
                 }
             }
         }
 
         await _roomRepository.UpdateAsync(game);
 
-        return bonusReceivers;
+        return
+        [
+            EventMessageFactory.RoundWinners(winners.Select(w => w.UserEmail).ToList()),
+            EventMessageFactory.BonusPoints(bonusReceivers)
+        ];
     }
 
-    public async Task<IList<string>> FinishGameAsync(Guid roomdId)
+    public async Task<SpecialMessage> FinishGameAsync(Guid roomdId)
     {
         var game = await _roomRepository.GetByIdAsync(roomdId)
             ?? throw new InvalidOperationException("Room not found");
@@ -375,10 +363,28 @@ public class GameService : IGameService
         game.TransitionToState(GameStateEnum.Finished);
         await _roomRepository.UpdateAsync(game);
 
-        return game.GetGameWinner().Select(p => p.UserEmail).ToList();
+        return EventMessageFactory.GameOver(game.GetGameWinner().Select(p => p.UserEmail).ToList());
     }
 
-    public async Task<IList<InitialGameStatusDto>> StartNewRoundAsync(Guid roomId)
+    public async Task<string> GetPlayerTurnAsync(Guid roomId)
+    {
+        var game = await _roomRepository.GetByIdAsync(roomId)
+            ?? throw new InvalidOperationException("Room not found");
+
+        if (game.HasStarted() == false)
+        {
+            throw new InvalidOperationException("Game has not started yet");
+        }
+
+        if (game.CurrentPlayerIndex >= game.Players.Count)
+        {
+            throw new InvalidOperationException("Current player index is out of bounds");
+        }
+
+        return game.Players[game.CurrentPlayerIndex].UserEmail;
+    }
+
+    public async Task<List<SpecialMessage>> StartNewRoundAsync(Guid roomId)
     {
         var game = await _roomRepository.GetByIdAsync(roomId)
             ?? throw new InvalidOperationException("Room not found");
@@ -399,7 +405,7 @@ public class GameService : IGameService
         return GetGameStatusDtos(game);
     }
 
-    public async Task<PublicPlayerUpdateDto> SubmitCardChoiceAsync(Guid roomId, string userEmail, CardType keepCardType, List<CardType> returnCardsType)
+    public async Task<List<SpecialMessage>> SubmitCardChoiceAsync(Guid roomId, string userEmail, CardType keepCardType, List<CardType> returnCardsType)
     {
         var game = _roomRepository.GetByIdAsync(roomId).Result ?? throw new InvalidOperationException("Room not found");
 
@@ -441,6 +447,18 @@ public class GameService : IGameService
         _logger.LogInformation("Player {UserEmail} has submitted card choice: keep {KeepCardType}, return {ReturnCardsType} in room {RoomId}",
             userEmail, keepCardType, string.Join(", ", returnCardsType), roomId);
 
-        return new PublicPlayerUpdateDto(player);
+        var messages = new List<SpecialMessage> { DataMessageFactory.PlayerUpdatePublic(player) };
+        
+        if (returnCardsType.Count > 0)
+        {
+            messages.Add(EventMessageFactory.ReturnCards(userEmail, returnCardsType.Count));
+        }
+
+        messages.AddRange([
+            DataMessageFactory.PlayerUpdatePrivate(player),
+            DataMessageFactory.PlayerUpdatePublic(player)
+        ]);
+
+        return messages;
     }
 }

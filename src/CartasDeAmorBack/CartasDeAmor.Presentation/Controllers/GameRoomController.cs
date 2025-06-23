@@ -46,11 +46,11 @@ public class GameRoomController : ControllerBase
     }
 
     [HttpGet]
-    public async Task<ActionResult<IEnumerable<GameRoomDto>>> GetAllRooms()
+    public async Task<ActionResult<IEnumerable<GameRoomDto>>> GetAvailableRooms()
     {
         try
         {
-            var rooms = await _roomService.GetAllRoomsAsync();
+            var rooms = await _roomService.GetAvailableRooms();
             return Ok(rooms);
         }
         catch (Exception ex)

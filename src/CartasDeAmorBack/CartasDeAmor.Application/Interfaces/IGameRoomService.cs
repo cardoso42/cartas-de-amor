@@ -1,14 +1,18 @@
 using CartasDeAmor.Application.DTOs;
+using CartasDeAmor.Domain.Entities;
 
 namespace CartasDeAmor.Domain.Services;
 
 public interface IGameRoomService
 {
     /// <summary>
-    /// Retrieves all game rooms.
+    /// Retrieves all available game rooms.
     /// </summary>
+    /// <remarks>
+    /// An available room are rooms that has not started the game yet.
+    /// </remarks>
     /// <returns>A task representing the asynchronous operation, containing a collection of game room DTOs</returns>
-    Task<IEnumerable<GameRoomDto>> GetAllRoomsAsync();
+    Task<IEnumerable<GameRoomDto>> GetAvailableRooms();
 
     /// <summary>
     /// Creates a new room with the specified name and adds the creator as the first player.
@@ -34,7 +38,7 @@ public interface IGameRoomService
     /// <param name="userEmail">The ID of the user to add to the room.</param>
     /// <param name="password">An optional password for the room. If provided, the user must enter the correct password to join.</param>
     /// <returns>A task representing the asynchronous operation.</returns>
-    Task AddUserToRoomAsync(Guid roomId, string userEmail, string? password);
+    Task<List<SpecialMessage>> AddUserToRoomAsync(Guid roomId, string userEmail, string? password);
 
     /// <summary>
     /// Removes a user from a room.
@@ -42,5 +46,5 @@ public interface IGameRoomService
     /// <param name="roomId">The ID of the room from which the user will be removed.</param>
     /// <param name="userEmail">The ID of the user to remove from the room.</param>
     /// <returns>A task representing the asynchronous operation.</returns>
-    Task RemoveUserFromRoomAsync(Guid roomId, string userEmail);
+    Task<List<SpecialMessage>> RemoveUserFromRoomAsync(Guid roomId, string userEmail);
 }

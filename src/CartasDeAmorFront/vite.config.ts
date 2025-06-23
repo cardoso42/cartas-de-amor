@@ -15,6 +15,11 @@ export default defineConfig({
 				target: process.env.VITE_API_URL || 'http://localhost:5149',
 				changeOrigin: true,
 				rewrite: (path) => path
+			},
+			'/gamehub': {
+				target: process.env.VITE_API_URL || 'http://localhost:5149',
+				changeOrigin: true,
+				ws: true // Enable WebSocket proxying for SignalR
 			}
 		}
 	},

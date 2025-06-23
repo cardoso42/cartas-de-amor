@@ -1,6 +1,7 @@
 using CartasDeAmor.Domain.Entities;
 using CartasDeAmor.Domain.Enums;
 using CartasDeAmor.Domain.Exceptions;
+using CartasDeAmor.Domain.Factories;
 
 namespace CartasDeAmor.Domain.Cards;
 
@@ -15,7 +16,7 @@ public class Guard : Card
     public override CardType CardType => CardType.Guard;
     public override Func<Game, Player, bool> ConditionForExtraPoint => new((game, player) => false);
 
-    public override CardActionResults Play(Game game, Player invokerPlayer, Player? targetPlayer, CardType? targetCardType)
+    public override CardResult Play(Game game, Player invokerPlayer, Player? targetPlayer, CardType? targetCardType)
     {
         // If the player guesses the card type of the target player correctly, the target player is eliminated.
 
@@ -34,15 +35,22 @@ public class Guard : Card
             throw new PlayerProtectedException("Target player cannot be targeted at this time.", targetPlayer.UserEmail);
         }
 
+        var result = new CardResult()
+        {
+            SpecialMessages =
+            [
+                EventMessageFactory.PlayCard(invokerPlayer.UserEmail, CardType),
+                EventMessageFactory.GuessCard(invokerPlayer.UserEmail, targetPlayer.UserEmail, targetCardType.Value)
+            ]
+        };
+
         if (targetPlayer.HasCard(targetCardType.Value))
         {
             targetPlayer.Eliminate();
-            return CardActionResults.PlayerEliminated;
+            result.SpecialMessages.Add(EventMessageFactory.PlayerEliminated(targetPlayer.UserEmail));
         }
-        else
-        {
-            return CardActionResults.None;
-        }
+
+        return result;
     }
     
     public override CardRequirements? GetCardActionRequirements()

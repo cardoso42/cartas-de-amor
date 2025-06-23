@@ -33,7 +33,7 @@ DB --> API: State updated
 deactivate DB
 
 API --> FE: SignalR: CardResult-{resultType} event
-API --> FE: SignalR: PrivatePlayerUpdate event
+API --> FE: SignalR: PlayerUpdatePrivate event
 
 API -> DB: Check if round is over
 activate DB

@@ -1,5 +1,6 @@
 using CartasDeAmor.Domain.Entities;
 using CartasDeAmor.Domain.Enums;
+using CartasDeAmor.Domain.Factories;
 
 namespace CartasDeAmor.Domain.Cards;
 
@@ -13,10 +14,13 @@ public class Spy : Card
 
     public override CardType CardType => CardType.Spy;
 
-    public override CardActionResults Play(Game game, Player invokerPlayer, Player? targetPlayer, CardType? targetCardType)
+    public override CardResult Play(Game game, Player invokerPlayer, Player? targetPlayer, CardType? targetCardType)
     {
         // No immediate effect
-        return CardActionResults.None;
+        return new CardResult
+        {
+            SpecialMessages = [EventMessageFactory.PlayCard(invokerPlayer.UserEmail, CardType)]
+        };
     }
     
     public override CardRequirements? GetCardActionRequirements()

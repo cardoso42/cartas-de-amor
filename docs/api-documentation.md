@@ -25,13 +25,19 @@ This document provides comprehensive documentation for the public interfaces of 
       - [Get Card Requirements](#get-card-requirements)
       - [Play Card](#play-card)
       - [Submit Card Choice](#submit-card-choice)
-    - [Card Result Events](#card-result-events)
-      - [CardResult-ShowCard](#cardresult-showcard)
-      - [CardResult-PlayerEliminated](#cardresult-playereliminated)
-      - [CardResult-SwitchCards](#cardresult-switchcards)
-      - [CardResult-DiscardAndDrawCard](#cardresult-discardanddrawcard)
-      - [CardResult-ProtectionGranted](#cardresult-protectiongranted)
-      - [CardResult-ChooseCard](#cardresult-choosecard)
+    - [MessageFactory Game Events](#messagefactory-game-events)
+      - [PlayCard](#playcard)
+      - [GuessCard](#guesscard)
+      - [ShowCard](#showcard)
+      - [CompareCards](#comparecards)
+      - [ComparisonTie](#comparisontie)
+      - [DiscardCard](#discardcard)
+      - [DrawCard](#drawcard)
+      - [PlayerEliminated](#playereliminated)
+      - [SwitchCards](#switchcards)
+      - [PlayerProtected](#playerprotected)
+      - [ChooseCard](#choosecard)
+      - [PublicPlayerUpdate](#publicplayerupdate)
     - [Game State Events](#game-state-events)
       - [RoundStarted](#roundstarted)
       - [RoundWinners](#roundwinners)
@@ -39,7 +45,7 @@ This document provides comprehensive documentation for the public interfaces of 
       - [GameOver](#gameover)
       - [NextTurn](#nextturn)
       - [PlayerDrewCard](#playerdrewcard)
-      - [PrivatePlayerUpdate](#privateplayerupdate)
+      - [PlayerUpdatePrivate](#PlayerUpdatePrivate)
       - [CardChoiceSubmitted](#cardchoicesubmitted)
     - [Error Events](#error-events)
       - [DrawCardError](#drawcarderror)
@@ -174,6 +180,8 @@ Base path: `/api/GameRoom`
 
 The Game Hub provides real-time communication for the Love Letter game. Connect to `/GameHub` with an authorization bearer token in the request header.
 
+**Note**: The backend uses MessageFactory to generate specific, granular events for each card effect instead of generic CardResult events. This provides better real-time feedback and more accurate game state communication to all players.
+
 ### Game Room Management
 
 #### Join Room
@@ -225,7 +233,7 @@ The Game Hub provides real-time communication for the Love Letter game. Connect 
 - **Parameters**:
   - `roomId` (Guid): The ID of the room where the player will draw a card
 - **Server Events**:
-  - `PrivatePlayerUpdate`: Sent to the player who drew the card with their updated hand
+  - `PlayerUpdatePrivate`: Sent to the player who drew the card with their updated hand
   - `PlayerDrewCard`: Sent to all players notifying that a player drew a card
   - `DrawCardError`: Sent to the caller if there's an error
 - **Notes**:
@@ -251,17 +259,28 @@ The Game Hub provides real-time communication for the Love Letter game. Connect 
     - `targetPlayerEmail`: The email of the target player (if required)
     - `targetCardType`: The card type being guessed or targeted (if required)
 - **Server Events**:
-  - `CardResult-{result}`: Sent to all players with the result of the card play (see Card Result Events section below)
-  - `PrivatePlayerUpdate`: Sent to the player who played the card with their updated status
-  - `PrivatePlayerUpdate`: Sent to the target player (if any) with their updated status
-  - `ChooseCard`: Sent to the player when they need to choose a card after playing
+  - `PlayCard`: Sent to all players with information about the card being played
+  - Card-specific events based on the card's effect:
+    - `GuessCard`: Guard card guess attempt
+    - `ShowCard`: Priest card show effect  
+    - `CompareCards`: Baron card comparison
+    - `ComparisonTie`: Baron card tie result
+    - `DiscardCard`: Card discard notifications
+    - `DrawCard`: Card draw notifications
+    - `PlayerEliminated`: Player elimination
+    - `SwitchCards`: King card effect
+    - `PlayerProtected`: Servant card protection
+    - `ChooseCard`: Chancellor card choice prompt
+  - `PublicPlayerUpdate`: Sent to all players with updated public player information
+  - `PlayerUpdatePrivate`: Sent to the player who played the card with their updated status
+  - `PlayerUpdatePrivate`: Sent to the target player (if any) with their updated status
   - `NextTurn`: Sent to all players with the email of the next player (if game advances)
   - `RoundWinners`: Sent to all players with a list of emails of the round winners (when a round ends)
   - `BonusPoints`: Sent to all players with a list of emails of the bonus points receivers (when a round ends)
   - `GameOver`: Sent to all players with a list of emails of the game winners (when a game ends)
   - Various error events: `MandatoryCardPlay`, `CardRequirements`, `PlayCardError`
 - **Notes**:
-  - Resolves the effects of playing a card
+  - Resolves the effects of playing a card using the new MessageFactory event system
   - May trigger other game state changes like round end
 
 #### Submit Card Choice
@@ -272,46 +291,88 @@ The Game Hub provides real-time communication for the Love Letter game. Connect 
   - `returnCardTypes` (List<CardType>): The card types the player wants to return
 - **Server Events**:
   - `CardChoiceSubmitted`: Sent to all players with the player's public update
-  - `PrivatePlayerUpdate`: Sent to the player with their updated status
+  - `PlayerUpdatePrivate`: Sent to the player with their updated status
   - `NextTurn`: Sent to all players with the email of the next player
   - `CardChoiceError`: Sent to the caller if there's an error
 - **Notes**:
   - Used after certain card effects that require the player to choose between multiple cards
   - Advances the game to the next player's turn
 
-### Card Result Events
+### MessageFactory Game Events
 
-When a card is played using the `PlayCard` method, one of the following events will be emitted based on the result of the card action. All these events send a `CardActionResultDto` object containing information about the action result.
+When a card is played using the `PlayCard` method, the backend uses MessageFactory to generate specific events based on the card's effect. These events provide detailed information about what happened during card play.
 
-#### CardResult-ShowCard
-- **Event**: `CardResult-ShowCard` 
-- **Description**: Sent when one player shows a card to another player
-- **Data**: CardActionResultDto with invoker and target player information
+#### PlayCard
+- **Event**: `PlayCard`
+- **Description**: Sent to all players when any card is played
+- **Data**: `{ Player: string, CardType: number }`
+- **Example**: `{ "Player": "player@example.com", "CardType": 1 }`
 
-#### CardResult-PlayerEliminated
-- **Event**: `CardResult-PlayerEliminated`
+#### GuessCard  
+- **Event**: `GuessCard`
+- **Description**: Sent when a Guard card is played to guess another player's card
+- **Data**: `{ Invoker: string, CardType: number, Target: string }`
+- **Example**: `{ "Invoker": "player1@example.com", "CardType": 2, "Target": "player2@example.com" }`
+
+#### ShowCard
+- **Event**: `ShowCard`
+- **Description**: Sent when a Priest card is played to look at another player's card
+- **Data**: `{ Invoker: string, Target: string }`
+- **Example**: `{ "Invoker": "player1@example.com", "Target": "player2@example.com" }`
+
+#### CompareCards
+- **Event**: `CompareCards`
+- **Description**: Sent when a Baron card is played to compare cards
+- **Data**: `{ Invoker: string, Target: string }`
+- **Example**: `{ "Invoker": "player1@example.com", "Target": "player2@example.com" }`
+
+#### ComparisonTie
+- **Event**: `ComparisonTie`
+- **Description**: Sent when a Baron card comparison results in a tie
+- **Data**: `{ Invoker: string, Target: string }`
+- **Example**: `{ "Invoker": "player1@example.com", "Target": "player2@example.com" }`
+
+#### DiscardCard
+- **Event**: `DiscardCard`
+- **Description**: Sent when a player discards a card (Prince effect)
+- **Data**: `{ Target: string, CardType: number }`
+- **Example**: `{ "Target": "player@example.com", "CardType": 3 }`
+
+#### DrawCard
+- **Event**: `DrawCard`
+- **Description**: Sent when a player draws a card (Chancellor effect)
+- **Data**: `{ Player: string }`
+- **Example**: `{ "Player": "player@example.com" }`
+
+#### PlayerEliminated
+- **Event**: `PlayerEliminated`
 - **Description**: Sent when a player is eliminated from the round
-- **Data**: CardActionResultDto with invoker and target player information (target has status=2 if they were eliminated)
+- **Data**: `{ Player: string }`
+- **Example**: `{ "Player": "player@example.com" }`
 
-#### CardResult-SwitchCards
-- **Event**: `CardResult-SwitchCards`
-- **Description**: Sent when two players switch cards
-- **Data**: CardActionResultDto with invoker and target player information
+#### SwitchCards
+- **Event**: `SwitchCards`
+- **Description**: Sent when two players switch cards (King effect)
+- **Data**: `{ Invoker: string, Target: string }`
+- **Example**: `{ "Invoker": "player1@example.com", "Target": "player2@example.com" }`
 
-#### CardResult-DiscardAndDrawCard
-- **Event**: `CardResult-DiscardAndDrawCard`
-- **Description**: Sent when a player discards and draws a new card
-- **Data**: CardActionResultDto with invoker information including played cards
+#### PlayerProtected
+- **Event**: `PlayerProtected`
+- **Description**: Sent when a player gains protection (Servant effect)
+- **Data**: `{ Player: string }`
+- **Example**: `{ "Player": "player@example.com" }`
 
-#### CardResult-ProtectionGranted
-- **Event**: `CardResult-ProtectionGranted`
-- **Description**: Sent when a player gains protection for a turn
-- **Data**: CardActionResultDto with invoker information
+#### ChooseCard
+- **Event**: `ChooseCard`
+- **Description**: Sent to a specific player when they need to choose cards (Chancellor effect)
+- **Data**: `{ Player: string }`
+- **Example**: `{ "Player": "player@example.com" }`
 
-#### CardResult-ChooseCard
-- **Event**: `CardResult-ChooseCard`
-- **Description**: Sent when a player needs to choose a card (triggers the `ChooseCard` event to the player)
-- **Data**: CardActionResultDto with invoker information and card type
+#### PublicPlayerUpdate
+- **Event**: `PublicPlayerUpdate`
+- **Description**: Sent to all players with public player state updates
+- **Data**: PublicPlayerUpdateDto with player's public information
+- **Example**: `{ "UserEmail": "player@example.com", "Status": 1, "HoldingCardsCount": 1, "PlayedCards": [2], "Score": 3 }`
 
 ### Game State Events
 
@@ -347,8 +408,8 @@ These events inform players about changes in the game state.
 - **Description**: Sent to all players when a player draws a card
 - **Data**: Email of the player who drew a card
 
-#### PrivatePlayerUpdate
-- **Event**: `PrivatePlayerUpdate`
+#### PlayerUpdatePrivate
+- **Event**: `PlayerUpdatePrivate`
 - **Description**: Sent to a specific player with their private game state
 - **Data**: PrivatePlayerUpdateDto with player's cards and status
 
@@ -411,7 +472,7 @@ The application uses several DTOs for transferring data between the client and s
 - **GameRoomCreationRequestDto**: Name and optional password for a new game room
 - **GameRoomDto**: Information about a game room (id, room name, owner email, password status, player count, creation time)
 - **CardPlayDto**: Information about a card being played
-- **CardActionResultDto**: Result of playing a card
+- **CardActionResultDto**: Legacy DTO, no longer used for main game events (replaced by MessageFactory events)
 - **CardRequirementsDto**: Requirements for playing a specific card
 - **InitialGameStatusDto**: Initial game state for a player
 - **PrivatePlayerUpdateDto**: Private update for a specific player

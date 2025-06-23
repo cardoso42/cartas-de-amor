@@ -32,16 +32,36 @@ public class Game
         return Players.ElementAt(CurrentPlayerIndex);
     }
 
+    private int GetNextPlayerIndex()
+    {
+        if (Players.Count == 0)
+            throw new InvalidOperationException("No players in the game.");
+
+        var nextIndex = (CurrentPlayerIndex + 1) % Players.Count;
+
+        // Skip eliminated players
+        while (nextIndex != CurrentPlayerIndex && Players.ElementAt(nextIndex).IsEliminated())
+        {
+            nextIndex = (nextIndex + 1) % Players.Count;
+        }
+
+        return nextIndex;
+    }
+
     /// <summary>
     /// Gets the next player in turn order
     /// </summary>
     public Player? GetNextPlayer()
     {
-        if (Players.Count == 0)
-            return null;
-
-        var nextIndex = (CurrentPlayerIndex + 1) % Players.Count;
-        return Players.ElementAt(nextIndex);
+        try
+        {
+            var nextIndex = GetNextPlayerIndex();
+            return Players.ElementAt(nextIndex);
+        }
+        catch (InvalidOperationException)
+        {
+            return null; // No players available
+        }
     }
 
     /// <summary>
@@ -49,10 +69,14 @@ public class Game
     /// </summary>
     public void AdvanceToNextPlayer()
     {
-        if (Players.Count > 0)
+        try
         {
-            CurrentPlayerIndex = (CurrentPlayerIndex + 1) % Players.Count;
+            CurrentPlayerIndex = GetNextPlayerIndex();
             UpdatedAt = DateTime.UtcNow;
+        }
+        catch (InvalidOperationException ex)
+        {
+            throw new GameException("Cannot advance to next player: " + ex.Message);
         }
     }
 
@@ -109,7 +133,7 @@ public class Game
     /// </summary>
     public int GetActivePlayerCount()
     {
-        return Players.Count(p => p.Status == PlayerStatus.Active || p.Status == PlayerStatus.Protected);
+        return Players.Count(p => p.IsInGame());
     }
 
     /// <summary>
@@ -117,7 +141,7 @@ public class Game
     /// </summary>
     public IEnumerable<Player> GetActivePlayers()
     {
-        return Players.Where(p => p.Status == PlayerStatus.Active || p.Status == PlayerStatus.Protected);
+        return Players.Where(p => p.IsInGame());
     }
 
     /// <summary>
@@ -213,7 +237,8 @@ public class Game
         CardsDeck.Add(CardType.Spy);         // 2 cards
         CardsDeck.Add(CardType.Spy);
 
-        CardsDeck.Add(CardType.Guard);       // 5 cards
+        CardsDeck.Add(CardType.Guard);       // 6 cards
+        CardsDeck.Add(CardType.Guard);
         CardsDeck.Add(CardType.Guard);
         CardsDeck.Add(CardType.Guard);
         CardsDeck.Add(CardType.Guard);
@@ -291,7 +316,7 @@ public class Game
     /// </summary>
     public void StartNewRound()
     {
-        var lastRoundWinner = new List<Player>();
+        List<Player> lastRoundWinner;
         try
         {
             lastRoundWinner = GetRoundWinners().ToList();
