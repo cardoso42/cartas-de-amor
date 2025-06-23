@@ -38,8 +38,8 @@ public class King : Card
         {
             SpecialMessages =
             [
-                MessageFactory.PlayCard(invokerPlayer.UserEmail, CardType),
-                MessageFactory.SwitchCards(invokerPlayer.UserEmail, targetPlayer.UserEmail)
+                EventMessageFactory.PlayCard(invokerPlayer.UserEmail, CardType),
+                EventMessageFactory.SwitchCards(invokerPlayer.UserEmail, targetPlayer.UserEmail)
             ]
         };
     }

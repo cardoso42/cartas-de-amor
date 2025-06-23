@@ -39,15 +39,15 @@ public class Guard : Card
         {
             SpecialMessages =
             [
-                MessageFactory.PlayCard(invokerPlayer.UserEmail, CardType),
-                MessageFactory.GuessCard(invokerPlayer.UserEmail, targetPlayer.UserEmail, targetCardType.Value)
+                EventMessageFactory.PlayCard(invokerPlayer.UserEmail, CardType),
+                EventMessageFactory.GuessCard(invokerPlayer.UserEmail, targetPlayer.UserEmail, targetCardType.Value)
             ]
         };
 
         if (targetPlayer.HasCard(targetCardType.Value))
         {
             targetPlayer.Eliminate();
-            result.SpecialMessages.Add(MessageFactory.PlayerEliminated(targetPlayer.UserEmail));
+            result.SpecialMessages.Add(EventMessageFactory.PlayerEliminated(targetPlayer.UserEmail));
         }
 
         return result;

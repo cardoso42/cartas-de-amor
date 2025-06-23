@@ -25,8 +25,8 @@ public class Servant : Card
         {
             SpecialMessages =
             [
-                MessageFactory.PlayCard(invokerPlayer.UserEmail, CardType),
-                MessageFactory.PlayerProtected(invokerPlayer.UserEmail)
+                EventMessageFactory.PlayCard(invokerPlayer.UserEmail, CardType),
+                EventMessageFactory.PlayerProtected(invokerPlayer.UserEmail)
             ]
         };
     }

@@ -93,7 +93,7 @@ public class GameRoomService : IGameRoomService
 
         return
         [
-            MessageFactory.UserJoined(player.UserEmail),
+            EventMessageFactory.UserJoined(player.UserEmail),
             DataMessageFactory.JoinRoom(game, player)
         ];
     }

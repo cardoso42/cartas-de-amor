@@ -38,15 +38,15 @@ public class Prince : Card
         {
             SpecialMessages =
             [
-                MessageFactory.PlayCard(invokerPlayer.UserEmail, CardType),
-                MessageFactory.DiscardCard(targetPlayer.UserEmail, discardedCard)
+                EventMessageFactory.PlayCard(invokerPlayer.UserEmail, CardType),
+                EventMessageFactory.DiscardCard(targetPlayer.UserEmail, discardedCard)
             ]
         };
 
         if (discardedCard == CardType.Princess)
         {
             targetPlayer.Eliminate();
-            result.SpecialMessages.Add(MessageFactory.PlayerEliminated(targetPlayer.UserEmail));
+            result.SpecialMessages.Add(EventMessageFactory.PlayerEliminated(targetPlayer.UserEmail));
             return result;
         }
 
@@ -61,7 +61,7 @@ public class Prince : Card
         }
 
         targetPlayer.HandCard(newCard);
-        result.SpecialMessages.Add(MessageFactory.DrawCard(targetPlayer.UserEmail));
+        result.SpecialMessages.Add(EventMessageFactory.DrawCard(targetPlayer.UserEmail));
 
         return result;
     }

@@ -24,8 +24,8 @@ public class Princess : Card
         {
             SpecialMessages =
             [
-                MessageFactory.PlayCard(invokerPlayer.UserEmail, CardType),
-                MessageFactory.PlayerEliminated(invokerPlayer.UserEmail)
+                EventMessageFactory.PlayCard(invokerPlayer.UserEmail, CardType),
+                EventMessageFactory.PlayerEliminated(invokerPlayer.UserEmail)
             ]
         };
     }

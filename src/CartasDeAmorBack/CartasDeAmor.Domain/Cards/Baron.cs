@@ -32,26 +32,26 @@ public class Baron : Card
         }
 
         var result = new CardResult();
-        result.SpecialMessages.Add(MessageFactory.PlayCard(invokerPlayer.UserEmail, CardType));
+        result.SpecialMessages.Add(EventMessageFactory.PlayCard(invokerPlayer.UserEmail, CardType));
 
         var invokerCard = invokerPlayer.GetCard();
         var targetCard = targetPlayer.GetCard();
 
-        result.SpecialMessages.Add(MessageFactory.CompareCards(invokerPlayer.UserEmail, targetPlayer.UserEmail));
+        result.SpecialMessages.Add(EventMessageFactory.CompareCards(invokerPlayer.UserEmail, targetPlayer.UserEmail));
 
         if (invokerCard > targetCard)
         {
             targetPlayer.Eliminate();
-            result.SpecialMessages.Add(MessageFactory.PlayerEliminated(targetPlayer.UserEmail));
+            result.SpecialMessages.Add(EventMessageFactory.PlayerEliminated(targetPlayer.UserEmail));
         }
         else if (invokerCard < targetCard)
         {
             invokerPlayer.Eliminate();
-            result.SpecialMessages.Add(MessageFactory.PlayerEliminated(invokerPlayer.UserEmail));
+            result.SpecialMessages.Add(EventMessageFactory.PlayerEliminated(invokerPlayer.UserEmail));
         }
         else
         {
-            result.SpecialMessages.Add(MessageFactory.ComparisonTie(invokerPlayer.UserEmail, targetPlayer.UserEmail));
+            result.SpecialMessages.Add(EventMessageFactory.ComparisonTie(invokerPlayer.UserEmail, targetPlayer.UserEmail));
         }
         
         return result;
