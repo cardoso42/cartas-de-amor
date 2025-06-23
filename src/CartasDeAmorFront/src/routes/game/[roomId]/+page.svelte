@@ -397,13 +397,24 @@
             playerName,
             deckPosition,
             playerPosition
-          });
+          }, () => { 
+            // Remove card from deck
+            if (gameStatus && gameStatus.cardsRemainingInDeck > 0) {
+              gameStatus.cardsRemainingInDeck--;
+              gameStatus = { ...gameStatus }; // Trigger reactivity            
+            }
+           });
         },
         onPrivatePlayerUpdate: (playerUpdate: PrivatePlayerUpdateDto) => {
           // Update the game status with the player's new cards and status
           if (gameStatus) {
             if (playerUpdate.holdingCards) {
               gameStatus.yourCards = playerUpdate.holdingCards;
+            }
+
+            if (playerUpdate.playedCards) {
+              // Update local player's played cards
+              localPlayerPlayedCards = playerUpdate.playedCards;
             }
             
             // Update protection status derived from player status
@@ -467,8 +478,6 @@
             sourcePosition,
             playedCardsPosition,
             tableCenterPosition: tableCenter
-          }, () => {
-            handleCardPlayed(data);
           });
         },
         onGuessCard: (data: { invoker: string; cardType: number; target: string }) => {
@@ -606,32 +615,6 @@
           const targetName = getPlayerDisplayName(data.target);
           const cardName = getCardName(data.cardType);
           showNotification(`${targetName} discarded ${cardName}`, 'info');
-          
-          // Add the discarded card to the player's played cards display
-          if (gameStatus) {
-            const playerEmail = data.target;
-            const discardedCard = data.cardType;
-            
-            if (playerEmail === userEmail) {
-              // Add to local player's played cards
-              localPlayerPlayedCards = [...localPlayerPlayedCards, discardedCard];
-            } else {
-              // Update other players' played cards
-              const otherPlayers = gameStatus.otherPlayersPublicData || [];
-              const playerToUpdate = otherPlayers.find(p => p.userEmail === playerEmail);
-              
-              if (playerToUpdate) {
-                // Add the discarded card to their played cards list
-                if (!playerToUpdate.playedCards) {
-                  playerToUpdate.playedCards = [];
-                }
-                playerToUpdate.playedCards.push(discardedCard);
-              }
-            }
-            
-            // Trigger reactivity by creating a new gameStatus object
-            gameStatus = { ...gameStatus };
-          }
         },
         onDrawCard: (data: { player: string }) => {
           const playerEmail = data.player;
@@ -663,23 +646,13 @@
             playerName,
             deckPosition,
             playerPosition
-          }, () => {
-            if (gameStatus && playerEmail !== userEmail) {
-              // Find the player in otherPlayersPublicData and increment their cardsInHand
-              const otherPlayers = gameStatus.otherPlayersPublicData || [];
-              const playerToUpdate = otherPlayers.find(p => p.userEmail === playerEmail);
-              
-              if (playerToUpdate) {
-                // Trigger reactivity by creating a new gameStatus object
-                gameStatus = { ...gameStatus, otherPlayersPublicData: [...otherPlayers] };
-              }
-            }
-
-            // Decrease the deck count when any player draws a card
+          }, () => { 
+            // Remove card from deck
             if (gameStatus && gameStatus.cardsRemainingInDeck > 0) {
-              gameStatus.cardsRemainingInDeck -= 1;
+              gameStatus.cardsRemainingInDeck--;
+              gameStatus = { ...gameStatus }; // Trigger reactivity            
             }
-          });
+           });
         },
         onCardReturnedToDeck: (data: { player: string; cardCount: number }) => {
           const playerName = getPlayerDisplayName(data.player);
@@ -710,26 +683,9 @@
             playerPosition,
             deckPosition
           }, () => {
-            // After animation completes, update game state
-            if (gameStatus) {
-              // Increase deck count when cards are returned to deck
-              gameStatus.cardsRemainingInDeck = (gameStatus.cardsRemainingInDeck || 0) + data.cardCount;
-              
-              // Visually remove cards from player's hand
-              const playerEmail = data.player;
-              if (playerEmail !== userEmail) {
-                // Update other players' card count
-                const otherPlayers = gameStatus.otherPlayersPublicData || [];
-                const playerToUpdate = otherPlayers.find(p => p.userEmail === playerEmail);
-                
-                if (playerToUpdate) {
-                  // Reduce their cards in hand count by the number of cards returned
-                  playerToUpdate.cardsInHand = Math.max(0, (playerToUpdate.cardsInHand || 0) - data.cardCount);
-                  // Trigger reactivity by creating a new gameStatus object
-                  gameStatus = { ...gameStatus, otherPlayersPublicData: [...otherPlayers] };
-                }
-              }
-              // Note: For local player, the card removal will be handled by subsequent PrivatePlayerUpdate events
+            if (gameStatus && gameStatus.cardsRemainingInDeck > 0) {
+              gameStatus.cardsRemainingInDeck += data.cardCount;
+              gameStatus = { ...gameStatus }; // Trigger reactivity
             }
           });
         },
@@ -746,28 +702,6 @@
           animationManager.queueEliminationAnimation({
             playerName: eliminatedPlayerName,
             center: tableCenter
-          }, () => {
-            // After animation completes, mark player as eliminated and remove their cards
-            eliminatedPlayers.add(data.player);
-            eliminatedPlayers = new Set(eliminatedPlayers); // Trigger reactivity
-            
-            // Clear the player's cards from the game status
-            if (gameStatus) {
-              if (data.player === userEmail) {
-                // Clear local player's cards
-                gameStatus.yourCards = [];
-              } else {
-                // Clear other player's cards
-                const otherPlayers = gameStatus.otherPlayersPublicData || [];
-                const playerToUpdate = otherPlayers.find(p => p.userEmail === data.player);
-                if (playerToUpdate) {
-                  playerToUpdate.cardsInHand = 0;
-                }
-              }
-              
-              // Trigger reactivity
-              gameStatus = { ...gameStatus };
-            }
           });
         },
         onSwitchCards: (data: { invoker: string; target: string }) => {
