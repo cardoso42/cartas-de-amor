@@ -20,21 +20,6 @@ public class GameHub(
     private readonly IAccountService _accountService = accountService;
     private readonly IConnectionMappingService _connectionMapping = connectionMapping;
 
-    public async Task JoinRoom(Guid roomId, string? password)
-    {
-        var userEmail = _accountService.GetEmailFromToken(Context.User);
-        _connectionMapping.AddConnection(userEmail, Context.ConnectionId);
-
-        var joinRoomResult = await _gameRoomService.AddUserToRoomAsync(roomId, userEmail, password);
-
-        await Clients.Group(roomId.ToString()).SendAsync("UserJoined", userEmail);
-        await Clients.Client(Context.ConnectionId).SendAsync("JoinedRoom", joinRoomResult);
-
-        await Groups.AddToGroupAsync(Context.ConnectionId, roomId.ToString());
-        
-        _logger.LogInformation("User {User} joined room {RoomId}", userEmail, roomId);
-    }
-
     private async Task SendSpecialMessage(Guid roomId, SpecialMessage message)
     {
         if (string.IsNullOrEmpty(message.Dest))
@@ -53,6 +38,20 @@ public class GameHub(
         {
             await SendSpecialMessage(roomId, message);
         }
+    }
+
+    public async Task JoinRoom(Guid roomId, string? password)
+    {
+        var userEmail = _accountService.GetEmailFromToken(Context.User);
+        _connectionMapping.AddConnection(userEmail, Context.ConnectionId);
+
+        var messages = await _gameRoomService.AddUserToRoomAsync(roomId, userEmail, password);
+
+        await SendSpecialMessages(roomId, messages);
+
+        await Groups.AddToGroupAsync(Context.ConnectionId, roomId.ToString());
+        
+        _logger.LogInformation("User {User} joined room {RoomId}", userEmail, roomId);
     }
 
     public async Task LeaveRoom(Guid roomId)

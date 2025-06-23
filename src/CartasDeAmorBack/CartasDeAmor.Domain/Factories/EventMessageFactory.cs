@@ -194,4 +194,14 @@ public static class MessageFactory
             ExtraData = player
         };
     }
+
+    public static SpecialMessage UserJoined(string player)
+    {
+        return new SpecialMessage
+        {
+            Dest = "",
+            Message = "UserJoined",
+            ExtraData = player
+        };
+    }
 }
