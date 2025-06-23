@@ -13,12 +13,12 @@ public interface IGameService
     Task<CardResult> PlayCardAsync(Guid roomId, string userEmail, CardPlayDto cardPlay);
     Task<PublicPlayerUpdateDto> SubmitCardChoiceAsync(Guid roomId, string userEmail, CardType keepCardType, List<CardType> returnCardsType);
     Task<IList<Player>> GetPlayersAsync(Guid roomId);
+    Task<string> GetPlayerTurnAsync(Guid roomId);
     Task<bool> IsPlayerTurnAsync(Guid roomId, string userEmail);
     Task<string> NextPlayerAsync(Guid roomId);
     Task<PrivatePlayerUpdateDto> GetPlayerStatusAsync(Guid roomId, string userEmail);
     Task<bool> IsRoundOverAsync(Guid roomId);
     Task<bool> IsGameOverAsync(Guid roomId);
-    Task<IList<string>> FinishRoundAsync(Guid roomId);
-    Task<IList<string>> AddBonusPointsAsync(Guid roomId);
-    Task<IList<string>> FinishGameAsync(Guid roomdId);
+    Task<List<SpecialMessage>> FinishRoundAsync(Guid roomId);
+    Task<SpecialMessage> FinishGameAsync(Guid roomdId);
 }

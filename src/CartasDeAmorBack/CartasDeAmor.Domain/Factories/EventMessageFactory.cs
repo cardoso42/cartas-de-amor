@@ -214,4 +214,44 @@ public static class EventMessageFactory
             ExtraData = player
         };
     }
+
+    public static SpecialMessage RoundWinners(List<string> winners)
+    {
+        return new SpecialMessage
+        {
+            Dest = "",
+            Message = "RoundWinners",
+            ExtraData = winners
+        };
+    }
+
+    public static SpecialMessage BonusPoints(List<string> bonusPointsReceivers)
+    {
+        return new SpecialMessage
+        {
+            Dest = "",
+            Message = "BonusPoints",
+            ExtraData = bonusPointsReceivers
+        };
+    }
+
+    public static SpecialMessage GameOver(List<string> winners)
+    {
+        return new SpecialMessage
+        {
+            Dest = "",
+            Message = "GameOver",
+            ExtraData = winners
+        };
+    }
+
+    public static SpecialMessage NextTurn(string player)
+    {
+        return new SpecialMessage
+        {
+            Dest = "",
+            Message = "NextTurn",
+            ExtraData = player
+        };
+    }
 }
