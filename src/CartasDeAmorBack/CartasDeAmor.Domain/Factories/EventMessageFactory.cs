@@ -3,7 +3,7 @@ using CartasDeAmor.Domain.Enums;
 
 namespace CartasDeAmor.Domain.Factories;
 
-public static class MessageFactory
+public static class EventMessageFactory
 {
     public static SpecialMessage PlayCard(string player, CardType cardType)
     {

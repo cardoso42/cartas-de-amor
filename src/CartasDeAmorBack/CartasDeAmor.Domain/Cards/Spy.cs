@@ -19,7 +19,7 @@ public class Spy : Card
         // No immediate effect
         return new CardResult
         {
-            SpecialMessages = [MessageFactory.PlayCard(invokerPlayer.UserEmail, CardType)]
+            SpecialMessages = [EventMessageFactory.PlayCard(invokerPlayer.UserEmail, CardType)]
         };
     }
     

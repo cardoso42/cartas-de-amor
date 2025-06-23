@@ -20,7 +20,7 @@ public class Countess : Card
         // Has no effect
         return new CardResult()
         {
-            SpecialMessages = [MessageFactory.PlayCard(invokerPlayer.UserEmail, CardType)]
+            SpecialMessages = [EventMessageFactory.PlayCard(invokerPlayer.UserEmail, CardType)]
         };
     }
     

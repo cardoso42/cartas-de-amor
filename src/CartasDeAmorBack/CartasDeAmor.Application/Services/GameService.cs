@@ -139,7 +139,7 @@ public class GameService : IGameService
 
         return
         [
-            MessageFactory.PlayerDrewCard(currentPlayer.UserEmail),
+            EventMessageFactory.PlayerDrewCard(currentPlayer.UserEmail),
             DataMessageFactory.PlayerUpdatePublic(currentPlayer),
             DataMessageFactory.PlayerUpdatePrivate(currentPlayer)
         ];
