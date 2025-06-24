@@ -16,6 +16,7 @@
   import AnimationManager from '$lib/components/game/animations/AnimationManager.svelte';
   import { InteractionBlocker, GameLog } from '$lib/components/game/ui';
   import type { LogEntry } from '$lib/components/game/ui/GameLog.svelte';
+  import { NavigationGuard } from '$lib/utils/navigationGuard';
   import type { 
     InitialGameStatusDto, 
     PrivatePlayerUpdateDto, 
@@ -77,6 +78,61 @@
     isRoomOwner = initialGameData.isRoomOwner;
   }
   
+  // Navigation and page lifecycle management
+  let navigationGuard: NavigationGuard;
+  
+  // Create navigation guard with cleanup handlers
+  navigationGuard = new NavigationGuard({
+    onBeforeNavigate: async (reason) => {
+      console.log(`Leaving game room due to: ${reason}`);
+      
+      try {
+        // Your custom cleanup code here
+        if (gameStatus) {
+          showNotification('Leaving game room...', 'info');
+        }
+        
+        // Leave the SignalR room
+        await signalR.leaveRoom(roomId);
+        
+        // Clear game state
+        gameStore.set(null);
+        
+        // Additional cleanup
+        if (errorTimeout) {
+          clearTimeout(errorTimeout);
+        }
+        
+        console.log('Cleanup completed successfully');
+      } catch (error) {
+        console.error('Error during cleanup:', error);
+      }
+    },
+    
+    onPageUnload: (reason) => {
+      console.log(`Page unload cleanup due to: ${reason}`);
+      
+      // Synchronous cleanup only
+      if (errorTimeout) {
+        clearTimeout(errorTimeout);
+      }
+    },
+    
+    onVisibilityChange: (isVisible) => {
+      if (isVisible) {
+        console.log('Game tab became visible');
+        // Optionally refresh connection status or game state
+      } else {
+        console.log('Game tab became hidden');
+        // Optionally pause animations or reduce activity
+      }
+    },
+    
+    // Uncomment the next two lines if you want to show a confirmation dialog when leaving
+    // confirmBeforeLeave: true,
+    // confirmMessage: 'Are you sure you want to leave the game? You may lose your progress.'
+  });
+  
   // Handle connection events
   let unsubscribeSignalR = () => {};
   unsubscribeSignalR = signalR.subscribe(state => {
@@ -88,7 +144,7 @@
   
   async function leaveRoom() {
     try {
-      await signalR.leaveRoom(roomId);
+      await navigationGuard.executeCleanup('manual');
       goto('/rooms');
     } catch (err) {
       console.error('Error leaving room:', err);
@@ -777,6 +833,9 @@
     if (errorTimeout) {
       clearTimeout(errorTimeout);
     }
+    
+    // Clean up navigation guard
+    navigationGuard.destroy();
   });
 </script>
 
