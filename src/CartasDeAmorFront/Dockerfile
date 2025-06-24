@@ -57,7 +57,7 @@ RUN echo 'server {' > /etc/nginx/conf.d/default.conf && \
     echo '    }' >> /etc/nginx/conf.d/default.conf && \
     echo '' >> /etc/nginx/conf.d/default.conf && \
     echo '    # SignalR hub proxy' >> /etc/nginx/conf.d/default.conf && \
-    echo '    location /gameHub {' >> /etc/nginx/conf.d/default.conf && \
+    echo '    location /gamehub {' >> /etc/nginx/conf.d/default.conf && \
     echo '        proxy_pass http://api:8080/gameHub;' >> /etc/nginx/conf.d/default.conf && \
     echo '        proxy_http_version 1.1;' >> /etc/nginx/conf.d/default.conf && \
     echo '        proxy_set_header Upgrade $http_upgrade;' >> /etc/nginx/conf.d/default.conf && \

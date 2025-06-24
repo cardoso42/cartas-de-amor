@@ -3,27 +3,28 @@
 import { PUBLIC_API_BASE_URL } from '$env/static/public';
 
 const API_CONFIG = {
-  // Base API URL will be handled by nginx proxy in Docker
+  // Base API URL will be handled by Vite's proxy configuration
+  // In development, requests to /api/* will be proxied to the API_URL from .env
   baseUrl: PUBLIC_API_BASE_URL,
   
-  // Auth endpoints  
+  // Auth endpoints
   auth: {
-    login: `${PUBLIC_API_BASE_URL}/account/login`,
-    register: `${PUBLIC_API_BASE_URL}/account/create`,
-    logout: `${PUBLIC_API_BASE_URL}/account/logout`,
-    deleteAccount: (email: string) => `${PUBLIC_API_BASE_URL}/account/${email}`
+    login: `${PUBLIC_API_BASE_URL}/Account/Login`,
+    register: `${PUBLIC_API_BASE_URL}/Account/Create`,
+    logout: `${PUBLIC_API_BASE_URL}/Account/Logout`,
+    deleteAccount: (email: string) => `${PUBLIC_API_BASE_URL}/Account/${email}`
   },
   
   // Game endpoints
   game: {
-    rooms: `${PUBLIC_API_BASE_URL}/gameroom`,
-    create: `${PUBLIC_API_BASE_URL}/gameroom`,
-    delete: (roomId: string) => `${PUBLIC_API_BASE_URL}/gameroom/${roomId}`,
+    rooms: `${PUBLIC_API_BASE_URL}/GameRoom`,
+    create: `${PUBLIC_API_BASE_URL}/GameRoom`,
+    delete: (roomId: string) => `${PUBLIC_API_BASE_URL}/GameRoom/${roomId}`,
   },
   
-  // SignalR hub - Use relative path to work with nginx proxy
+  // SignalR hub - Use relative path to work with Vite proxy
   signalR: {
-    gameHub: `/gameHub`,
+    gameHub: `/gamehub`,
   }
   
   // Add more endpoint configurations as needed
