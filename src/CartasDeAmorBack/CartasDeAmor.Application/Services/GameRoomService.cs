@@ -70,10 +70,16 @@ public class GameRoomService : IGameRoomService
 
     public async Task<List<SpecialMessage>> AddUserToRoomAsync(Guid roomId, string userEmail, string? password)
     {
-        var game = await _roomRepository.GetByIdAsync(roomId) ?? throw new InvalidOperationException("Room not found");
-        if (game.Players.Any(p => p.UserEmail == userEmail))
+        var game = await _roomRepository.GetByIdAsync(roomId)
+            ?? throw new InvalidOperationException("Room not found");
+
+        var player = game.Players.FirstOrDefault(p => p.UserEmail == userEmail);
+        if (player != null)
         {
-            throw new InvalidOperationException("User is already in the room");
+            return 
+            [
+                DataMessageFactory.JoinRoom(game, player)
+            ];
         }
 
         if (game.Players.Count >= GameSettings.MaxPlayers)
@@ -86,7 +92,7 @@ public class GameRoomService : IGameRoomService
             throw new InvalidOperationException("Incorrect password for the room");
         }
 
-        var player = await CreatePlayer(game, userEmail);
+        player = await CreatePlayer(game, userEmail);
         game.Players.Add(player);
 
         await _roomRepository.UpdateAsync(game);
