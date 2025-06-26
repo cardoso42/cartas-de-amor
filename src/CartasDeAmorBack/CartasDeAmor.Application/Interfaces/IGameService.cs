@@ -21,4 +21,5 @@ public interface IGameService
     Task<bool> IsGameOverAsync(Guid roomId);
     Task<List<SpecialMessage>> FinishRoundAsync(Guid roomId);
     Task<SpecialMessage> FinishGameAsync(Guid roomdId);
+    Task<InitialGameStatusDto?> GetCurrentGameStatusAsync(Guid roomId, string userEmail);
 }

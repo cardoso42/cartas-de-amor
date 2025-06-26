@@ -461,4 +461,28 @@ public class GameService : IGameService
 
         return messages;
     }
+
+    public async Task<InitialGameStatusDto?> GetCurrentGameStatusAsync(Guid roomId, string userEmail)
+    {
+        var game = await _roomRepository.GetByIdAsync(roomId);
+        if (game == null)
+        {
+            return null;
+        }
+
+        // Check if the user is a player in this game
+        var player = game.Players.FirstOrDefault(p => p.UserEmail == userEmail);
+        if (player == null)
+        {
+            return null;
+        }
+
+        // Only return game status if the game has started
+        if (!game.HasStarted())
+        {
+            return null;
+        }
+
+        return new InitialGameStatusDto(game, player);
+    }
 }
