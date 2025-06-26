@@ -128,6 +128,11 @@ public class Game
         return GameState != GameStateEnum.WaitingForPlayers;
     }
 
+    public bool IsActive()
+    {
+        return GameState != GameStateEnum.Finished && Players.Count > 0;
+    }
+
     /// <summary>
     /// Gets the number of active (not eliminated) players
     /// </summary>
