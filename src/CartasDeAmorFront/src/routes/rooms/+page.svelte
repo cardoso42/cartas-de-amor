@@ -6,11 +6,7 @@
   import { page } from '$app/stores';
   import { goto } from '$app/navigation';
   import { gameStore } from '$lib/stores/gameStore';
-	import type { JoinRoomResultDto } from '$lib/types/game-types';
-	import auth from '$lib/stores/authStore';
-  
-  // Import reusable UI components
-  import { Card, Button, LoadingSpinner } from '$lib/components/ui';
+	import type { JoinRoomResultDto, InitialGameStatusDto } from '$lib/types/game-types';
   
   // Import new components
   import ConnectionStatus from '$lib/components/rooms/ConnectionStatus.svelte';
@@ -18,13 +14,11 @@
   import ErrorDisplay from '$lib/components/rooms/ErrorDisplay.svelte';
   import PasswordModal from '$lib/components/rooms/PasswordModal.svelte';
   import RoomsList from '$lib/components/rooms/RoomsList.svelte';
-  import UserActiveRooms from '$lib/components/rooms/UserActiveRooms.svelte';
 	import { get } from 'svelte/store';
 	import user from '$lib/stores/userStore';
   
   // Access the rooms from server-side load
   let gameRooms: GameRoom[] = $page.data.rooms || [];
-  let userActiveRooms: GameRoom[] = [];
   let error = $page.data.error || '';
   
   // Form data
@@ -32,12 +26,14 @@
   
   // UI state
   let isLoading = false;
-  let isLoadingActiveRooms = false;
   let isCreatingRoom = false;
   let isJoiningRoom = false;
   let selectedRoomId: string | null = null;
   let passwordModalOpen = false;
   let signalRStatus: string = 'disconnected';
+  let rejoiningRoomId: string | null = null; // Track room being rejoined
+  let checkingActiveGame = true; // Track if we're checking for active games
+  let hasActiveGame = false; // Track if user has an active game
 
   // Subscribe to SignalR status
   const unsubscribeSignalR = signalR.subscribe(state => {
@@ -64,16 +60,42 @@
     }
   }
 
-  // Function to refresh user's active rooms
-  async function refreshUserActiveRooms() {
+  // Function to check and auto-join active game
+  async function checkAndJoinActiveGame() {
     try {
-      isLoadingActiveRooms = true;
-      userActiveRooms = await getUserActiveRooms();
+      checkingActiveGame = true;
+      
+      // Get user's active games
+      const activeRooms = await getUserActiveRooms();
+      
+      if (activeRooms && activeRooms.length > 0) {
+        // User has an active game, automatically join the first one
+        hasActiveGame = true;
+        const activeRoom = activeRooms[0];
+                
+        // Initialize SignalR connection if needed
+        if (signalRStatus !== 'connected') {
+          await signalR.initialize();
+        }
+        
+        // Set up rejoining tracking
+        rejoiningRoomId = activeRoom.id;
+        
+        // Join the room via SignalR (no password needed for rejoin)
+        await signalR.joinRoom(activeRoom.id, null);
+        
+        return true; // Successfully found and joining active game
+      } else {
+        // No active games, user can see lobby
+        hasActiveGame = false;
+        return false;
+      }
     } catch (err) {
-      console.error('Error refreshing user active rooms:', err);
-      // Don't set error here as it's less critical
+      console.error('Error checking for active games:', err);
+      hasActiveGame = false;
+      return false;
     } finally {
-      isLoadingActiveRooms = false;
+      checkingActiveGame = false;
     }
   }
 
@@ -93,34 +115,6 @@
       error = err instanceof Error ? err.message : 'Failed to create room. Please try again.';
     } finally {
       isCreatingRoom = false;
-    }
-  }
-
-  // Handle joining a room from user's active rooms list
-  function handleRejoinRoom(event: CustomEvent<{ roomId: string }>) {
-    const { roomId } = event.detail;
-    joinRoomWithPassword(roomId, null); // Active rooms shouldn't need password for rejoin
-  }
-
-  // Handle leaving a room from user's active rooms list
-  async function handleLeaveRoom(event: CustomEvent<{ roomId: string }>) {
-    const { roomId } = event.detail;
-    
-    try {
-      // Initialize SignalR connection if needed
-      if (signalRStatus !== 'connected') {
-        await signalR.initialize();
-      }
-      
-      // Leave the room via SignalR
-      await signalR.leaveRoom(roomId);
-      
-      // Refresh the user's active rooms list to remove the left room
-      await refreshUserActiveRooms();
-      
-    } catch (err) {
-      console.error('Error leaving room:', err);
-      error = err instanceof Error ? err.message : 'Failed to leave room. Please try again.';
     }
   }
 
@@ -208,13 +202,28 @@
 
         goto(`/game/${joinRoomResult.roomId}`);
       },
+      onCurrentGameStatus: (initialGameStatus: InitialGameStatusDto | null) => {
+        if (initialGameStatus && rejoiningRoomId) {
+          // Game is in progress, set game state and navigate to game page
+          gameStore.set({
+            roomId: rejoiningRoomId,
+            roomName: '',
+            players: initialGameStatus.allPlayersInOrder || [],
+            isRoomOwner: false,
+            hostEmail: undefined
+          });
+        }
+      },
     });
     
-    // Refresh rooms immediately (in case server data is stale)
-    await refreshRooms();
+    // First check if user has any active games and auto-join if they do
+    const hasActiveGame = await checkAndJoinActiveGame();
     
-    // Also refresh user's active rooms
-    await refreshUserActiveRooms();
+    // Only load the lobby interface if user doesn't have an active game
+    if (!hasActiveGame) {
+      // Refresh rooms immediately (in case server data is stale)
+      await refreshRooms();
+    }
   });
   
   onDestroy(() => {
@@ -228,41 +237,52 @@
 
 <AuthGuard requireAuth={true} redirectTo="/login">
   <div class="lobby-container">
-    <h1>Game Lobby</h1>
-    
-    <ErrorDisplay message={error} on:retry={refreshRooms} />
-    
-    <CreateRoomForm 
-      isCreating={isCreatingRoom} 
-      on:create={handleCreateRoom} 
-    />
-    
-    <UserActiveRooms 
-      rooms={userActiveRooms}
-      isLoading={isLoadingActiveRooms}
-      isJoining={isJoiningRoom}
-      selectedRoomId={selectedRoomId}
-      on:refresh={refreshUserActiveRooms}
-      on:rejoin={handleRejoinRoom}
-      on:leave={handleLeaveRoom}
-    />
-    
-    <RoomsList 
-      rooms={gameRooms} 
-      isLoading={isLoading}
-      isJoining={isJoiningRoom}
-      selectedRoomId={selectedRoomId}
-      on:refresh={refreshRooms}
-      on:join={handleJoinRoom}
-    />
-    
-    <PasswordModal 
-      open={passwordModalOpen}
-      on:join={handlePasswordSubmit}
-      on:cancel={handlePasswordCancel}
-    />
-    
-    <ConnectionStatus status={signalRStatus} />
+    {#if checkingActiveGame}
+      <!-- Show loading screen while checking for active games -->
+      <div class="checking-games">
+        <h1>Love Letter</h1>
+        <div class="loading-content">
+          <div class="spinner"></div>
+          <p>Checking for active games...</p>
+        </div>
+      </div>
+    {:else if hasActiveGame}
+      <!-- Show joining active game screen -->
+      <div class="joining-game">
+        <h1>Love Letter</h1>
+        <div class="joining-content">
+          <div class="spinner"></div>
+          <p>Rejoining your active game...</p>
+        </div>
+      </div>
+    {:else}
+      <!-- Show normal lobby interface -->
+      <h1>Game Lobby</h1>
+      
+      <ErrorDisplay message={error} on:retry={refreshRooms} />
+      
+      <CreateRoomForm 
+        isCreating={isCreatingRoom} 
+        on:create={handleCreateRoom} 
+      />
+      
+      <RoomsList 
+        rooms={gameRooms} 
+        isLoading={isLoading}
+        isJoining={isJoiningRoom}
+        selectedRoomId={selectedRoomId}
+        on:refresh={refreshRooms}
+        on:join={handleJoinRoom}
+      />
+      
+      <PasswordModal 
+        open={passwordModalOpen}
+        on:join={handlePasswordSubmit}
+        on:cancel={handlePasswordCancel}
+      />
+      
+      <ConnectionStatus status={signalRStatus} />
+    {/if}
   </div>
 </AuthGuard>
 
@@ -277,5 +297,41 @@
   h1 {
     color: #9c27b0;
     margin-bottom: 2rem;
+  }
+
+  .checking-games, .joining-game {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 60vh;
+    text-align: center;
+  }
+
+  .loading-content, .joining-content {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1rem;
+  }
+
+  .spinner {
+    width: 40px;
+    height: 40px;
+    border: 4px solid #f3f3f3;
+    border-top: 4px solid #9c27b0;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+  }
+
+  @keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+  }
+
+  .checking-games p, .joining-game p {
+    color: #666;
+    font-size: 1.1rem;
+    margin: 0;
   }
 </style>

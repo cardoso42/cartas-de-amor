@@ -40,6 +40,7 @@ interface SignalRHandlers {
   onUserJoined?: (playerEmail: string) => void;
   onUserLeft?: (playerEmail: string) => void;
   onRoundStarted?: (initialGameStatus: InitialGameStatusDto) => void;
+  onCurrentGameStatus?: (initialGameStatus: InitialGameStatusDto | null) => void;
   onNextTurn?: (playerEmail: string) => void;
   onPlayerDrewCard?: (playerEmail: string) => void;
   onGameStartError?: (error: string) => void;
@@ -72,14 +73,13 @@ interface SignalRHandlers {
   onGameOver?: (winners: string[]) => void;
 }
 
-// TODO: acabei de jogar um principe, escolhi a mim mesmo para descartar, mas o jogo não atualizou corretamente a minha nova carta, apenas quando comprei do deck no próximo turno
-
 // Handler registration API
 let registeredHandlers: SignalRHandlers = {
   onJoinedRoom: undefined,
   onUserJoined: undefined,
   onUserLeft: undefined,
   onRoundStarted: undefined,
+  onCurrentGameStatus: undefined,
   onNextTurn: undefined,
   onPlayerDrewCard: undefined,
   onGameStartError: undefined,
@@ -114,6 +114,7 @@ let registeredHandlers: SignalRHandlers = {
 function attachEventHandlers(connection: SignalR.HubConnection) {
   // Remove existing handlers to prevent duplicates
   connection.off('JoinedRoom');
+  connection.off('CurrentGameStatus');
   connection.off('UserJoined');
   connection.off('UserLeft');
   connection.off('RoundStarted');
@@ -153,6 +154,7 @@ function attachEventHandlers(connection: SignalR.HubConnection) {
   connection.on('UserJoined', (playerEmail: string) => registeredHandlers.onUserJoined?.(playerEmail));
   connection.on('UserLeft', (playerEmail: string) => registeredHandlers.onUserLeft?.(playerEmail));
   connection.on('RoundStarted', (initialGameStatus: InitialGameStatusDto) => registeredHandlers.onRoundStarted?.(initialGameStatus));
+  connection.on('CurrentGameStatus', (initialGameStatus: InitialGameStatusDto | null) => registeredHandlers.onCurrentGameStatus?.(initialGameStatus));
   connection.on('NextTurn', (playerEmail: string) => registeredHandlers.onNextTurn?.(playerEmail));
   connection.on('PlayerDrewCard', (playerEmail: string) => registeredHandlers.onPlayerDrewCard?.(playerEmail));
   connection.on('GameStartError', (error: string) => registeredHandlers.onGameStartError?.(error));
@@ -457,6 +459,22 @@ export const signalR = {
         return true;
       } catch (error) {
         console.error('Error submitting card choice:', error);
+        throw error;
+      }
+    }
+    
+    return false;
+  },
+
+  async getCurrentGameStatus(roomId: string) {
+    const state = get(signalRStore);
+    
+    if (state.connection && state.connection.state === SignalR.HubConnectionState.Connected) {
+      try {
+        await state.connection.invoke('GetCurrentGameStatus', roomId);
+        return true;
+      } catch (error) {
+        console.error('Error getting current game status:', error);
         throw error;
       }
     }

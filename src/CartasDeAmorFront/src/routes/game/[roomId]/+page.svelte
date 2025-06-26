@@ -67,6 +67,10 @@
   let logEntries: LogEntry[] = [];
   let isLogCollapsed: boolean = false;
   
+  // Local storage keys for game logs
+  const getLogStorageKey = (roomId: string) => `love-letter-logs-${roomId}`;
+  const getLogCollapseStateKey = (roomId: string) => `love-letter-log-collapsed-${roomId}`;
+  
   // Track eliminated players locally until game state updates
   let eliminatedPlayers = new Set<string>();
 
@@ -84,20 +88,31 @@
   // Create navigation guard with cleanup handlers
   navigationGuard = new NavigationGuard({
     onBeforeNavigate: async (reason) => {
-      console.log(`Leaving game room due to: ${reason}`);
+      console.log(`Navigation detected due to: ${reason}`);
       
       try {
-        // Your custom cleanup code here
-        if (gameStatus) {
-          showNotification('Leaving game room...', 'info');
+        // Only leave the room for manual leave action or page unload/close
+        // Don't leave for normal navigation within the app
+        if (reason === 'manual' || reason === 'page_close') {
+          if (gameStatus) {
+            showNotification('Leaving game room...', 'info');
+          }
+          
+          gameStore.set({
+            roomId: null,
+            roomName: undefined,
+            players: [],
+            isRoomOwner: false,
+            hostEmail: undefined
+          });
+
+          // Clear logs from local storage when manually leaving
+          clearLogsFromStorage();
+
+          // Leave the SignalR room
+          await signalR.leaveRoom(roomId);
         }
-        
-        // Leave the SignalR room
-        await signalR.leaveRoom(roomId);
-        
-        // Clear game state
-        gameStore.set(null);
-        
+
         // Additional cleanup
         if (errorTimeout) {
           clearTimeout(errorTimeout);
@@ -144,11 +159,11 @@
   
   async function leaveRoom() {
     try {
+      clearLogsFromStorage();
       await navigationGuard.executeCleanup('manual');
-      goto('/rooms');
     } catch (err) {
       console.error('Error leaving room:', err);
-      // If error, go back to rooms anyway
+    } finally {
       goto('/rooms');
     }
   }
@@ -181,7 +196,10 @@
     };
     
     // Add to log entries
-    logEntries = [logEntry, ...logEntries].slice(0, 100); // Keep last 100 entries
+    logEntries = [logEntry, ...logEntries];
+    
+    // Save to local storage
+    saveLogsToStorage();
     
     // Still log to console for debugging
     console.log(`[${type.toUpperCase()}] ${message}`);
@@ -214,41 +232,77 @@
   // Handle log events
   function handleLogToggle(event: CustomEvent<{ collapsed: boolean }>) {
     isLogCollapsed = event.detail.collapsed;
+    // Save collapse state to local storage
+    saveLogCollapseState();
   }
   
   function handleLogClear() {
     logEntries = [];
+    // Clear logs from local storage
+    saveLogsToStorage();
   }
   
-  // Handle card played event - triggered when a card is initially played
-  function handleCardPlayed(data: { player: string; cardType: number }) {
-    if (!gameStatus) {
-      return;
+  // Local storage functions for game logs
+  function saveLogsToStorage() {
+    try {
+      const storageKey = getLogStorageKey(roomId);
+      localStorage.setItem(storageKey, JSON.stringify(logEntries.map(entry => ({
+        ...entry,
+        timestamp: entry.timestamp.toISOString() // Convert Date to string for storage
+      }))));
+    } catch (error) {
+      console.warn('Failed to save logs to local storage:', error);
     }
-    
-    const playerEmail = data.player;
-    const playedCard = data.cardType;
-    
-    // If the player is the current user, update their cards in hand and played cards
-    if (playerEmail === userEmail && gameStatus.yourCards) {    
-      // Add to local player's played cards
-      localPlayerPlayedCards = [...localPlayerPlayedCards, playedCard];
-    } else {
-      // Update other players' card count and played cards
-      const otherPlayers = gameStatus.otherPlayersPublicData || [];
-      const playerToUpdate = otherPlayers.find(p => p.userEmail === playerEmail);
-      
-      if (playerToUpdate) {        
-        // Add the played card to their played cards list
-        if (!playerToUpdate.playedCards) {
-          playerToUpdate.playedCards = [];
-        }
-        playerToUpdate.playedCards.push(playedCard);
+  }
+  
+  function loadLogsFromStorage() {
+    try {
+      const storageKey = getLogStorageKey(roomId);
+      const stored = localStorage.getItem(storageKey);
+      if (stored) {
+        const parsedLogs = JSON.parse(stored);
+        logEntries = parsedLogs.map((entry: any) => ({
+          ...entry,
+          timestamp: new Date(entry.timestamp) // Convert string back to Date
+        }));
       }
+    } catch (error) {
+      console.warn('Failed to load logs from local storage:', error);
+      logEntries = []; // Reset to empty on error
     }
-    
-    // Trigger reactivity by creating a new gameStatus object
-    gameStatus = { ...gameStatus };
+  }
+  
+  function saveLogCollapseState() {
+    try {
+      const collapseKey = getLogCollapseStateKey(roomId);
+      localStorage.setItem(collapseKey, JSON.stringify(isLogCollapsed));
+    } catch (error) {
+      console.warn('Failed to save log collapse state:', error);
+    }
+  }
+  
+  function loadLogCollapseState() {
+    try {
+      const collapseKey = getLogCollapseStateKey(roomId);
+      const stored = localStorage.getItem(collapseKey);
+      if (stored !== null) {
+        isLogCollapsed = JSON.parse(stored);
+      }
+    } catch (error) {
+      console.warn('Failed to load log collapse state:', error);
+      isLogCollapsed = false; // Default to expanded on error
+    }
+  }
+  
+  function clearLogsFromStorage() {
+    try {
+      const storageKey = getLogStorageKey(roomId);
+      const collapseKey = getLogCollapseStateKey(roomId);
+      localStorage.removeItem(storageKey);
+      localStorage.removeItem(collapseKey);
+    } catch (error) {
+      console.warn('Failed to clear logs from local storage:', error);
+    }
   }
 
   // Update player data from public player updates (without card type info)
@@ -301,6 +355,10 @@
   // Initialize SignalR and join room on mount
   onMount(async () => {
     try {
+      // Load logs and UI state from local storage first
+      loadLogsFromStorage();
+      loadLogCollapseState();
+      
       // Initialize SignalR if not already connected
       if (!isConnected) {
         await signalR.initialize();
@@ -331,6 +389,20 @@
           eliminatedPlayers.delete(playerEmail); // Remove from eliminated players
           const playerName = getPlayerDisplayName(playerEmail);
           showNotification(`Player left: ${playerName}`, 'info');
+        },
+        onCurrentGameStatus: (initialGameStatus: InitialGameStatusDto | null) => {
+          if (initialGameStatus) {
+            // Game is in progress, set the game state and display it
+            gameStatus = initialGameStatus;
+            localPlayerPlayedCards = []; // Reset played cards, will be populated by PrivatePlayerUpdate if needed
+            eliminatedPlayers.clear();
+            eliminatedPlayers = new Set(eliminatedPlayers); // Trigger reactivity
+            
+            // Set current turn player from game status
+            if (initialGameStatus.allPlayersInOrder && initialGameStatus.firstPlayerIndex >= 0 && initialGameStatus.firstPlayerIndex < initialGameStatus.allPlayersInOrder.length) {
+              currentTurnPlayerEmail = initialGameStatus.allPlayersInOrder[initialGameStatus.firstPlayerIndex];
+            }
+          }
         },
         onRoundStarted: (initialGameStatus: InitialGameStatusDto) => {
           // Store the current state before updating
@@ -424,7 +496,7 @@
         onNextTurn: (playerEmail: string) => {
           currentTurnPlayerEmail = playerEmail;
           const playerName = getPlayerDisplayName(playerEmail);
-          showNotification(`${playerName}'s turn`, 'info');
+          showNotification(`Turn: ${playerName}`, 'info');
         },
         onPlayerDrewCard: (playerEmail: string) => {
           const playerName = getPlayerDisplayName(playerEmail);
@@ -817,8 +889,17 @@
             winnerEmails: winners,
             currentUserEmail: userEmail
           });
+          
+          // Clear logs from storage when game ends
+          setTimeout(() => {
+            clearLogsFromStorage();
+          }, 5000); // Give some time for users to see final logs before clearing
         }
       });
+
+      // After joining, get the current game status to see if game is in progress
+      await signalR.getCurrentGameStatus(roomId);
+
     } catch (err) {
       console.error('Error connecting to game room:', err);
       // If we can't connect, go back to rooms
