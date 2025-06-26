@@ -1,7 +1,7 @@
 <script lang="ts">
   import AuthGuard from '$lib/components/auth/AuthGuard.svelte';
   import { onMount, onDestroy } from 'svelte';
-  import { getGameRooms, createGameRoom, type GameRoom } from '$lib/services/gameRoomService';
+  import { getGameRooms, getUserActiveRooms, createGameRoom, type GameRoom } from '$lib/services/gameRoomService';
   import { signalR } from '$lib/services/signalRService';
   import { page } from '$app/stores';
   import { goto } from '$app/navigation';
@@ -18,11 +18,13 @@
   import ErrorDisplay from '$lib/components/rooms/ErrorDisplay.svelte';
   import PasswordModal from '$lib/components/rooms/PasswordModal.svelte';
   import RoomsList from '$lib/components/rooms/RoomsList.svelte';
+  import UserActiveRooms from '$lib/components/rooms/UserActiveRooms.svelte';
 	import { get } from 'svelte/store';
 	import user from '$lib/stores/userStore';
   
   // Access the rooms from server-side load
   let gameRooms: GameRoom[] = $page.data.rooms || [];
+  let userActiveRooms: GameRoom[] = [];
   let error = $page.data.error || '';
   
   // Form data
@@ -30,6 +32,7 @@
   
   // UI state
   let isLoading = false;
+  let isLoadingActiveRooms = false;
   let isCreatingRoom = false;
   let isJoiningRoom = false;
   let selectedRoomId: string | null = null;
@@ -61,6 +64,19 @@
     }
   }
 
+  // Function to refresh user's active rooms
+  async function refreshUserActiveRooms() {
+    try {
+      isLoadingActiveRooms = true;
+      userActiveRooms = await getUserActiveRooms();
+    } catch (err) {
+      console.error('Error refreshing user active rooms:', err);
+      // Don't set error here as it's less critical
+    } finally {
+      isLoadingActiveRooms = false;
+    }
+  }
+
   // Create a new room
   async function handleCreateRoom(event: CustomEvent<{ roomName: string, roomPassword: string | null }>) {
     const { roomName, roomPassword } = event.detail;
@@ -77,6 +93,34 @@
       error = err instanceof Error ? err.message : 'Failed to create room. Please try again.';
     } finally {
       isCreatingRoom = false;
+    }
+  }
+
+  // Handle joining a room from user's active rooms list
+  function handleRejoinRoom(event: CustomEvent<{ roomId: string }>) {
+    const { roomId } = event.detail;
+    joinRoomWithPassword(roomId, null); // Active rooms shouldn't need password for rejoin
+  }
+
+  // Handle leaving a room from user's active rooms list
+  async function handleLeaveRoom(event: CustomEvent<{ roomId: string }>) {
+    const { roomId } = event.detail;
+    
+    try {
+      // Initialize SignalR connection if needed
+      if (signalRStatus !== 'connected') {
+        await signalR.initialize();
+      }
+      
+      // Leave the room via SignalR
+      await signalR.leaveRoom(roomId);
+      
+      // Refresh the user's active rooms list to remove the left room
+      await refreshUserActiveRooms();
+      
+    } catch (err) {
+      console.error('Error leaving room:', err);
+      error = err instanceof Error ? err.message : 'Failed to leave room. Please try again.';
     }
   }
 
@@ -168,6 +212,9 @@
     
     // Refresh rooms immediately (in case server data is stale)
     await refreshRooms();
+    
+    // Also refresh user's active rooms
+    await refreshUserActiveRooms();
   });
   
   onDestroy(() => {
@@ -188,6 +235,16 @@
     <CreateRoomForm 
       isCreating={isCreatingRoom} 
       on:create={handleCreateRoom} 
+    />
+    
+    <UserActiveRooms 
+      rooms={userActiveRooms}
+      isLoading={isLoadingActiveRooms}
+      isJoining={isJoiningRoom}
+      selectedRoomId={selectedRoomId}
+      on:refresh={refreshUserActiveRooms}
+      on:rejoin={handleRejoinRoom}
+      on:leave={handleLeaveRoom}
     />
     
     <RoomsList 
