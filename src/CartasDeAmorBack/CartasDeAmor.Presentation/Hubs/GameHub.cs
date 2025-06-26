@@ -102,9 +102,6 @@ public class GameHub(
             var messages = await _gameService.StartGameAsync(roomId, userEmail);
             await SendSpecialMessages(roomId, messages);
 
-            // Prepare the game for the first player
-            await _gameService.NextPlayerAsync(roomId);
-
             _logger.LogInformation("Game started in room {RoomId} by host {HostEmail}", roomId, userEmail);
         }
         catch (InvalidOperationException ex)

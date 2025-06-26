@@ -27,7 +27,7 @@ public class InitialGameStatusDto
         OtherPlayersPublicData = playersStatuses;
         YourCards = player.HoldingCards;
         AllPlayersInOrder = game.Players.Select(p => p.UserEmail).ToList();
-        FirstPlayerIndex = game.CurrentPlayerIndex + 1;
+        FirstPlayerIndex = game.CurrentPlayerIndex;
         IsProtected = player.IsProtected();
         Score = player.Score;
         CardsRemainingInDeck = game.CardsDeck.Count;
