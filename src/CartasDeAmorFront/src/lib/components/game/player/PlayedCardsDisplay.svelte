@@ -5,8 +5,6 @@
   export let playedCards: CardType[] = [];
   export let playerName: string = '';
 
-  // TODO: When playing a card against a protected target, the card is not shown in the played cards FIX IT
-
   const usualCardCount = 1; // Default number of cards to show normally
   
   let isHovering = false;
