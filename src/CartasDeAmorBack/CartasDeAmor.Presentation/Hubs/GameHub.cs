@@ -238,11 +238,7 @@ public class GameHub(
     {
         try
         {
-            var userEmail = Context.User?.FindFirst("sub")?.Value;
-            if (string.IsNullOrEmpty(userEmail))
-            {
-                throw new HubException("User not authenticated");
-            }
+            var userEmail = _accountService.GetEmailFromToken(Context.User);
 
             _connectionMapping.AddConnection(userEmail, Context.ConnectionId);
             await Groups.AddToGroupAsync(Context.ConnectionId, roomId.ToString());
@@ -251,6 +247,35 @@ public class GameHub(
         {
             _logger.LogError(ex, "Error reconnecting to room");
             throw new HubException("Failed to reconnect to room");
+        }
+    }
+
+    public async Task GetCurrentGameStatus(Guid roomId)
+    {
+        try
+        {
+            var userEmail = _accountService.GetEmailFromToken(Context.User);
+
+            // Check if there's an active game and send the current status
+            var currentGameStatus = await _gameService.GetCurrentGameStatusAsync(roomId, userEmail);
+            if (currentGameStatus != null)
+            {
+                // Send the current game status to the requesting player
+                // The game status already contains FirstPlayerIndex with current turn info
+                await Clients.Caller.SendAsync("CurrentGameStatus", currentGameStatus);
+            }
+            else
+            {
+                // No active game found, send empty status
+                await Clients.Caller.SendAsync("CurrentGameStatus", null);
+            }
+
+            _logger.LogInformation("User {User} requested current game status for room {RoomId}", userEmail, roomId);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error getting current game status");
+            throw new HubException("Failed to get current game status");
         }
     }
 
