@@ -60,6 +60,23 @@ public class GameRoomController : ControllerBase
         }
     }
 
+    [HttpGet("user")]
+    public async Task<ActionResult<IEnumerable<GameRoomDto>>> GetRoomsFromUser()
+    {
+        var userEmail = _accountService.GetEmailFromToken(User);
+
+        try
+        {
+            var rooms = await _roomService.GetActiveRoomsByUserAsync(userEmail);
+            return Ok(rooms);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error retrieving rooms for user: {UserEmail}", userEmail);
+            return StatusCode(500, "An error occurred while retrieving the user's rooms");
+        }
+    }
+
     [HttpDelete("{roomId}")]
     public async Task<IActionResult> DeleteRoom(Guid roomId)
     {

@@ -32,6 +32,13 @@ public interface IGameRoomService
     Task DeleteRoomAsync(Guid roomId, string userEmail);
 
     /// <summary>
+    /// Retrieves a list of rooms with active games that a user is currently in.
+    /// </summary>
+    /// <param name="userEmail">The email of the user whose rooms are to be retrieved.</param>
+    /// <returns>A task representing the asynchronous operation, containing a list of the user's rooms.</returns>
+    Task<List<GameRoomDto>> GetActiveRoomsByUserAsync(string userEmail);
+
+    /// <summary>
     /// Adds a user to a room.
     /// </summary>
     /// <param name="roomId">The ID of the room to which the user will be added.</param>

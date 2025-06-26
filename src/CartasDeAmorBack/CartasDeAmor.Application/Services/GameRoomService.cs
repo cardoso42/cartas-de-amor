@@ -129,4 +129,12 @@ public class GameRoomService : IGameRoomService
             .Where(room => !room.HasStarted())
             .Select(room => new GameRoomDto(room));
     }
+
+    public async Task<List<GameRoomDto>> GetActiveRoomsByUserAsync(string userEmail)
+    {
+        return (await _roomRepository.GetAllAsync())
+            .Where(room => room.HasPlayer(userEmail) && room.IsActive())
+            .Select(room => new GameRoomDto(room))
+            .ToList();
+    }
 }
