@@ -23,6 +23,14 @@ public interface IAccountService
     Task<LoginResultDto> LoginAsync(string email, string password);
 
     /// <summary>
+    /// Updates a user account's username.
+    /// </summary>
+    /// <param name="email">The email of the user to update.</param>
+    /// <param name="username">The new username for the account.</param>
+    /// <returns>A task representing the asynchronous operation.</returns>
+    Task UpdateAccountAsync(string email, string username);
+
+    /// <summary>
     /// Deletes a user account.
     /// </summary>
     /// <param name="email">The email of the user to delete.</param>
