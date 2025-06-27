@@ -14,17 +14,9 @@ public class InitialGameStatusDto
     public int CardsRemainingInDeck { get; set; } = 0;
 
     public InitialGameStatusDto() { }
-    public InitialGameStatusDto(Game game, Player player)
+    public InitialGameStatusDto(Game game, ICollection<PlayerStatusDto> players, Player player)
     {
-        var playersStatuses = new List<PlayerStatusDto>();
-        var players = game.Players.ToList();
-        players.RemoveAll(p => p.UserEmail == player.UserEmail); // Exclude the current player
-
-        playersStatuses.AddRange(
-            players.Select(p => new PlayerStatusDto(p))
-        );
-
-        OtherPlayersPublicData = playersStatuses;
+        OtherPlayersPublicData = players;
         YourCards = player.HoldingCards;
         AllPlayersInOrder = game.Players.Select(p => p.UserEmail).ToList();
         FirstPlayerIndex = game.CurrentPlayerIndex;

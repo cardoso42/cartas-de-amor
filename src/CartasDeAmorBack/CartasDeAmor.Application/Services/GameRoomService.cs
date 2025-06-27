@@ -32,7 +32,6 @@ public class GameRoomService : IGameRoomService
         return new Player
         {
             GameId = game.Id,
-            Username = user.Username,
             UserEmail = userEmail,
             Id = currentId + 1,
             HoldingCards = []
