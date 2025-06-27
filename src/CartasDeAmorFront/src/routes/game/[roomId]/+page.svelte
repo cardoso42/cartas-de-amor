@@ -367,6 +367,50 @@
     }
   }
 
+  // Helper function to handle player removal and reordering
+  function removePlayerFromGame(playerEmail: string) {
+    // Remove from basic players list
+    players = players.filter(p => p !== playerEmail);
+    eliminatedPlayers.delete(playerEmail); // Remove from eliminated players
+    
+    // If game is in progress, update game status
+    if (gameStatus) {
+      // Remove the player from otherPlayersPublicData
+      if (gameStatus.otherPlayersPublicData) {
+        gameStatus.otherPlayersPublicData = gameStatus.otherPlayersPublicData.filter(p => p.userEmail !== playerEmail);
+      }
+      
+      // Remove from allPlayersInOrder if it exists and handle turn order
+      if (gameStatus.allPlayersInOrder) {
+        const playerIndex = gameStatus.allPlayersInOrder.indexOf(playerEmail);
+        gameStatus.allPlayersInOrder = gameStatus.allPlayersInOrder.filter(p => p !== playerEmail);
+        
+        // Adjust turn management if needed
+        if (gameStatus.allPlayersInOrder.length > 0) {
+          // If the player who left was the current turn player
+          if (currentTurnPlayerEmail === playerEmail) {
+            // Move to next player (wrapping around if needed)
+            let nextPlayerIndex = playerIndex;
+            if (nextPlayerIndex >= gameStatus.allPlayersInOrder.length) {
+              nextPlayerIndex = 0;
+            }
+            currentTurnPlayerEmail = gameStatus.allPlayersInOrder[nextPlayerIndex];
+            gameStatus.firstPlayerIndex = nextPlayerIndex;
+          } 
+          // If the player who left was before the current turn player in the original order
+          else if (playerIndex !== -1 && playerIndex < gameStatus.firstPlayerIndex) {
+            gameStatus.firstPlayerIndex = Math.max(0, gameStatus.firstPlayerIndex - 1);
+          }
+        }
+      }
+      
+      // Trigger reactivity by creating a new gameStatus object
+      gameStatus = { ...gameStatus };
+    }
+  }
+
+
+
   // Initialize SignalR and join room on mount
   onMount(async () => {
     try {
@@ -400,9 +444,8 @@
           showNotification(`Player joined: ${playerName}`, 'info');
         },
         onUserLeft: (playerEmail: string) => {
-          players = players.filter(p => p !== playerEmail);
-          eliminatedPlayers.delete(playerEmail); // Remove from eliminated players
           const playerName = getPlayerDisplayName(playerEmail);
+          removePlayerFromGame(playerEmail);
           showNotification(`Player left: ${playerName}`, 'info');
         },
         onCurrentGameStatus: (initialGameStatus: InitialGameStatusDto | null) => {
