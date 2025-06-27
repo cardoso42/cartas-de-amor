@@ -108,7 +108,7 @@
               <div class="delete-confirmation">
                 <p>Are you sure you want to delete your account? This action cannot be undone.</p>
                 <div class="button-group">
-                  <button class="secondary" on:click={toggleDeleteConfirm}>Cancel</button>
+                  <button class="primary" on:click={toggleDeleteConfirm}>Cancel</button>
                   <button class="danger" on:click={confirmDeleteAccount}>Confirm Delete</button>
                 </div>
               </div>

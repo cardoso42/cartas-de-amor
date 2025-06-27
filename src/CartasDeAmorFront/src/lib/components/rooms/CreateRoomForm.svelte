@@ -45,7 +45,6 @@
 				disabled={isCreating}
 				required
 			/>
-			aslkdfjalskdjflakdjf
 			<Input
 				type="text"
 				placeholder="Password (optional)"
