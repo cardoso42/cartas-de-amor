@@ -33,7 +33,7 @@
       <p>This room requires a password to join.</p>
       <form on:submit|preventDefault={handleSubmit}>
         <input 
-          type="password" 
+          type="text" 
           placeholder="Room password" 
           bind:value={password}
           use:focusOnMount
