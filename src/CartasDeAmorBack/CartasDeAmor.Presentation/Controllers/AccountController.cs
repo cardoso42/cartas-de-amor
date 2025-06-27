@@ -81,6 +81,44 @@ public class AccountController : ControllerBase
     }
 
     [Authorize]
+    [HttpPut("{email}")]
+    public async Task<IActionResult> UpdateAccount(string email, [FromBody] UpdateAccountRequestDto updateAccountRequest)
+    {
+        var userEmail = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+
+        if (userEmail == null)
+        {
+            _logger.LogWarning("Update account attempt without valid authentication");
+            return Unauthorized(new { Message = "User not properly authenticated" });
+        }
+
+        if (!string.Equals(userEmail, email, StringComparison.OrdinalIgnoreCase))
+        {
+            _logger.LogWarning("User {AuthenticatedEmail} attempted to update account {TargetEmail}", userEmail, email);
+            return Forbid();
+        }
+
+        _logger.LogInformation("Attempting to update account with email {Email}", email);
+
+        try
+        {
+            await _accountService.UpdateAccountAsync(email, updateAccountRequest.Username);
+            _logger.LogInformation("Successfully updated account with email {Email}", email);
+            return Ok(new { Message = "Account updated successfully." });
+        }
+        catch (KeyNotFoundException ex)
+        {
+            _logger.LogWarning("Account update failed: {Message}", ex.Message);
+            return NotFound(new { Message = ex.Message });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Unexpected error while updating account with email {Email}", email);
+            throw;
+        }
+    }
+
+    [Authorize]
     [HttpDelete("{email}")]
     public async Task<IActionResult> DeleteAccount(string email)
     {
