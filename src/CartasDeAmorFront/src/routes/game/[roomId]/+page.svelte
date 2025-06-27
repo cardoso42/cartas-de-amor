@@ -888,12 +888,10 @@
             winnerNames,
             winnerEmails: winners,
             currentUserEmail: userEmail
-          });
-          
-          // Clear logs from storage when game ends
-          setTimeout(() => {
+          }, () => {
             clearLogsFromStorage();
-          }, 5000); // Give some time for users to see final logs before clearing
+            leaveRoom();
+          });
         }
       });
 
