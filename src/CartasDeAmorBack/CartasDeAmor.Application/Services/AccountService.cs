@@ -63,6 +63,15 @@ public class AccountService : IAccountService
         };
     }
 
+    public async Task UpdateAccountAsync(string email, string username)
+    {
+        var user = await _userRepository.GetByEmailAsync(email)
+            ?? throw new KeyNotFoundException($"User with email {email} not found");
+
+        user.Username = username;
+        await _userRepository.UpdateAsync(user);
+    }
+
     public async Task DeleteAccountAsync(string email)
     {
         var user = await _userRepository.GetByEmailAsync(email);
