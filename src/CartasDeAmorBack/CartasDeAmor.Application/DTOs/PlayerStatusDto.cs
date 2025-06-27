@@ -14,13 +14,13 @@ public class PlayerStatusDto
 
     public PlayerStatusDto() { }
 
-    public PlayerStatusDto(Player player)
+    public PlayerStatusDto(User user, Player player)
     {
-        UserEmail = player.UserEmail;
-        Username = player.Username;
+        UserEmail = user.Email;
+        Username = user.Username;
         IsProtected = player.IsProtected();
         Score = player.Score;
         CardsInHand = player.HoldingCards.Count;
-        Status = PlayerStatus.Active;
+        Status = player.Status;
     }
 }

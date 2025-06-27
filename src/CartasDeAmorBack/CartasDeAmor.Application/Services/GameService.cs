@@ -14,23 +14,32 @@ namespace CartasDeAmor.Application.Services;
 public class GameService : IGameService
 {
     private readonly IGameRoomRepository _roomRepository;
+    private readonly IUserRepository _userRepository;
     private readonly ILogger<GameService> _logger;
 
     public GameService(
-        IGameRoomRepository roomRepository,
+        IGameRoomRepository roomRepository, IUserRepository userRepository,
         ILogger<GameService> logger)
     {
         _roomRepository = roomRepository;
+        _userRepository = userRepository;
         _logger = logger;
     }
 
-    private static List<SpecialMessage> GetGameStatusDtos(Game game)
+    private async Task<List<SpecialMessage>> GetGameStatusDtos(Game game)
     {
         List<SpecialMessage> messages = [];
 
+        // Get all player emails
+        var playerEmails = game.Players.Select(p => p.UserEmail).ToList();
+        
+        // Fetch all users in a single query
+        var users = (await _userRepository.GetByEmailsAsync(playerEmails))
+            .ToDictionary(u => u.Email, u => u);
+
         foreach (var player in game.Players)
         {
-            messages.Add(DataMessageFactory.RoundStart(game, player));
+            messages.Add(DataMessageFactory.RoundStart(game, player, users));
         }
 
         return messages;
@@ -65,7 +74,7 @@ public class GameService : IGameService
 
         await _roomRepository.UpdateAsync(game);
 
-        return GetGameStatusDtos(game);
+        return await GetGameStatusDtos(game);
     }
 
     public async Task<IList<Player>> GetPlayersAsync(Guid roomId)
@@ -402,7 +411,7 @@ public class GameService : IGameService
         game.StartNewRound();
         await _roomRepository.UpdateAsync(game);
 
-        return GetGameStatusDtos(game);
+        return await GetGameStatusDtos(game);
     }
 
     public async Task<List<SpecialMessage>> SubmitCardChoiceAsync(Guid roomId, string userEmail, CardType keepCardType, List<CardType> returnCardsType)
@@ -483,7 +492,32 @@ public class GameService : IGameService
             return null;
         }
 
-        return new InitialGameStatusDto(game, player);
+        var otherPlayers = game.Players
+            .Where(p => p.UserEmail != userEmail)
+            .ToList();
+
+        // Get all user emails for other players
+        var otherPlayerEmails = otherPlayers.Select(p => p.UserEmail).ToList();
+        
+        // Fetch all users in a single query to avoid N+1 problem
+        var users = (await _userRepository.GetByEmailsAsync(otherPlayerEmails))
+            .ToDictionary(u => u.Email, u => u);
+
+        // Log warning if some users are missing
+        var missingUsers = otherPlayerEmails.Except(users.Keys).ToList();
+        if (missingUsers.Any())
+        {
+            _logger.LogWarning("Some users not found in database for game {RoomId}: {MissingUsers}", 
+                roomId, string.Join(", ", missingUsers));
+        }
+
+        // Create PlayerStatusDto objects for players that have corresponding users
+        var otherPlayersPublicData = otherPlayers
+            .Where(player => users.ContainsKey(player.UserEmail))
+            .Select(player => new PlayerStatusDto(users[player.UserEmail], player))
+            .ToList();
+
+        return new InitialGameStatusDto(game, otherPlayersPublicData, player);
     }
 
     public async Task<List<SpecialMessage>> VerifyGameValidity(Guid roomId)

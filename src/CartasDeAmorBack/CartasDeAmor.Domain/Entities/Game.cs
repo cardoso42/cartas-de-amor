@@ -97,14 +97,6 @@ public class Game
     }
 
     /// <summary>
-    /// Gets a player by their username
-    /// </summary>
-    public Player? GetPlayerByUsername(string username)
-    {
-        return Players.FirstOrDefault(p => p.Username.Equals(username, StringComparison.OrdinalIgnoreCase));
-    }
-
-    /// <summary>
     /// Checks if a player with the given email exists in the game
     /// </summary>
     public bool HasPlayer(string email)

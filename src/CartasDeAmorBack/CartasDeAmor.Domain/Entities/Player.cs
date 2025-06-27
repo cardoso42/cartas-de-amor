@@ -6,7 +6,6 @@ public class Player
 {
     public int Id { get; set; }
     public Guid GameId { get; set; }
-    public required string Username { get; set; }
     public required string UserEmail { get; set; }
     public IList<CardType> PlayedCards { get; set; } = [];
     public required IList<CardType> HoldingCards { get; set; }
