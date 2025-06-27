@@ -69,14 +69,15 @@ export function processGameData(
     isEliminated: eliminatedPlayers.has(userEmail) // Check local elimination state
   });
   
-  // Add other players in order around the table
+  // Add other players in consecutive positions (reordered to fill gaps)
+  // This ensures that when a player leaves, the remaining players are redistributed evenly around the table
   (status.otherPlayersPublicData || []).forEach((player, index) => {
     processedPlayers.push({
       id: index + 1,
       name: player.username || player.userEmail.split('@')[0], // Use proper username or fallback to email username
       email: player.userEmail,
       isLocalPlayer: false,
-      position: index + 1,
+      position: index + 1, // Sequential positioning - no gaps when players leave
       tokens: player.score || 0,
       cards: [], // Other players' cards are hidden
       cardsInHand: player.cardsInHand || 1,
