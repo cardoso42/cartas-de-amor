@@ -44,7 +44,7 @@ public class GameHub(
     public async Task JoinRoom(Guid roomId, string? password)
     {
         var userEmail = _accountService.GetEmailFromToken(Context.User);
-        _connectionMapping.AddConnection(userEmail, Context.ConnectionId);
+        _connectionMapping.AddConnection(userEmail, Context.ConnectionId, roomId);
 
         var messages = await _gameRoomService.AddUserToRoomAsync(roomId, userEmail, password);
 
@@ -237,7 +237,7 @@ public class GameHub(
         {
             var userEmail = _accountService.GetEmailFromToken(Context.User);
 
-            _connectionMapping.AddConnection(userEmail, Context.ConnectionId);
+            _connectionMapping.AddConnection(userEmail, Context.ConnectionId, roomId);
             await Groups.AddToGroupAsync(Context.ConnectionId, roomId.ToString());
         }
         catch (Exception ex)
@@ -279,7 +279,14 @@ public class GameHub(
     public override async Task OnDisconnectedAsync(Exception? exception)
     {
         // Remove connection from mapping when user disconnects
+        var roomId = _connectionMapping.GetRoomIdByConnectionId(Context.ConnectionId);
         _connectionMapping.RemoveConnectionById(Context.ConnectionId);
+        
+        if (roomId.HasValue)
+        {
+            var endGameMessages = await _gameService.VerifyGameValidity(roomId.Value);
+            await SendSpecialMessages(roomId.Value, endGameMessages);
+        }
         
         // SignalR will automatically remove the connection from all groups
         await base.OnDisconnectedAsync(exception);
