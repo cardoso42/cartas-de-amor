@@ -1,5 +1,5 @@
 import API_CONFIG from '$lib/config/api-config';
-import { apiDelete } from '$lib/utils/apiUtils';
+import { apiDelete, apiPut } from '$lib/utils/apiUtils';
 import { parseJwt, type JwtPayload } from '$lib/utils/jwtUtils';
 
 export interface UserData {
@@ -40,6 +40,26 @@ export function getCurrentUserProfile(): UserData | null {
   } catch (error) {
     console.error('Error getting current user profile:', error);
     return null;
+  }
+}
+
+/**
+ * Update the user's account username
+ */
+export async function updateAccount(email: string, username: string): Promise<{ success: boolean; message: string }> {
+  try {
+    // Use the update account endpoint from API config
+    await apiPut(API_CONFIG.auth.updateAccount(email), { username });
+    return {
+      success: true,
+      message: 'Username updated successfully'
+    };
+  } catch (error) {
+    console.error('Error updating account:', error);
+    return {
+      success: false,
+      message: error instanceof Error ? error.message : 'An error occurred updating your account'
+    };
   }
 }
 

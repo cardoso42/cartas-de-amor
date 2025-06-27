@@ -3,11 +3,13 @@
   import { onMount } from 'svelte';
   import { 
     getCurrentUserProfile, 
-    deleteAccount, 
+    deleteAccount,
+    updateAccount, 
     type UserData 
   } from '$lib/services/userService';
   import { goto } from '$app/navigation';
   import auth from '$lib/stores/authStore';
+  import user from '$lib/stores/userStore';
   
   // User data state
   let userData: UserData = {
@@ -19,6 +21,9 @@
   let message = '';
   let messageType = '';
   let showDeleteConfirm = false;
+  let isEditingUsername = false;
+  let newUsername = '';
+  let isUpdatingUsername = false;
   
   async function confirmDeleteAccount() {
     if (userData.email) {
@@ -42,21 +47,94 @@
     showDeleteConfirm = !showDeleteConfirm;
   }
   
-  function logout() {
-    auth.logout();
-    goto('/login');
+  function startEditingUsername() {
+    isEditingUsername = true;
+    newUsername = userData.username;
+  }
+  
+  function cancelEditingUsername() {
+    isEditingUsername = false;
+    newUsername = '';
+    message = '';
+    messageType = '';
+  }
+  
+  async function saveUsername() {
+    if (!newUsername.trim()) {
+      message = 'Username cannot be empty';
+      messageType = 'error';
+      return;
+    }
+    
+    if (newUsername === userData.username) {
+      message = 'No changes were made';
+      messageType = 'error';
+      return;
+    }
+    
+    isUpdatingUsername = true;
+    
+    try {
+      const result = await updateAccount(userData.email, newUsername.trim());
+      
+      if (result.success) {
+        // Update the local user data
+        userData.username = newUsername.trim();
+        
+        // Update the user store to keep it in sync across tabs
+        user.updateUser({ username: newUsername.trim() });
+        
+        message = result.message;
+        messageType = 'success';
+        isEditingUsername = false;
+        newUsername = '';
+      } else {
+        message = result.message;
+        messageType = 'error';
+      }
+    } catch (error) {
+      message = 'An unexpected error occurred';
+      messageType = 'error';
+      console.error('Username update error:', error);
+    } finally {
+      isUpdatingUsername = false;
+    }
   }
   
   onMount(() => {
-    // Fetch the user profile data
-    const profile = getCurrentUserProfile();
+    // First check if user store has data
+    const storeUserData = user.getUserData();
     
-    if (profile) {
-      userData = profile;
+    if (storeUserData && storeUserData.email && storeUserData.username) {
+      // Use data from user store
+      userData = {
+        username: storeUserData.username,
+        email: storeUserData.email,
+        joinedDate: '', // We don't store joinedDate in user store, get from JWT
+      };
+      
+      // Get joinedDate from JWT token
+      const jwtProfile = getCurrentUserProfile();
+      if (jwtProfile) {
+        userData.joinedDate = jwtProfile.joinedDate;
+      }
     } else {
-      // If profile couldn't be loaded, show error
-      message = 'Could not load profile data. Please try again later.';
-      messageType = 'error';
+      // Fallback to JWT token data
+      const profile = getCurrentUserProfile();
+      
+      if (profile) {
+        userData = profile;
+        // Also update the user store with this data
+        user.setUser({
+          id: profile.email, // Using email as ID since we don't have a separate ID
+          email: profile.email,
+          username: profile.username
+        });
+      } else {
+        // If profile couldn't be loaded, show error
+        message = 'Could not load profile data. Please try again later.';
+        messageType = 'error';
+      }
     }
   });
 </script>
@@ -89,7 +167,39 @@
           <div class="profile-info">
             <div class="info-row">
               <span class="info-label">Username</span>
-              <span class="info-value">{userData.username}</span>
+              {#if !isEditingUsername}
+                <div class="info-value-container">
+                  <span class="info-value">{userData.username}</span>
+                  <button class="edit-button" on:click={startEditingUsername} title="Edit username">
+                    <span class="material-icons">edit</span>
+                  </button>
+                </div>
+              {:else}
+                <div class="edit-username-container">
+                  <input 
+                    type="text" 
+                    bind:value={newUsername} 
+                    class="username-input"
+                    disabled={isUpdatingUsername}
+                  />
+                  <div class="edit-buttons">
+                    <button 
+                      class="save-button" 
+                      on:click={saveUsername}
+                      disabled={isUpdatingUsername}
+                    >
+                      {isUpdatingUsername ? 'Saving...' : 'Save'}
+                    </button>
+                    <button 
+                      class="cancel-button" 
+                      on:click={cancelEditingUsername}
+                      disabled={isUpdatingUsername}
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                </div>
+              {/if}
             </div>
             <div class="info-row">
               <span class="info-label">Email</span>
@@ -237,6 +347,97 @@
     flex: 2;
   }
   
+  .info-value-container {
+    flex: 2;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+  
+  .edit-button {
+    background-color: #9c27b0;
+    border: none;
+    cursor: pointer;
+    padding: 0.5rem;
+    border-radius: 4px;
+    color: white;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  
+  .edit-button:hover {
+    background-color: #7b1fa2;
+    transform: scale(1.1);
+  }
+  
+  .edit-button .material-icons {
+    font-size: 1.2rem;
+  }
+  
+  .edit-username-container {
+    flex: 2;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+  
+  .username-input {
+    padding: 0.5rem;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-size: 1rem;
+  }
+  
+  .username-input:focus {
+    outline: none;
+    border-color: #9c27b0;
+  }
+  
+  .edit-buttons {
+    display: flex;
+    gap: 0.5rem;
+  }
+  
+  .save-button {
+    background-color: #9c27b0;
+    color: white;
+    border: none;
+    padding: 0.5rem 1rem;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 0.875rem;
+  }
+  
+  .save-button:hover:not(:disabled) {
+    background-color: #7b1fa2;
+  }
+  
+  .save-button:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+  
+  .cancel-button {
+    background-color: #f5f5f5;
+    color: #666;
+    border: 1px solid #ddd;
+    padding: 0.5rem 1rem;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 0.875rem;
+  }
+  
+  .cancel-button:hover:not(:disabled) {
+    background-color: #eeeeee;
+  }
+  
+  .cancel-button:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+  
   .form-group {
     margin-bottom: 1.5rem;
   }
@@ -263,12 +464,40 @@
     color: #c62828;
   }
   
+  .primary {
+    background-color: #9c27b0;
+    color: white;
+    padding: 0.75rem 1.5rem;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 1rem;
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    transition: all 0.2s ease;
+  }
+  
+  .primary:hover {
+    background-color: #7b1fa2;
+    transform: translateY(-1px);
+  }
+  
   .danger {
     background-color: #f44336;
     color: white;
+    padding: 0.75rem 1.5rem;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 1rem;
+    font-weight: 500;
+    transition: all 0.2s ease;
   }
   
   .danger:hover {
     background-color: #d32f2f;
+    transform: translateY(-1px);
   }
 </style>
