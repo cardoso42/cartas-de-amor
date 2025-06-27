@@ -31,9 +31,13 @@ export function getCurrentUserProfile(): UserData | null {
     
     // Extract user data from the decoded token
     // The actual properties will depend on what's included in your JWT
+    const username = typeof decodedToken.username === 'string' ? decodedToken.username : 'Unknown';
+    const userEmail = typeof decodedToken.userEmail === 'string' ? decodedToken.userEmail : 
+                     typeof decodedToken.sub === 'string' ? decodedToken.sub : 'Unknown';
+    
     return {
-      username: decodedToken.username || 'Unknown',
-      email: decodedToken.userEmail  || decodedToken.sub || 'Unknown',
+      username: username,
+      email: userEmail,
       joinedDate: decodedToken.iat ? new Date(decodedToken.iat * 1000).toISOString() : new Date().toISOString(),
       // These stats would typically come from a separate API call
     };
