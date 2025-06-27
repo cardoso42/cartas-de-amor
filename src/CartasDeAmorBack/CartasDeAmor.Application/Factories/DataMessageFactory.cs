@@ -40,13 +40,27 @@ public static class DataMessageFactory
         };
     }
 
-    public static SpecialMessage RoundStart(Game game, Player player)
+    public static SpecialMessage RoundStart(Game game, Player player, Dictionary<string, User> users)
     {
+        // Get other players' data for this specific player
+        var otherPlayers = game.Players
+            .Where(p => p.UserEmail != player.UserEmail)
+            .Select(p => new PlayerStatusDto 
+            { 
+                UserEmail = p.UserEmail, 
+                Username = users.ContainsKey(p.UserEmail) ? users[p.UserEmail].Username : p.UserEmail, // Use actual username if available, fallback to email
+                Status = p.Status,
+                IsProtected = p.IsProtected(),
+                Score = p.Score,
+                CardsInHand = p.HoldingCards.Count
+            })
+            .ToList();
+
         return new SpecialMessage
         {
             Dest = player.UserEmail,
             Message = "RoundStarted",
-            ExtraData = new InitialGameStatusDto(game, player)
+            ExtraData = new InitialGameStatusDto(game, otherPlayers, player)
         };
     }
 

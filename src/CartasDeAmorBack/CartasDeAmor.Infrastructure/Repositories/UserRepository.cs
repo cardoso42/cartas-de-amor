@@ -24,6 +24,13 @@ namespace CartasDeAmor.Infrastructure.Repositories
             return await _context.Users.FirstOrDefaultAsync(u => u.Email == email);
         }
 
+        public async Task<IEnumerable<User>> GetByEmailsAsync(IEnumerable<string> emails)
+        {
+            return await _context.Users
+                .Where(u => emails.Contains(u.Email))
+                .ToListAsync();
+        }
+
         public async Task AddAsync(User user)
         {
             await _context.Users.AddAsync(user);
