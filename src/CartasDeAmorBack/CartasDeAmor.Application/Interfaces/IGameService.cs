@@ -20,5 +20,6 @@ public interface IGameService
     Task<bool> IsRoundOverAsync(Guid roomId);
     Task<bool> IsGameOverAsync(Guid roomId);
     Task<List<SpecialMessage>> FinishRoundAsync(Guid roomId);
+	Task<bool> VerifyRoundValidity(Guid roomId);
     Task<SpecialMessage> FinishGameAsync(Guid roomdId);
 }

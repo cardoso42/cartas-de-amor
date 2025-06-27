@@ -461,4 +461,17 @@ public class GameService : IGameService
 
         return messages;
     }
+
+	Task<bool> VerifyGameValidity(Guid roomId) {
+        var game = _roomRepository.GetByIdAsync(roomId).Result ?? throw new InvalidOperationException("Room not found");
+		var players = game.Players;
+		if (players.Count <= 1) {
+			try {
+				var message = FinishGameAsync(roomId);
+				FinishRoundAsync(roomId);
+			} catch (Exception e) {
+				// blah
+			}
+		}
+	}
 }
