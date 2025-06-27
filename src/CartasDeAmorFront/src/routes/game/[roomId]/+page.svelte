@@ -157,6 +157,21 @@
     }
   });
   
+  async function confirmLeaveRoom() {
+    // Check if game is in progress
+    const isGameInProgress = gameStatus !== null;
+    
+    let confirmMessage = 'Are you sure you want to leave the room?';
+    if (isGameInProgress) {
+      confirmMessage = 'Are you sure you want to leave the room?\n\nWarning: You will quit and automatically lose the game if you continue!';
+    }
+    
+    const confirmed = confirm(confirmMessage);
+    if (confirmed) {
+      await leaveRoom();
+    }
+  }
+
   async function leaveRoom() {
     try {
       clearLogsFromStorage();
@@ -928,7 +943,7 @@
             {#if isGameStarting}Starting...{:else}Start Game{/if}
           </button>
         {/if}
-        <button on:click={leaveRoom} class="danger small">Leave Room</button>
+        <button on:click={confirmLeaveRoom} class="danger small">Leave Room</button>
       </div>
     </header>
 
