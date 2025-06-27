@@ -1,0 +1,13 @@
+@startuml Logout
+
+actor "Player" as Player
+participant "Frontend" as FE
+
+Player -> FE: Request logout
+activate FE
+FE -> FE: Clear stored token
+FE -> FE: Clear user session data
+FE --> Player: Logout successful
+deactivate FE
+
+@enduml
