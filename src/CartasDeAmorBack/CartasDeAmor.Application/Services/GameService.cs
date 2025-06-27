@@ -485,4 +485,20 @@ public class GameService : IGameService
 
         return new InitialGameStatusDto(game, player);
     }
+
+    public async Task<List<SpecialMessage>> VerifyGameValidity(Guid roomId)
+    {
+        var game = await _roomRepository.GetByIdAsync(roomId)
+            ?? throw new InvalidOperationException("Room not found");
+
+        var messages = new List<SpecialMessage>();
+
+        var players = game.Players;
+        if (players.Count <= 1)
+        {
+            messages.Add(await FinishGameAsync(roomId));
+        }
+
+        return messages;
+	}
 }
