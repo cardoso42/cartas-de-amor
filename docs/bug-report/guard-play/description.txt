@@ -1,2 +1,0 @@
-When playing the guard, the server must send back the result, even if nothing,
-so the other players know which card that player wrongfully guessed

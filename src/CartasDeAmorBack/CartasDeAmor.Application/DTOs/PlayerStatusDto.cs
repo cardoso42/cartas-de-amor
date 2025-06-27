@@ -3,7 +3,6 @@ using CartasDeAmor.Domain.Enums;
 
 namespace CartasDeAmor.Application.DTOs;
 
-// TODO: Remove this class and replace by PublicPlayerUpdateDto
 public class PlayerStatusDto
 {
     public string UserEmail { get; set; } = string.Empty;

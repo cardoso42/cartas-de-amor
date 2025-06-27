@@ -6,7 +6,6 @@ namespace CartasDeAmor.Application.Factories;
 
 public static class DataMessageFactory
 {
-    // TODO: Create proper DTOs for these messages instead of using anonymous objects
     public static SpecialMessage PlayerUpdatePublic(Player player)
     {
         return new SpecialMessage

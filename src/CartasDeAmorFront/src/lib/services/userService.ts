@@ -43,8 +43,6 @@ export function getCurrentUserProfile(): UserData | null {
   }
 }
 
-// TODO: Implement proper API endpoint for changing profile data
-
 /**
  * Delete the user's account
  */
