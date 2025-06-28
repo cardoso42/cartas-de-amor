@@ -4,8 +4,8 @@ using CartasDeAmor.Domain.Enums;
 using CartasDeAmor.Application.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using CartasDeAmor.Domain.Exceptions;
-using CartasDeAmor.Domain.Entities;
-using CartasDeAmor.Domain.Factories;
+using CartasDeAmor.Application.Extensions;
+using MediatR;
 
 namespace CartasDeAmor.Presentation.Hubs;
 
@@ -13,42 +13,21 @@ namespace CartasDeAmor.Presentation.Hubs;
 public class GameHub(
     ILogger<GameHub> logger, IGameRoomService gameRoomService,
     IGameService gameService, IAccountService accountService,
-    IConnectionMappingService connectionMapping) : Hub
+    IConnectionMappingService connectionMapping, IMediator mediator) : Hub
 {
     private readonly ILogger<GameHub> _logger = logger;
     private readonly IGameRoomService _gameRoomService = gameRoomService;
     private readonly IGameService _gameService = gameService;
     private readonly IAccountService _accountService = accountService;
     private readonly IConnectionMappingService _connectionMapping = connectionMapping;
-
-    private async Task SendSpecialMessage(Guid roomId, SpecialMessage message)
-    {
-        if (string.IsNullOrEmpty(message.Dest))
-        {
-            await Clients.Group(roomId.ToString()).SendAsync(message.Message, message.ExtraData);
-        }
-        else
-        {
-            await Clients.User(message.Dest).SendAsync(message.Message, message.ExtraData);
-        }
-    }
-    
-    private async Task SendSpecialMessages(Guid roomId, List<SpecialMessage> messages)
-    {
-        foreach (var message in messages)
-        {
-            await SendSpecialMessage(roomId, message);
-        }
-    }
+    private readonly IMediator _mediator = mediator;
 
     public async Task JoinRoom(Guid roomId, string? password)
     {
         var userEmail = _accountService.GetEmailFromToken(Context.User);
         _connectionMapping.AddConnection(userEmail, Context.ConnectionId, roomId);
 
-        var messages = await _gameRoomService.AddUserToRoomAsync(roomId, userEmail, password);
-
-        await SendSpecialMessages(roomId, messages);
+        await _gameRoomService.AddUserToRoomAsync(roomId, userEmail, password);
         await Groups.AddToGroupAsync(Context.ConnectionId, roomId.ToString());
         
         _logger.LogInformation("User {User} joined room {RoomId}", userEmail, roomId);
@@ -60,9 +39,7 @@ public class GameHub(
         _connectionMapping.RemoveConnection(userEmail, Context.ConnectionId);
 
         await Groups.RemoveFromGroupAsync(Context.ConnectionId, roomId.ToString());
-        var messages = await _gameRoomService.RemoveUserFromRoomAsync(roomId, userEmail);
-
-        await SendSpecialMessages(roomId, messages);
+        await _gameRoomService.RemoveUserFromRoomAsync(roomId, userEmail);
 
         _logger.LogInformation("User {User} left room {RoomId}", userEmail, roomId);
     }
@@ -74,8 +51,7 @@ public class GameHub(
 
         try
         {
-            var messages = await _gameService.DrawCardAsync(roomId, userEmail);
-            await SendSpecialMessages(roomId, messages);
+            await _gameService.DrawCardAsync(roomId, userEmail);
             _logger.LogInformation("User {User} drew a card in room {RoomId}", userEmail, roomId);
         }
         catch (InvalidOperationException ex)
@@ -99,8 +75,7 @@ public class GameHub(
         try
         {
             // Start the game through the game service
-            var messages = await _gameService.StartGameAsync(roomId, userEmail);
-            await SendSpecialMessages(roomId, messages);
+            await _gameService.StartGameAsync(roomId, userEmail);
 
             _logger.LogInformation("Game started in room {RoomId} by host {HostEmail}", roomId, userEmail);
         }
@@ -124,8 +99,7 @@ public class GameHub(
 
         try
         {
-            var messages = await _gameService.GetCardActionRequirementsAsync(roomId, userEmail, cardType);
-            await SendSpecialMessages(roomId, messages);
+            await _gameService.GetCardActionRequirementsAsync(roomId, userEmail, cardType);
         }
         catch (Exception ex)
         {
@@ -143,29 +117,26 @@ public class GameHub(
         }
 
         var nextTurnPlayer = await _gameService.NextPlayerAsync(roomId);
-        await SendSpecialMessage(roomId, EventMessageFactory.NextTurn(nextTurnPlayer));
+        await _mediator.SendNextTurnAsync(roomId, nextTurnPlayer);
     }
 
     private async Task HandleRoundEnd(Guid roomId)
     {
         _logger.LogInformation("Round in room {RoomId} is over", roomId);
 
-        var roundEndMessages = await _gameService.FinishRoundAsync(roomId);
-        await SendSpecialMessages(roomId, roundEndMessages);
+        await _gameService.FinishRoundAsync(roomId);
 
         if (await _gameService.IsGameOverAsync(roomId))
         {
             _logger.LogInformation("Game in room {RoomId} is over", roomId);
-            var gameEndMessage = await _gameService.FinishGameAsync(roomId);
-            await SendSpecialMessage(roomId, gameEndMessage);
+            await _gameService.FinishGameAsync(roomId);
             return;
         }
 
-        var newRoundMessages = await _gameService.StartNewRoundAsync(roomId);
-        await SendSpecialMessages(roomId, newRoundMessages);
+        await _gameService.StartNewRoundAsync(roomId);
 
         var nextTurnPlayer = await _gameService.GetPlayerTurnAsync(roomId);
-        await SendSpecialMessage(roomId, EventMessageFactory.NextTurn(nextTurnPlayer));
+        await _mediator.SendNextTurnAsync(roomId, nextTurnPlayer);
     }
 
     public async Task PlayCard(Guid roomId, CardPlayDto cardPlayDto)
@@ -176,8 +147,6 @@ public class GameHub(
         try
         {
             var result = await _gameService.PlayCardAsync(roomId, userEmail, cardPlayDto);
-
-            await SendSpecialMessages(roomId, result.SpecialMessages);
             _logger.LogInformation("User {User} played card {CardType} in room {RoomId}", userEmail, cardPlayDto.CardType, roomId);
 
             if (result.ShouldAdvanceTurn)
@@ -193,8 +162,7 @@ public class GameHub(
         catch (CardRequirementsNotMetException ex)
         {
             _logger.LogWarning(ex, "Card requirements not met for user {User} in room {RoomId}. Resending them", userEmail, roomId);
-            var messages = await _gameService.GetCardActionRequirementsAsync(roomId, userEmail, cardPlayDto.CardType);
-            await SendSpecialMessages(roomId, messages);
+            await _gameService.GetCardActionRequirementsAsync(roomId, userEmail, cardPlayDto.CardType);
         }
         catch (InvalidOperationException ex)
         {
@@ -215,8 +183,7 @@ public class GameHub(
 
         try
         {
-            var messages = await _gameService.SubmitCardChoiceAsync(roomId, userEmail, keepCardType, returnCardTypes);
-            await SendSpecialMessages(roomId, messages);
+            await _gameService.SubmitCardChoiceAsync(roomId, userEmail, keepCardType, returnCardTypes);
             await AdvanceGame(roomId);
         }
         catch (InvalidOperationException ex)
@@ -284,8 +251,7 @@ public class GameHub(
         
         if (roomId.HasValue)
         {
-            var endGameMessages = await _gameService.VerifyGameValidity(roomId.Value);
-            await SendSpecialMessages(roomId.Value, endGameMessages);
+            await _gameService.VerifyGameValidity(roomId.Value);
         }
         
         // SignalR will automatically remove the connection from all groups

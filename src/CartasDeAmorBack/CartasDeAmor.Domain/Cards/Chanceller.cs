@@ -1,7 +1,7 @@
 using CartasDeAmor.Domain.Entities;
 using CartasDeAmor.Domain.Enums;
 using CartasDeAmor.Domain.Exceptions;
-using CartasDeAmor.Domain.Factories;
+using CartasDeAmor.Domain.Events;
 
 namespace CartasDeAmor.Domain.Cards;
 
@@ -21,7 +21,7 @@ public class Chanceller : Card
         // Player draws two cards from the deck and chooses one to keep.
 
         var result = new CardResult();
-        result.SpecialMessages.Add(EventMessageFactory.PlayCard(invokerPlayer.UserEmail, CardType));
+        result.Events.Add(new PlayCardEvent(invokerPlayer.UserEmail, CardType));
         
         try
         {
@@ -29,10 +29,11 @@ public class Chanceller : Card
             {
                 var drawnCard = game.DrawCard();
                 invokerPlayer.HandCard(drawnCard);
-                result.SpecialMessages.Add(EventMessageFactory.DrawCard(invokerPlayer.UserEmail));
+                result.Events.Add(new DrawCardEvent(invokerPlayer.UserEmail));
 
                 // This is done inside the loop in case the deck is empty
-                // It doesn't really make sense to make the player choose if it has only one card
+                // It doesn't really make sense to make the player choose 
+                // if it has only one card
                 result.ShouldAdvanceTurn = false;
             }
         }
@@ -46,7 +47,8 @@ public class Chanceller : Card
         if (result.ShouldAdvanceTurn == false)
         {
             // The player was able to draw cards, so we prompt them to choose one
-            result.SpecialMessages.Add(EventMessageFactory.ChooseCard(invokerPlayer.UserEmail));
+            
+            result.Events.Add(new ChooseCardEvent(invokerPlayer.UserEmail));
         }
 
         return result;
