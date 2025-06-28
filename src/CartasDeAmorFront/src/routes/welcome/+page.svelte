@@ -5,6 +5,9 @@
 	function handleLogin() {
 		goto('/login');
 	}
+	function handleRegister() {
+		goto('/register');
+	}
 </script>
 
 <svelte:head>
@@ -15,7 +18,10 @@
 	<div class="container">
 		<div class="home-content">
 			<h1 class="title">Cartas de Amor</h1>
-			<button class="success" on:click={handleLogin}>Login</button>
+			<div class="home-buttons">
+				<button class="success" on:click={handleLogin}>Login</button>
+				<button class="success" on:click={handleRegister}>Register</button>
+			</div>
 		</div>
 	</div>
 </AuthGuard>
@@ -40,5 +46,12 @@
 		margin-bottom: 2rem;
 		color: #9c27b0; /* Purple color theme for "Love Letter" */
 		text-align: center;
+	}
+	
+	.home-buttons {
+		display: flex;
+		flex-direction: column;
+		gap: 1em;
+		justify-content: space-between;
 	}
 </style>
