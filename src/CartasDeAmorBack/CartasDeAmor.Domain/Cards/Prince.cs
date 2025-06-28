@@ -1,7 +1,7 @@
 using CartasDeAmor.Domain.Entities;
 using CartasDeAmor.Domain.Enums;
 using CartasDeAmor.Domain.Exceptions;
-using CartasDeAmor.Domain.Factories;
+using CartasDeAmor.Domain.Events;
 
 namespace CartasDeAmor.Domain.Cards;
 
@@ -36,17 +36,17 @@ public class Prince : Card
 
         var result = new CardResult
         {
-            SpecialMessages =
+            Events =
             [
-                EventMessageFactory.PlayCard(invokerPlayer.UserEmail, CardType),
-                EventMessageFactory.DiscardCard(targetPlayer.UserEmail, discardedCard)
+                new PlayCardEvent(invokerPlayer.UserEmail, CardType),
+                new DiscardCardEvent(targetPlayer.UserEmail, discardedCard)
             ]
         };
 
         if (discardedCard == CardType.Princess)
         {
             targetPlayer.Eliminate();
-            result.SpecialMessages.Add(EventMessageFactory.PlayerEliminated(targetPlayer.UserEmail));
+            result.Events.Add(new PlayerEliminatedEvent(targetPlayer.UserEmail));
             return result;
         }
 
@@ -61,7 +61,7 @@ public class Prince : Card
         }
 
         targetPlayer.HandCard(newCard);
-        result.SpecialMessages.Add(EventMessageFactory.DrawCard(targetPlayer.UserEmail));
+        result.Events.Add(new DrawCardEvent(targetPlayer.UserEmail));
 
         return result;
     }

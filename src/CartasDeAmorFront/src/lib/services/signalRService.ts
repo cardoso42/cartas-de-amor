@@ -39,6 +39,7 @@ interface SignalRHandlers {
   onJoinedRoom?: (joinRoomResult: JoinRoomResultDto) => void;
   onUserJoined?: (playerEmail: string) => void;
   onUserLeft?: (playerEmail: string) => void;
+  onUsernameChanged?: (userEmail: string, newUsername: string) => void;
   onRoundStarted?: (initialGameStatus: InitialGameStatusDto) => void;
   onCurrentGameStatus?: (initialGameStatus: InitialGameStatusDto | null) => void;
   onNextTurn?: (playerEmail: string) => void;
@@ -78,6 +79,7 @@ let registeredHandlers: SignalRHandlers = {
   onJoinedRoom: undefined,
   onUserJoined: undefined,
   onUserLeft: undefined,
+  onUsernameChanged: undefined,
   onRoundStarted: undefined,
   onCurrentGameStatus: undefined,
   onNextTurn: undefined,
@@ -117,6 +119,7 @@ function attachEventHandlers(connection: SignalR.HubConnection) {
   connection.off('CurrentGameStatus');
   connection.off('UserJoined');
   connection.off('UserLeft');
+  connection.off('UsernameChanged');
   connection.off('RoundStarted');
   connection.off('NextTurn');
   connection.off('PlayerDrewCard');
@@ -153,6 +156,7 @@ function attachEventHandlers(connection: SignalR.HubConnection) {
   connection.on('JoinedRoom', (joinRoomResult: JoinRoomResultDto) => registeredHandlers.onJoinedRoom?.(joinRoomResult));
   connection.on('UserJoined', (playerEmail: string) => registeredHandlers.onUserJoined?.(playerEmail));
   connection.on('UserLeft', (playerEmail: string) => registeredHandlers.onUserLeft?.(playerEmail));
+  connection.on('UsernameChanged', (userEmail: string, newUsername: string) => registeredHandlers.onUsernameChanged?.(userEmail, newUsername));
   connection.on('RoundStarted', (initialGameStatus: InitialGameStatusDto) => registeredHandlers.onRoundStarted?.(initialGameStatus));
   connection.on('CurrentGameStatus', (initialGameStatus: InitialGameStatusDto | null) => registeredHandlers.onCurrentGameStatus?.(initialGameStatus));
   connection.on('NextTurn', (playerEmail: string) => registeredHandlers.onNextTurn?.(playerEmail));

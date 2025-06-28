@@ -448,8 +448,27 @@
           removePlayerFromGame(playerEmail);
           showNotification(`Player left: ${playerName}`, 'info');
         },
+        onUsernameChanged: (userEmail: string, newUsername: string) => {
+          const oldDisplayName = getPlayerDisplayName(userEmail);
+          
+          // Update the username in gameStatus if it exists
+          if (gameStatus?.otherPlayersPublicData) {
+            const playerToUpdate = gameStatus.otherPlayersPublicData.find(p => p.userEmail === userEmail);
+            if (playerToUpdate) {
+              playerToUpdate.username = newUsername;
+              gameStatus = { ...gameStatus }; // Trigger reactivity
+            }
+          }
+          
+          // If it's the current user, update the user store as well
+          if (userEmail === $user.email) {
+            user.updateUser({ username: newUsername });
+          }
+          
+          showNotification(`${oldDisplayName} changed username to ${newUsername}`, 'info');
+        },
         onCurrentGameStatus: (initialGameStatus: InitialGameStatusDto | null) => {
-          if (initialGameStatus) {
+          if (initialGameStatus) {           
             // Game is in progress, set the game state and display it
             gameStatus = initialGameStatus;
             localPlayerPlayedCards = []; // Reset played cards, will be populated by PrivatePlayerUpdate if needed

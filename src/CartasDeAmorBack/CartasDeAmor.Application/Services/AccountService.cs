@@ -6,8 +6,9 @@ using Microsoft.IdentityModel.Tokens;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
-using BCrypt.Net;
 using CartasDeAmor.Application.DTOs;
+using CartasDeAmor.Application.Extensions;
+using MediatR;
 
 namespace CartasDeAmor.Application.Services;
 
@@ -15,11 +16,13 @@ public class AccountService : IAccountService
 {
     private readonly IUserRepository _userRepository;
     private readonly IConfiguration _configuration;
+    private readonly IMediator _mediator;
 
-    public AccountService(IUserRepository userRepository, IConfiguration configuration)
+    public AccountService(IUserRepository userRepository, IConfiguration configuration, IMediator mediator)
     {
         _userRepository = userRepository ?? throw new ArgumentNullException(nameof(userRepository));
         _configuration = configuration ?? throw new ArgumentNullException(nameof(configuration));
+        _mediator = mediator ?? throw new ArgumentNullException(nameof(mediator));
     }
 
     public async Task<string> CreateAccountAsync(string username, string email, string password)
@@ -70,6 +73,9 @@ public class AccountService : IAccountService
 
         user.Username = username;
         await _userRepository.UpdateAsync(user);
+
+        // Send SignalR notification using the convenient extension method
+        await _mediator.SendUsernameChangedAsync(email, username);
     }
 
     public async Task DeleteAccountAsync(string email)

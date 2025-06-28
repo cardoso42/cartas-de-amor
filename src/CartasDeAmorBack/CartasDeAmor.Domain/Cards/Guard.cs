@@ -1,7 +1,7 @@
 using CartasDeAmor.Domain.Entities;
 using CartasDeAmor.Domain.Enums;
 using CartasDeAmor.Domain.Exceptions;
-using CartasDeAmor.Domain.Factories;
+using CartasDeAmor.Domain.Events;
 
 namespace CartasDeAmor.Domain.Cards;
 
@@ -37,22 +37,22 @@ public class Guard : Card
 
         var result = new CardResult()
         {
-            SpecialMessages =
+            Events =
             [
-                EventMessageFactory.PlayCard(invokerPlayer.UserEmail, CardType),
-                EventMessageFactory.GuessCard(invokerPlayer.UserEmail, targetPlayer.UserEmail, targetCardType.Value)
+                new PlayCardEvent(invokerPlayer.UserEmail, CardType),
+                new GuessCardEvent(invokerPlayer.UserEmail, targetPlayer.UserEmail, targetCardType.Value)
             ]
         };
 
         if (targetPlayer.HasCard(targetCardType.Value))
         {
             targetPlayer.Eliminate();
-            result.SpecialMessages.Add(EventMessageFactory.PlayerEliminated(targetPlayer.UserEmail));
+            result.Events.Add(new PlayerEliminatedEvent(targetPlayer.UserEmail));
         }
 
         return result;
     }
-    
+
     public override CardRequirements? GetCardActionRequirements()
     {
         return new CardRequirements

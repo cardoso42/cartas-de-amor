@@ -1,6 +1,6 @@
 using CartasDeAmor.Domain.Entities;
 using CartasDeAmor.Domain.Enums;
-using CartasDeAmor.Domain.Factories;
+using CartasDeAmor.Domain.Events;
 
 namespace CartasDeAmor.Domain.Cards;
 
@@ -23,10 +23,10 @@ public class Servant : Card
         
         return new CardResult 
         {
-            SpecialMessages =
+            Events =
             [
-                EventMessageFactory.PlayCard(invokerPlayer.UserEmail, CardType),
-                EventMessageFactory.PlayerProtected(invokerPlayer.UserEmail)
+                new PlayCardEvent(invokerPlayer.UserEmail, CardType),
+                new PlayerProtectedEvent(invokerPlayer.UserEmail)
             ]
         };
     }

@@ -1,7 +1,7 @@
 using CartasDeAmor.Domain.Entities;
 using CartasDeAmor.Domain.Enums;
 using CartasDeAmor.Domain.Exceptions;
-using CartasDeAmor.Domain.Factories;
+using CartasDeAmor.Domain.Events;
 
 namespace CartasDeAmor.Domain.Cards;
 
@@ -36,10 +36,10 @@ public class King : Card
 
         return new CardResult
         {
-            SpecialMessages =
+            Events =
             [
-                EventMessageFactory.PlayCard(invokerPlayer.UserEmail, CardType),
-                EventMessageFactory.SwitchCards(invokerPlayer.UserEmail, targetPlayer.UserEmail)
+                new PlayCardEvent(invokerPlayer.UserEmail, CardType),
+                new SwitchCardsEvent(invokerPlayer.UserEmail, targetPlayer.UserEmail)
             ]
         };
     }

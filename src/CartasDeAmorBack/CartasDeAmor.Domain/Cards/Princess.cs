@@ -1,6 +1,6 @@
 using CartasDeAmor.Domain.Entities;
 using CartasDeAmor.Domain.Enums;
-using CartasDeAmor.Domain.Factories;
+using CartasDeAmor.Domain.Events;
 
 namespace CartasDeAmor.Domain.Cards;
 
@@ -22,10 +22,10 @@ public class Princess : Card
         invokerPlayer.Eliminate();
         return new CardResult
         {
-            SpecialMessages =
+            Events =
             [
-                EventMessageFactory.PlayCard(invokerPlayer.UserEmail, CardType),
-                EventMessageFactory.PlayerEliminated(invokerPlayer.UserEmail)
+                new PlayCardEvent(invokerPlayer.UserEmail, CardType),
+                new PlayerEliminatedEvent(invokerPlayer.UserEmail)
             ]
         };
     }
