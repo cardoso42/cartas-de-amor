@@ -1,6 +1,6 @@
 using CartasDeAmor.Domain.Entities;
 using CartasDeAmor.Domain.Enums;
-using CartasDeAmor.Domain.Factories;
+using CartasDeAmor.Domain.Events;
 
 namespace CartasDeAmor.Domain.Cards;
 
@@ -20,7 +20,7 @@ public class Countess : Card
         // Has no effect
         return new CardResult()
         {
-            SpecialMessages = [EventMessageFactory.PlayCard(invokerPlayer.UserEmail, CardType)]
+            Events = [new PlayCardEvent(invokerPlayer.UserEmail, CardType)]
         };
     }
     

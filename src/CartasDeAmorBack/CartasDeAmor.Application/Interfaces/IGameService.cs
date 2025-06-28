@@ -6,12 +6,12 @@ namespace CartasDeAmor.Application.Interfaces;
 
 public interface IGameService
 {
-    Task<List<SpecialMessage>> StartGameAsync(Guid roomId, string hostEmail);
-    Task<List<SpecialMessage>> StartNewRoundAsync(Guid roomId);
-    Task<List<SpecialMessage>> DrawCardAsync(Guid roomId, string userEmail);
-    Task<List<SpecialMessage>> GetCardActionRequirementsAsync(Guid roomId, string currentPlayer, CardType cardType);
+    Task StartGameAsync(Guid roomId, string hostEmail);
+    Task StartNewRoundAsync(Guid roomId);
+    Task DrawCardAsync(Guid roomId, string userEmail);
+    Task GetCardActionRequirementsAsync(Guid roomId, string currentPlayer, CardType cardType);
     Task<CardResult> PlayCardAsync(Guid roomId, string userEmail, CardPlayDto cardPlay);
-    Task<List<SpecialMessage>> SubmitCardChoiceAsync(Guid roomId, string userEmail, CardType keepCardType, List<CardType> returnCardsType);
+    Task SubmitCardChoiceAsync(Guid roomId, string userEmail, CardType keepCardType, List<CardType> returnCardsType);
     Task<IList<Player>> GetPlayersAsync(Guid roomId);
     Task<string> GetPlayerTurnAsync(Guid roomId);
     Task<bool> IsPlayerTurnAsync(Guid roomId, string userEmail);
@@ -19,8 +19,8 @@ public interface IGameService
     Task<PrivatePlayerUpdateDto> GetPlayerStatusAsync(Guid roomId, string userEmail);
     Task<bool> IsRoundOverAsync(Guid roomId);
     Task<bool> IsGameOverAsync(Guid roomId);
-    Task<List<SpecialMessage>> FinishRoundAsync(Guid roomId);
-	Task<List<SpecialMessage>> VerifyGameValidity(Guid roomId);
-    Task<SpecialMessage> FinishGameAsync(Guid roomdId);
+    Task FinishRoundAsync(Guid roomId);
+	Task VerifyGameValidity(Guid roomId);
+    Task FinishGameAsync(Guid roomdId);
     Task<InitialGameStatusDto?> GetCurrentGameStatusAsync(Guid roomId, string userEmail);
 }

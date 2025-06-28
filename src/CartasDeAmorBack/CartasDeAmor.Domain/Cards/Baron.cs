@@ -1,7 +1,7 @@
 using CartasDeAmor.Domain.Entities;
 using CartasDeAmor.Domain.Enums;
 using CartasDeAmor.Domain.Exceptions;
-using CartasDeAmor.Domain.Factories;
+using CartasDeAmor.Domain.Events;
 
 namespace CartasDeAmor.Domain.Cards;
 
@@ -32,26 +32,26 @@ public class Baron : Card
         }
 
         var result = new CardResult();
-        result.SpecialMessages.Add(EventMessageFactory.PlayCard(invokerPlayer.UserEmail, CardType));
+        result.Events.Add(new PlayCardEvent(invokerPlayer.UserEmail, CardType));
 
         var invokerCard = invokerPlayer.GetCard();
         var targetCard = targetPlayer.GetCard();
 
-        result.SpecialMessages.Add(EventMessageFactory.CompareCards(invokerPlayer.UserEmail, targetPlayer.UserEmail));
+        result.Events.Add(new CompareCardsEvent(invokerPlayer.UserEmail, targetPlayer.UserEmail));
 
         if (invokerCard > targetCard)
         {
             targetPlayer.Eliminate();
-            result.SpecialMessages.Add(EventMessageFactory.PlayerEliminated(targetPlayer.UserEmail));
+            result.Events.Add(new PlayerEliminatedEvent(targetPlayer.UserEmail));
         }
         else if (invokerCard < targetCard)
         {
             invokerPlayer.Eliminate();
-            result.SpecialMessages.Add(EventMessageFactory.PlayerEliminated(invokerPlayer.UserEmail));
+            result.Events.Add(new PlayerEliminatedEvent(invokerPlayer.UserEmail));
         }
         else
         {
-            result.SpecialMessages.Add(EventMessageFactory.ComparisonTie(invokerPlayer.UserEmail, targetPlayer.UserEmail));
+            result.Events.Add(new ComparisonTieEvent(invokerPlayer.UserEmail, targetPlayer.UserEmail));
         }
         
         return result;

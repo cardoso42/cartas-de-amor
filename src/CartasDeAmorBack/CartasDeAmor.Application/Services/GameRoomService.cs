@@ -2,8 +2,8 @@ using CartasDeAmor.Domain.Repositories;
 using CartasDeAmor.Domain.Entities;
 using CartasDeAmor.Application.DTOs;
 using CartasDeAmor.Domain.Configuration;
-using CartasDeAmor.Application.Factories;
-using CartasDeAmor.Domain.Factories;
+using CartasDeAmor.Application.Extensions;
+using MediatR;
 
 namespace CartasDeAmor.Domain.Services;
 
@@ -12,15 +12,18 @@ public class GameRoomService : IGameRoomService
     private readonly IGameRoomRepository _roomRepository;
     private readonly IPlayerRepository _playerRepository;
     private readonly IUserRepository _userRepository;
+    private readonly IMediator _mediator;
 
     public GameRoomService(
         IGameRoomRepository roomRepository, 
         IPlayerRepository playerRepository, 
-        IUserRepository userRepository)
+        IUserRepository userRepository,
+        IMediator mediator)
     {
         _roomRepository = roomRepository;
         _playerRepository = playerRepository;
         _userRepository = userRepository;
+        _mediator = mediator;
     }
 
     private async Task<Player> CreatePlayer(Game game, string userEmail)
@@ -67,7 +70,7 @@ public class GameRoomService : IGameRoomService
         await _roomRepository.DeleteAsync(roomId);
     }
 
-    public async Task<List<SpecialMessage>> AddUserToRoomAsync(Guid roomId, string userEmail, string? password)
+    public async Task AddUserToRoomAsync(Guid roomId, string userEmail, string? password)
     {
         var game = await _roomRepository.GetByIdAsync(roomId)
             ?? throw new InvalidOperationException("Room not found");
@@ -75,10 +78,9 @@ public class GameRoomService : IGameRoomService
         var player = game.Players.FirstOrDefault(p => p.UserEmail == userEmail);
         if (player != null)
         {
-            return 
-            [
-                DataMessageFactory.JoinRoom(game, player)
-            ];
+            // User already in room, just send join room data
+            await _mediator.SendJoinRoomAsync(userEmail, new JoinRoomResultDto(game, player));
+            return;
         }
 
         if (game.Players.Count >= GameSettings.MaxPlayers)
@@ -96,14 +98,14 @@ public class GameRoomService : IGameRoomService
 
         await _roomRepository.UpdateAsync(game);
 
-        return
-        [
-            EventMessageFactory.UserJoined(player.UserEmail),
-            DataMessageFactory.JoinRoom(game, player)
-        ];
+        // Send user joined event to all players in room
+        await _mediator.SendGameEventAsync(roomId, null, "UserJoined", userEmail);
+        
+        // Send join room data to the user who joined
+        await _mediator.SendJoinRoomAsync(userEmail, new JoinRoomResultDto(game, player));
     }
 
-    public async Task<List<SpecialMessage>> RemoveUserFromRoomAsync(Guid roomId, string userEmail)
+    public async Task RemoveUserFromRoomAsync(Guid roomId, string userEmail)
     {
         var game = await _roomRepository.GetByIdAsync(roomId)
             ?? throw new InvalidOperationException("Room not found");
@@ -115,10 +117,8 @@ public class GameRoomService : IGameRoomService
         await _roomRepository.UpdateAsync(game);
         await _playerRepository.DeleteAsync(roomId, userEmail);
 
-        return
-        [
-            EventMessageFactory.UserLeft(player.UserEmail),
-        ];
+        // Send user left event to all players in room
+        await _mediator.SendGameEventAsync(roomId, null, "UserLeft", userEmail);
     }
 
     public async Task<IEnumerable<GameRoomDto>> GetAvailableRooms()

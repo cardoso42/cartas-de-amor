@@ -1,6 +1,6 @@
 using CartasDeAmor.Domain.Entities;
 using CartasDeAmor.Domain.Enums;
-using CartasDeAmor.Domain.Factories;
+using CartasDeAmor.Domain.Events;
 
 namespace CartasDeAmor.Domain.Cards;
 
@@ -19,10 +19,10 @@ public class Spy : Card
         // No immediate effect
         return new CardResult
         {
-            SpecialMessages = [EventMessageFactory.PlayCard(invokerPlayer.UserEmail, CardType)]
+            Events = [new PlayCardEvent(invokerPlayer.UserEmail, CardType)]
         };
     }
-    
+
     public override CardRequirements? GetCardActionRequirements()
     {
         return null;

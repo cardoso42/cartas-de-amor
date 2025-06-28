@@ -1,7 +1,7 @@
 using CartasDeAmor.Domain.Entities;
 using CartasDeAmor.Domain.Enums;
 using CartasDeAmor.Domain.Exceptions;
-using CartasDeAmor.Domain.Factories;
+using CartasDeAmor.Domain.Events;
 
 namespace CartasDeAmor.Domain.Cards;
 
@@ -30,11 +30,11 @@ public class Priest : Card
 
         return new CardResult()
         {
-            SpecialMessages =
+            Events =
             [
-                EventMessageFactory.PlayCard(invokerPlayer.UserEmail, CardType),
-                EventMessageFactory.PeekCard(invokerPlayer.UserEmail, targetPlayer.UserEmail),
-                EventMessageFactory.ShowCard(invokerPlayer.UserEmail, targetPlayer.UserEmail, targetPlayer.HoldingCards.FirstOrDefault())
+                new PlayCardEvent(invokerPlayer.UserEmail, CardType),
+                new PeekCardEvent(invokerPlayer.UserEmail, targetPlayer.UserEmail),
+                new ShowCardEvent(invokerPlayer.UserEmail, targetPlayer.UserEmail, targetPlayer.HoldingCards.FirstOrDefault())
             ]
         };
     }

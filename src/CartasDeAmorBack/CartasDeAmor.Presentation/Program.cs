@@ -43,6 +43,12 @@ builder.Services.AddSignalR();
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
 
+// Add MediatR
+builder.Services.AddMediatR(cfg => {
+    cfg.RegisterServicesFromAssembly(typeof(CartasDeAmor.Application.Commands.SendRoomMessageCommand).Assembly);
+    cfg.RegisterServicesFromAssembly(typeof(Program).Assembly); // For presentation layer handlers
+});
+
 // Register application services
 builder.Services.AddScoped<IUserRepository, UserRepository>();
 builder.Services.AddScoped<IGameRoomRepository, GameRoomRepository>();
@@ -51,6 +57,8 @@ builder.Services.AddScoped<IAccountService, AccountService>();
 builder.Services.AddScoped<IGameRoomService, GameRoomService>();
 builder.Services.AddScoped<IGameService, GameService>();
 builder.Services.AddSingleton<IConnectionMappingService, ConnectionMappingService>();
+// Remove the old notification service - now handled by MediatR
+// builder.Services.AddScoped<IUsernameChangeNotificationService, CartasDeAmor.Presentation.Services.UsernameChangeNotificationService>();
 
 // Initialize static game settings
 CartasDeAmor.Domain.Configuration.GameSettingsProvider.Initialize(builder.Configuration);

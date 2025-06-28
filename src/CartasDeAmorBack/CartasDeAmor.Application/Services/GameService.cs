@@ -7,7 +7,9 @@ using CartasDeAmor.Domain.Entities;
 using Microsoft.Extensions.Logging;
 using CartasDeAmor.Domain.Exceptions;
 using CartasDeAmor.Domain.Configuration;
-using CartasDeAmor.Application.Factories;
+using CartasDeAmor.Application.Extensions;
+using CartasDeAmor.Domain.Events;
+using MediatR;
 
 namespace CartasDeAmor.Application.Services;
 
@@ -16,20 +18,20 @@ public class GameService : IGameService
     private readonly IGameRoomRepository _roomRepository;
     private readonly IUserRepository _userRepository;
     private readonly ILogger<GameService> _logger;
+    private readonly IMediator _mediator;
 
     public GameService(
         IGameRoomRepository roomRepository, IUserRepository userRepository,
-        ILogger<GameService> logger)
+        ILogger<GameService> logger, IMediator mediator)
     {
         _roomRepository = roomRepository;
         _userRepository = userRepository;
         _logger = logger;
+        _mediator = mediator;
     }
 
-    private async Task<List<SpecialMessage>> GetGameStatusDtos(Game game)
+    private async Task SendGameStatusDtos(Game game)
     {
-        List<SpecialMessage> messages = [];
-
         // Get all player emails
         var playerEmails = game.Players.Select(p => p.UserEmail).ToList();
         
@@ -39,13 +41,26 @@ public class GameService : IGameService
 
         foreach (var player in game.Players)
         {
-            messages.Add(DataMessageFactory.RoundStart(game, player, users));
-        }
+            // Get other players' data for this specific player
+            var otherPlayers = game.Players
+                .Where(p => p.UserEmail != player.UserEmail)
+                .Select(p => new PlayerStatusDto 
+                {
+                    UserEmail = p.UserEmail, 
+                    Username = users.ContainsKey(p.UserEmail) ? users[p.UserEmail].Username : p.UserEmail, // Use actual username if available, fallback to email
+                    Status = p.Status,
+                    IsProtected = p.IsProtected(),
+                    Score = p.Score,
+                    CardsInHand = p.HoldingCards.Count
+                })
+                .ToList();
 
-        return messages;
+            // Send round start data to the specific player (this is the main message the frontend expects)
+            await _mediator.SendRoundStartAsync(player.UserEmail, new InitialGameStatusDto(game, otherPlayers, player));
+        }
     }
 
-    public async Task<List<SpecialMessage>> StartGameAsync(Guid roomId, string hostEmail)
+    public async Task StartGameAsync(Guid roomId, string hostEmail)
     {
         // Get the game room
         var game = await _roomRepository.GetByIdAsync(roomId)
@@ -74,7 +89,7 @@ public class GameService : IGameService
 
         await _roomRepository.UpdateAsync(game);
 
-        return await GetGameStatusDtos(game);
+        await SendGameStatusDtos(game);
     }
 
     public async Task<IList<Player>> GetPlayersAsync(Guid roomId)
@@ -117,7 +132,7 @@ public class GameService : IGameService
         return players[game.CurrentPlayerIndex].UserEmail == userEmail;
     }
 
-    public async Task<List<SpecialMessage>> DrawCardAsync(Guid roomId, string userEmail)
+    public async Task DrawCardAsync(Guid roomId, string userEmail)
     {
         var game = await _roomRepository.GetByIdAsync(roomId) ?? throw new InvalidOperationException("Room not found");
 
@@ -146,12 +161,12 @@ public class GameService : IGameService
 
         await _roomRepository.UpdateAsync(game);
 
-        return
-        [
-            EventMessageFactory.PlayerDrewCard(currentPlayer.UserEmail),
-            DataMessageFactory.PlayerUpdatePublic(currentPlayer),
-            DataMessageFactory.PlayerUpdatePrivate(currentPlayer)
-        ];
+        // Send player drew card event to all players in room
+        await _mediator.SendGameEventAsync(roomId, null, "PlayerDrewCard", currentPlayer.UserEmail);
+        
+        // Send player updates
+        await _mediator.SendPlayerUpdatePublicAsync(roomId, currentPlayer);
+        await _mediator.SendPlayerUpdatePrivateAsync(currentPlayer);
     }
 
     public async Task<string> NextPlayerAsync(Guid roomId)
@@ -247,19 +262,23 @@ public class GameService : IGameService
 
         await _roomRepository.UpdateAsync(game);
 
-        result.SpecialMessages.Insert(0, DataMessageFactory.PlayerUpdatePublic(currentPlayer));
-        result.SpecialMessages.Insert(1, DataMessageFactory.PlayerUpdatePrivate(currentPlayer));
+        // Send player updates via MediatR
+        await _mediator.SendPlayerUpdatePublicAsync(roomId, currentPlayer);
+        await _mediator.SendPlayerUpdatePrivateAsync(currentPlayer);
 
         if (targetPlayer != null)
         {
-            result.SpecialMessages.Insert(2, DataMessageFactory.PlayerUpdatePublic(targetPlayer));
-            result.SpecialMessages.Insert(3, DataMessageFactory.PlayerUpdatePrivate(targetPlayer));
+            await _mediator.SendPlayerUpdatePublicAsync(roomId, targetPlayer);
+            await _mediator.SendPlayerUpdatePrivateAsync(targetPlayer);
         }
+
+        // Process game events from card play
+        await ProcessGameEvents(roomId, result.Events);
 
         return result;
     }
 
-    public async Task<List<SpecialMessage>> GetCardActionRequirementsAsync(Guid roomId, string currentPlayer, CardType cardType)
+    public async Task GetCardActionRequirementsAsync(Guid roomId, string currentPlayer, CardType cardType)
     {
         var gameRoom = await _roomRepository.GetByIdAsync(roomId) ?? throw new ArgumentException("Game room not found.");
         var card = CardFactory.Create(cardType);
@@ -268,11 +287,9 @@ public class GameService : IGameService
 
         if (requirements == null)
         {
-            return
-            [
-                DataMessageFactory.CardRequirements(
-                    currentPlayer, new CardRequirementsDto { CardType = cardType })
-            ];
+            await _mediator.SendCardRequirementsAsync(
+                currentPlayer, new CardRequirementsDto { CardType = cardType });
+            return;
         }
 
         var requirementsDto = new CardRequirementsDto { CardType = cardType };
@@ -302,7 +319,7 @@ public class GameService : IGameService
             }
         }
 
-        return [ DataMessageFactory.CardRequirements(currentPlayer, requirementsDto) ];
+        await _mediator.SendCardRequirementsAsync(currentPlayer, requirementsDto);
     }
 
     public async Task<bool> IsRoundOverAsync(Guid roomId)
@@ -321,7 +338,7 @@ public class GameService : IGameService
         return game.IsGameOver();
     }
 
-    public async Task<List<SpecialMessage>> FinishRoundAsync(Guid roomId)
+    public async Task FinishRoundAsync(Guid roomId)
     {
         var game = await _roomRepository.GetByIdAsync(roomId)
             ?? throw new InvalidOperationException("Room not found");
@@ -357,14 +374,14 @@ public class GameService : IGameService
 
         await _roomRepository.UpdateAsync(game);
 
-        return
-        [
-            EventMessageFactory.RoundWinners(winners.Select(w => w.UserEmail).ToList()),
-            EventMessageFactory.BonusPoints(bonusReceivers)
-        ];
+        // Send round winners event to all players in room
+        await _mediator.SendGameEventAsync(roomId, null, "RoundWinners", winners.Select(w => w.UserEmail).ToList());
+        
+        // Send bonus points event to all players in room
+        await _mediator.SendGameEventAsync(roomId, null, "BonusPoints", bonusReceivers);
     }
 
-    public async Task<SpecialMessage> FinishGameAsync(Guid roomdId)
+    public async Task FinishGameAsync(Guid roomdId)
     {
         var game = await _roomRepository.GetByIdAsync(roomdId)
             ?? throw new InvalidOperationException("Room not found");
@@ -372,7 +389,8 @@ public class GameService : IGameService
         game.TransitionToState(GameStateEnum.Finished);
         await _roomRepository.UpdateAsync(game);
 
-        return EventMessageFactory.GameOver(game.GetGameWinner().Select(p => p.UserEmail).ToList());
+        // Send game over event to all players in room
+        await _mediator.SendGameEventAsync(roomdId, null, "GameOver", game.GetGameWinner().Select(p => p.UserEmail).ToList());
     }
 
     public async Task<string> GetPlayerTurnAsync(Guid roomId)
@@ -393,7 +411,7 @@ public class GameService : IGameService
         return game.Players[game.CurrentPlayerIndex].UserEmail;
     }
 
-    public async Task<List<SpecialMessage>> StartNewRoundAsync(Guid roomId)
+    public async Task StartNewRoundAsync(Guid roomId)
     {
         var game = await _roomRepository.GetByIdAsync(roomId)
             ?? throw new InvalidOperationException("Room not found");
@@ -411,12 +429,12 @@ public class GameService : IGameService
         game.StartNewRound();
         await _roomRepository.UpdateAsync(game);
 
-        return await GetGameStatusDtos(game);
+        await SendGameStatusDtos(game);
     }
 
-    public async Task<List<SpecialMessage>> SubmitCardChoiceAsync(Guid roomId, string userEmail, CardType keepCardType, List<CardType> returnCardsType)
+    public async Task SubmitCardChoiceAsync(Guid roomId, string userEmail, CardType keepCardType, List<CardType> returnCardsType)
     {
-        var game = _roomRepository.GetByIdAsync(roomId).Result ?? throw new InvalidOperationException("Room not found");
+        var game = await _roomRepository.GetByIdAsync(roomId) ?? throw new InvalidOperationException("Room not found");
 
         if (game.HasStarted() == false)
         {
@@ -424,7 +442,7 @@ public class GameService : IGameService
         }
 
         // Verify it's the player's turn
-        if (!IsPlayerTurnAsync(roomId, userEmail).Result)
+        if (!await IsPlayerTurnAsync(roomId, userEmail))
         {
             throw new InvalidOperationException("It's not your turn");
         }
@@ -456,19 +474,19 @@ public class GameService : IGameService
         _logger.LogInformation("Player {UserEmail} has submitted card choice: keep {KeepCardType}, return {ReturnCardsType} in room {RoomId}",
             userEmail, keepCardType, string.Join(", ", returnCardsType), roomId);
 
-        var messages = new List<SpecialMessage> { DataMessageFactory.PlayerUpdatePublic(player) };
+        // Send player updates via MediatR
+        await _mediator.SendPlayerUpdatePublicAsync(roomId, player);
         
         if (returnCardsType.Count > 0)
         {
-            messages.Add(EventMessageFactory.ReturnCards(userEmail, returnCardsType.Count));
+            await _mediator.SendGameEventAsync(roomId, null, "CardReturnedToDeck", new
+            {
+                Player = userEmail,
+                CardCount = returnCardsType.Count
+            });
         }
 
-        messages.AddRange([
-            DataMessageFactory.PlayerUpdatePrivate(player),
-            DataMessageFactory.PlayerUpdatePublic(player)
-        ]);
-
-        return messages;
+        await _mediator.SendPlayerUpdatePrivateAsync(player);
     }
 
     public async Task<InitialGameStatusDto?> GetCurrentGameStatusAsync(Guid roomId, string userEmail)
@@ -520,19 +538,30 @@ public class GameService : IGameService
         return new InitialGameStatusDto(game, otherPlayersPublicData, player);
     }
 
-    public async Task<List<SpecialMessage>> VerifyGameValidity(Guid roomId)
+    public async Task VerifyGameValidity(Guid roomId)
     {
         var game = await _roomRepository.GetByIdAsync(roomId)
             ?? throw new InvalidOperationException("Room not found");
 
-        var messages = new List<SpecialMessage>();
-
         var players = game.Players;
         if (players.Count <= 1)
         {
-            messages.Add(await FinishGameAsync(roomId));
+            await FinishGameAsync(roomId);
         }
+    }
 
-        return messages;
-	}
+    /// <summary>
+    /// Processes a list of game events and converts them to MediatR commands
+    /// </summary>
+    private async Task ProcessGameEvents(Guid roomId, List<GameEvent> events)
+    {
+        foreach (var gameEvent in events)
+        {
+            await _mediator.SendGameEventAsync(
+                roomId,
+                gameEvent.Destination,
+                gameEvent.EventType,
+                gameEvent.EventData);
+        }
+    }
 }
