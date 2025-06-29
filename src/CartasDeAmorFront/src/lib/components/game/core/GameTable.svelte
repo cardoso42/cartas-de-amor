@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { CardType, type InitialGameStatusDto, type CardRequirementsDto, CardActionRequirements } from '$lib/types/game-types';
+  import { CardType, type GameStatusDto, type CardRequirementsDto, CardActionRequirements } from '$lib/types/game-types';
   import { user } from '$lib/stores/userStore';
   import { signalR } from '$lib/services/signalRService';
   import { page } from '$app/stores';
@@ -12,12 +12,11 @@
   import PlayerArea from '../player/PlayerArea.svelte';
   import CardTypeSelector from '../ui/CardTypeSelector.svelte';
   import GameFlowInstructions from './GameFlowInstructions.svelte';
-  import { getCardName, getRequirementName } from '$lib/utils/cardUtils';
   import { getPlayerPosition, getCurrentTurnPlayer, getPlayerDisplayName } from '$lib/utils/gameUtils';
   import { processGameData } from '$lib/utils/gameDataProcessor';
   
   // Props from parent component
-  export let gameStatus: InitialGameStatusDto;
+  export let gameStatus: GameStatusDto;
   export let currentUserEmail: string;
   export let currentTurnPlayerEmail: string = '';
   export let localPlayerPlayedCards: number[] = []; // Played cards for the local player
@@ -208,12 +207,12 @@
     }
     
     // Get the current player's cards from the game status directly
-    if (!gameStatus || !gameStatus.yourCards || gameStatus.yourCards.length === 0) {
+    if (!gameStatus || !gameStatus.yourData.holdingCards || gameStatus.yourData.holdingCards.length === 0) {
       alert($_('game.noCardsAvailable'));
       return;
     }
     
-    cardsToChoose = [...gameStatus.yourCards]; // Make a copy
+    cardsToChoose = [...gameStatus.yourData.holdingCards]; // Make a copy
     showCardChoiceModal = true;
   }
   

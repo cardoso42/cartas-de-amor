@@ -1,4 +1,4 @@
-import type { InitialGameStatusDto, CardType } from '$lib/types/game-types';
+import type { GameStatusDto, CardType } from '$lib/types/game-types';
 
 /**
  * PlayerStatus enum values (must match backend)
@@ -44,7 +44,7 @@ export interface ProcessedPlayer {
  * Process raw game data into a format suitable for display
  */
 export function processGameData(
-  status: InitialGameStatusDto, 
+  status: GameStatusDto, 
   userEmail: string, 
   turnPlayer: string,
   localPlayerName: string,
@@ -60,11 +60,11 @@ export function processGameData(
     email: userEmail,
     isLocalPlayer: true,
     position: 0,
-    tokens: status.score || 0,
-    cards: status.yourCards || [],
-    cardsInHand: (status.yourCards || []).length,
+    tokens: status.yourData.score || 0,
+    cards: status.yourData.holdingCards || [],
+    cardsInHand: (status.yourData.holdingCards || []).length,
     playedCards: localPlayerPlayedCards, // Use the tracked local player played cards
-    isProtected: status.isProtected !== undefined ? status.isProtected : false,
+    isProtected: isPlayerProtected(status.yourData.status || 0),
     isCurrentTurn: userEmail === turnPlayer,
     isEliminated: eliminatedPlayers.has(userEmail) // Check local elimination state
   });
@@ -74,15 +74,15 @@ export function processGameData(
   (status.otherPlayersPublicData || []).forEach((player, index) => {
     processedPlayers.push({
       id: index + 1,
-      name: player.username || player.userEmail.split('@')[0], // Use proper username or fallback to email username
+      name: player.username || player.userEmail.split('@')[0], // Use username when available, fallback to email
       email: player.userEmail,
       isLocalPlayer: false,
       position: index + 1, // Sequential positioning - no gaps when players leave
       tokens: player.score || 0,
       cards: [], // Other players' cards are hidden
-      cardsInHand: player.cardsInHand || 1,
+      cardsInHand: player.holdingCardsCount || 1,
       playedCards: player.playedCards || [], // Include played cards for display
-      isProtected: player.isProtected !== undefined ? player.isProtected : isPlayerProtected(player.status || 0),
+      isProtected: isPlayerProtected(player.status || 0),
       isCurrentTurn: player.userEmail === turnPlayer,
       isEliminated: eliminatedPlayers.has(player.userEmail) || isPlayerEliminated(player.status || 0)
     });
