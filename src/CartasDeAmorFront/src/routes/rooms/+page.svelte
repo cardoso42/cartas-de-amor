@@ -7,7 +7,7 @@
   import { goto } from '$app/navigation';
   import { gameStore } from '$lib/stores/gameStore';
   import { _ } from 'svelte-i18n';
-	import type { JoinRoomResultDto, InitialGameStatusDto } from '$lib/types/game-types';
+	import type { JoinRoomResultDto, GameStatusDto } from '$lib/types/game-types';
   
   // Import new components
   import ConnectionStatus from '$lib/components/rooms/ConnectionStatus.svelte';
@@ -203,7 +203,7 @@
 
         goto(`/game/${joinRoomResult.roomId}`);
       },
-      onCurrentGameStatus: (initialGameStatus: InitialGameStatusDto | null) => {
+      onCurrentGameStatus: (initialGameStatus: GameStatusDto | null) => {
         if (initialGameStatus && rejoiningRoomId) {
           // Game is in progress, set game state and navigate to game page
           gameStore.set({

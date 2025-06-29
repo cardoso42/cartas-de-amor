@@ -1,4 +1,4 @@
-import type { InitialGameStatusDto } from '$lib/types/game-types';
+import type { GameStatusDto } from '$lib/types/game-types';
 import type { ProcessedPlayer } from './gameDataProcessor';
 
 /**
@@ -37,7 +37,7 @@ export function getPlayerPosition(playerIndex: number, totalPlayers: number) {
 /**
  * Get the current turn player email
  */
-export function getCurrentTurnPlayer(status: InitialGameStatusDto | null, turnPlayerEmail: string): string {
+export function getCurrentTurnPlayer(status: GameStatusDto | null, turnPlayerEmail: string): string {
   if (!status) return '';
   
   // If we have a turn player email from SignalR, use that

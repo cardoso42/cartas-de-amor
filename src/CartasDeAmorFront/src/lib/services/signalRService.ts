@@ -6,7 +6,7 @@ import API_CONFIG from '$lib/config/api-config';
 import * as SignalR from '@microsoft/signalr';
 import type { 
   JoinRoomResultDto, 
-  InitialGameStatusDto, 
+  GameStatusDto, 
   PrivatePlayerUpdateDto,
   CardRequirementsDto,
   PublicPlayerUpdateDto
@@ -40,8 +40,8 @@ interface SignalRHandlers {
   onUserJoined?: (playerEmail: string) => void;
   onUserLeft?: (playerEmail: string) => void;
   onUsernameChanged?: (userEmail: string, newUsername: string) => void;
-  onRoundStarted?: (initialGameStatus: InitialGameStatusDto) => void;
-  onCurrentGameStatus?: (initialGameStatus: InitialGameStatusDto | null) => void;
+  onRoundStarted?: (initialGameStatus: GameStatusDto) => void;
+  onCurrentGameStatus?: (initialGameStatus: GameStatusDto | null) => void;
   onNextTurn?: (playerEmail: string) => void;
   onPlayerDrewCard?: (playerEmail: string) => void;
   onGameStartError?: (error: string) => void;
@@ -157,8 +157,8 @@ function attachEventHandlers(connection: SignalR.HubConnection) {
   connection.on('UserJoined', (playerEmail: string) => registeredHandlers.onUserJoined?.(playerEmail));
   connection.on('UserLeft', (playerEmail: string) => registeredHandlers.onUserLeft?.(playerEmail));
   connection.on('UsernameChanged', (userEmail: string, newUsername: string) => registeredHandlers.onUsernameChanged?.(userEmail, newUsername));
-  connection.on('RoundStarted', (initialGameStatus: InitialGameStatusDto) => registeredHandlers.onRoundStarted?.(initialGameStatus));
-  connection.on('CurrentGameStatus', (initialGameStatus: InitialGameStatusDto | null) => registeredHandlers.onCurrentGameStatus?.(initialGameStatus));
+  connection.on('RoundStarted', (initialGameStatus: GameStatusDto) => registeredHandlers.onRoundStarted?.(initialGameStatus));
+  connection.on('CurrentGameStatus', (initialGameStatus: GameStatusDto | null) => registeredHandlers.onCurrentGameStatus?.(initialGameStatus));
   connection.on('NextTurn', (playerEmail: string) => registeredHandlers.onNextTurn?.(playerEmail));
   connection.on('PlayerDrewCard', (playerEmail: string) => registeredHandlers.onPlayerDrewCard?.(playerEmail));
   connection.on('GameStartError', (error: string) => registeredHandlers.onGameStartError?.(error));
