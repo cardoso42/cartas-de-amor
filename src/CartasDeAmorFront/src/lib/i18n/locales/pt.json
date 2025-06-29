@@ -72,8 +72,8 @@
     "passwordRequired": "Senha é obrigatória."
   },
   "navigation": {
-    "home": "Início",
-    "dashboard": "Painel",
+    "dashboard": "Início",
+    "game": "Jogo Atual",
     "rooms": "Salas de jogo",
     "profile": "Perfil",
     "rules": "Regras",

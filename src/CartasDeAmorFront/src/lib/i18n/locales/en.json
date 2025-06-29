@@ -72,8 +72,8 @@
     "enterPassword": "Enter Password"
   },
   "navigation": {
-    "home": "Home",
-    "dashboard": "Dashboard",
+    "dashboard": "Home",
+    "game": "Current Game",
     "rooms": "Game Rooms",
     "profile": "Profile",
     "rules": "Rules",

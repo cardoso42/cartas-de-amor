@@ -46,9 +46,9 @@
     <div class="navbar-links">
       {#if isAuthenticated}
         <!-- Links for authenticated users -->
-        <a href="/dashboard" class:active={$page.url.pathname === '/dashboard'}>{$_('navigation.home')}</a>
+        <a href="/dashboard" class:active={$page.url.pathname === '/dashboard'}>{$_('navigation.dashboard')}</a>
         {#if isInGame && currentRoomId}
-          <a href="/game/{currentRoomId}" class:active={$page.url.pathname.startsWith('/game/')}>{$_('navigation.dashboard')}</a>
+          <a href="/game/{currentRoomId}" class:active={$page.url.pathname.startsWith('/game/')}>{$_('navigation.game')}</a>
         {:else}
           <a href="/rooms" class:active={$page.url.pathname === '/rooms'}>{$_('navigation.rooms')}</a>
         {/if}

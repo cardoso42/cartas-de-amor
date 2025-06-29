@@ -34,16 +34,9 @@
       <div class="dashboard-card">
         <div class="card-icon">📜</div>
         <h2>{$_('navigation.rules')}</h2>
-        <p>{$_('common.rulesDescription')}</p>
+        <p>{$_('common.rulesDescription', { values: { appName: $_('app.name') } })}</p>
         <a href="/rules" class="button">{$_('common.readRules')}</a>
       </div>
-      
-      <!-- <div class="dashboard-card"> -->
-      <!--   <div class="card-icon">🏆</div> -->
-      <!--   <h2>Leaderboard</h2> -->
-      <!--   <p>Check the top players and see where you stand.</p> -->
-      <!--   <a href="/leaderboard" class="button disabled">Coming Soon</a> -->
-      <!-- </div> -->
     </div>
   </div>
 </AuthGuard>
