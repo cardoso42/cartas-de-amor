@@ -1,22 +1,24 @@
 <script lang="ts">
+  import { _ } from 'svelte-i18n';
+  
   export let players: string[] = [];
   export let userEmail: string = '';
 </script>
 
 <div class="game-content">
   <div class="lobby">
-    <h2>Players in Room</h2>
+    <h2>{$_('rooms.playersInRoom')}</h2>
     {#if players.length > 0}
       <ul class="player-list">
         {#each players as player}
-          <li>{player} {player === userEmail ? '(You)' : ''}</li>
+          <li>{player} {player === userEmail ? $_('rooms.you') : ''}</li>
         {/each}
       </ul>
     {:else}
-      <p>Loading players...</p>
+      <p>{$_('rooms.loadingPlayers')}</p>
     {/if}
     <div class="waiting-message">
-      Waiting for game to start...
+      {$_('rooms.waitingForGame')}
     </div>
   </div>
 </div>

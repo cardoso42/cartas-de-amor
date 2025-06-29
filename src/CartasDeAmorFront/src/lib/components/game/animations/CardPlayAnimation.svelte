@@ -1,6 +1,7 @@
 <!-- CardPlayAnimation.svelte -->
 <script lang="ts">
   import { onMount, createEventDispatcher } from 'svelte';
+  import { _ } from 'svelte-i18n';
   import { getCardName } from '$lib/utils/cardUtils';
   import type { CardType } from '$lib/types/game-types';
 
@@ -107,7 +108,7 @@
     <!-- Player name and action text -->
     {#if phase === 'displaying'}
       <div class="action-text">
-        <div class="player-action">{playerName} played</div>
+        <div class="player-action">{$_('game.cardPlayed', { values: { playerName } })}</div>
         <div class="card-title-display">{getCardName(cardType)}</div>
       </div>
     {/if}

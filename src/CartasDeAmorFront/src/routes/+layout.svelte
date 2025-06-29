@@ -5,6 +5,7 @@
   import { user } from '$lib/stores/userStore';
   import settings from '$lib/stores/settingsStore';
   import '$lib/styles/index.css';
+  import { waitLocale } from '$lib/i18n'; // Initialize i18n
 
   // Initialize stores on app start
   onMount(() => {
@@ -15,12 +16,19 @@
   });
 </script>
 
-<div class="app">
-  <Navbar />
-  <main class="content">
-    <slot />
-  </main>
-</div>
+{#await waitLocale()}
+  <!-- Loading state while i18n is initializing -->
+  <div class="loading-container">
+    <div class="loading-spinner"></div>
+  </div>
+{:then}
+  <div class="app">
+    <Navbar />
+    <main class="content">
+      <slot />
+    </main>
+  </div>
+{/await}
 
 <style>
   :global(body) {
@@ -49,5 +57,27 @@
     max-width: 1200px;
     width: 100%;
     margin: 0 auto;
+  }
+
+  .loading-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    background-color: #f5f5f5;
+  }
+
+  .loading-spinner {
+    width: 40px;
+    height: 40px;
+    border: 4px solid #e0e0e0;
+    border-top: 4px solid #9c27b0;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+  }
+
+  @keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
   }
 </style>

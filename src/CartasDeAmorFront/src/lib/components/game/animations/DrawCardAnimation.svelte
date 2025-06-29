@@ -1,6 +1,7 @@
 <!-- DrawCardAnimation.svelte -->
 <script lang="ts">
   import { onMount, createEventDispatcher } from 'svelte';
+  import { _ } from 'svelte-i18n';
 
   export let playerName: string = '';
   export let deckPosition: { x: number; y: number; width?: number; height?: number };
@@ -75,7 +76,7 @@
     <!-- Player name and action text -->
     {#if phase === 'arriving'}
       <div class="action-text">
-        <div class="player-action">{playerName} drew a card</div>
+        <div class="player-action">{$_('game.cardDrawn', { values: { playerName } })}</div>
       </div>
     {/if}
   </div>

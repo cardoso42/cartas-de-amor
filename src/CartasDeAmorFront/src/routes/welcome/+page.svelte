@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
 	import AuthGuard from '$lib/components/auth/AuthGuard.svelte';
+	import { _ } from 'svelte-i18n';
 
 	function handleLogin() {
 		goto('/login');
@@ -11,16 +12,16 @@
 </script>
 
 <svelte:head>
-	<title>Cartas de Amor</title>
+	<title>{$_('app.name')}</title>
 </svelte:head>
 
 <AuthGuard requireAuth={false}>
 	<div class="container">
 		<div class="home-content">
-			<h1 class="title">Cartas de Amor</h1>
+			<h1 class="title">{$_('app.name')}</h1>
 			<div class="home-buttons">
-				<button class="success" on:click={handleLogin}>Login</button>
-				<button class="success" on:click={handleRegister}>Register</button>
+				<button class="success" on:click={handleLogin}>{$_('auth.login')}</button>
+				<button class="success" on:click={handleRegister}>{$_('auth.register')}</button>
 			</div>
 		</div>
 	</div>

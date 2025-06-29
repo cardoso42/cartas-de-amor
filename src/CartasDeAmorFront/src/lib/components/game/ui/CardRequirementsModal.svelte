@@ -2,6 +2,7 @@
   import { CardType, CardActionRequirements, type CardRequirementsDto } from '$lib/types/game-types';
   import { createEventDispatcher } from 'svelte';
   import { getCardName } from '$lib/utils/cardUtils';
+  import { _ } from 'svelte-i18n';
   
   // Simple interface for player display context
   interface PlayerDisplayInfo {
@@ -37,8 +38,8 @@
     <div class="modal-content" on:click|stopPropagation on:keydown|stopPropagation role="dialog" aria-modal="true" aria-labelledby="modal-title" tabindex="-1">
       <!-- Modal Header -->
       <div class="modal-header">
-        <h2 id="modal-title">Playing {getCardName(requirements.cardType)}</h2>
-        <button class="close-button" on:click={close} aria-label="Close modal">×</button>
+        <h2 id="modal-title">{$_('game.playingCard', { values: { cardName: getCardName(requirements.cardType) } })}</h2>
+        <button class="close-button" on:click={close} aria-label={$_('game.closeModal')}>×</button>
       </div>
       
       <!-- Card Effect Description -->
@@ -46,37 +47,37 @@
         {#if requirements.message}
           <p class="card-rule">{requirements.message}</p>
         {:else}
-          <p class="card-rule">Playing this card requires additional choices.</p>
+          <p class="card-rule">{$_('game.cardRequiresChoices')}</p>
         {/if}
       </div>
       
       <!-- Next Steps Information -->
       <div class="next-steps">
-        <h3>What happens next:</h3>
+        <h3>{$_('game.whatHappensNext')}</h3>
         <div class="steps-list">
           {#if needsPlayerSelection && needsCardTypeSelection}
             <div class="step">
               <span class="step-number">1</span>
-              <span class="step-text">You'll select a target player by clicking on them at the table</span>
+              <span class="step-text">{$_('game.selectTargetPlayer')}</span>
             </div>
             <div class="step">
               <span class="step-number">2</span>
-              <span class="step-text">Then you'll choose a card type to guess</span>
+              <span class="step-text">{$_('game.chooseCardType')}</span>
             </div>
           {:else if needsPlayerSelection}
             <div class="step">
               <span class="step-number">1</span>
-              <span class="step-text">You'll select a target player by clicking on them at the table</span>
+              <span class="step-text">{$_('game.selectTargetPlayer')}</span>
             </div>
           {:else if needsCardTypeSelection}
             <div class="step">
               <span class="step-number">1</span>
-              <span class="step-text">You'll choose a card type from the options presented</span>
+              <span class="step-text">{$_('game.chooseCardTypeOnly')}</span>
             </div>
           {:else}
             <div class="step">
               <span class="step-number">✓</span>
-              <span class="step-text">This card has no additional requirements</span>
+              <span class="step-text">{$_('game.noAdditionalRequirements')}</span>
             </div>
           {/if}
         </div>
@@ -85,7 +86,7 @@
       <!-- Valid Targets Preview (if applicable) -->
       {#if needsPlayerSelection && requirements.possibleTargets.length > 0}
         <div class="targets-preview">
-          <h4>Valid targets:</h4>
+          <h4>{$_('game.validTargets')}</h4>
           <div class="target-list">
             {#each requirements.possibleTargets as targetEmail}
               {@const player = players.find(p => p.email === targetEmail)}
@@ -98,7 +99,7 @@
       <!-- Modal Actions -->
       <div class="modal-actions">
         <button class="primary-button" on:click={close}>
-          Got it, let's play!
+          {$_('game.gotItLetsPlay')}
         </button>
       </div>
     </div>

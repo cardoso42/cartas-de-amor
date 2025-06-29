@@ -1,5 +1,6 @@
 <script lang="ts">
   import { createEventDispatcher } from 'svelte';
+  import { _ } from 'svelte-i18n';
   import type { GameRoom } from '$lib/services/gameRoomService';
   
   export let rooms: GameRoom[] = [];
@@ -19,21 +20,21 @@
 
 <div class="available-rooms">
   <div class="rooms-header">
-    <h2>Available Rooms</h2>
+    <h2>{$_('rooms.availableRooms')}</h2>
     <button
       class="small" 
       on:click={() => dispatch('refresh')} 
       disabled={isLoading}
-      title="Refresh room list"
+      title={$_('rooms.refreshRoomList')}
     >
-      {isLoading ? 'Refreshing...' : '↻ Refresh'}
+      {isLoading ? $_('common.refreshing') : `↻ ${$_('common.refresh')}`}
     </button>
   </div>
   
   {#if isLoading && rooms.length === 0}
-    <p class="loading">Loading available rooms...</p>
+    <p class="loading">{$_('rooms.loadingAvailableRooms')}</p>
   {:else if rooms.length === 0}
-    <p class="no-rooms">No game rooms available. Create one to get started!</p>
+    <p class="no-rooms">{$_('rooms.noRoomsAvailable')}</p>
   {:else}
     <div class="rooms-list">
       {#each rooms as room (room.id)}
@@ -46,7 +47,7 @@
               {/if}
             </h3>
             <div class="room-details">
-              <span class="players">{room.currentPlayers} Players</span>
+              <span class="players">{room.currentPlayers} {$_('rooms.playersInRoom')}</span>
             </div>
           </div>
           <button 
@@ -54,9 +55,9 @@
             on:click={() => handleJoin(room.id, room.hasPassword)}
           >
             {#if isJoining && selectedRoomId === room.id}
-              Joining...
+              {$_('common.joining')}
             {:else}
-              Join
+              {$_('rooms.joinRoomButton')}
             {/if}
           </button>
         </div>

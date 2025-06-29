@@ -4,6 +4,7 @@
   import { signalR } from '$lib/services/signalRService';
   import { page } from '$app/stores';
   import { onMount } from 'svelte';
+  import { _ } from 'svelte-i18n';
   import CardRequirementsModal from '../ui/CardRequirementsModal.svelte';
   import CardChoiceModal from '../ui/CardChoiceModal.svelte';
   import WoodenTable from '../../layout/WoodenTable.svelte';
@@ -193,7 +194,7 @@
     console.error('❌ Play card error from server:', error);
     
     // Show error to user (you might want to replace this with a proper notification system)
-    alert(`Card play failed: ${error}`);
+    alert($_('game.cardPlayFailed', { values: { error } }));
     
     // Reset the card playing state so user can try again
     resetCardPlayingState();
@@ -208,7 +209,7 @@
     
     // Get the current player's cards from the game status directly
     if (!gameStatus || !gameStatus.yourCards || gameStatus.yourCards.length === 0) {
-      alert('Error: No cards available to choose from');
+      alert($_('game.noCardsAvailable'));
       return;
     }
     
@@ -218,7 +219,7 @@
   
   // Handle card choice error from server
   function handleCardChoiceError(error: string) {
-    alert(`Card choice failed: ${error}`);
+    alert($_('game.cardChoiceFailed', { values: { error } }));
   }
   
   // Handle modal events
@@ -243,7 +244,7 @@
       showCardChoiceModal = false;
       cardsToChoose = [];
     } catch (error) {
-      alert(`Failed to submit card choice: ${error}`);
+      alert($_('game.failedToSubmitCardChoice', { values: { error: String(error) } }));
     }
   }
   
@@ -344,9 +345,10 @@
       console.error('❌ Error sending card play request:', error);
       // Let the PlayCardError handler deal with server-side errors
       // For client-side errors, we could show a different message
-      alert(`Failed to send card play request: ${error}`);
+      alert($_('game.failedToSendCardPlayRequest', { values: { error: String(error) } }));
       resetCardPlayingState();
-    }  }
+    }
+  }
 
   // Handle clicking on a player's card
   async function handleCardClick(cardType: CardType) {

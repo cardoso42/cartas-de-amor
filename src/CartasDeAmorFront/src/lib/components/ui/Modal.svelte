@@ -2,6 +2,7 @@
 <script lang="ts">
   import { createEventDispatcher } from 'svelte';
   import { fly, fade } from 'svelte/transition';
+  import { _ } from 'svelte-i18n';
   
   // Props
   export let isOpen = false;
@@ -75,7 +76,7 @@
             <button 
               class="close-button" 
               on:click={close}
-              aria-label="Close modal"
+              aria-label={$_('game.closeModal')}
               type="button"
             >
               ×

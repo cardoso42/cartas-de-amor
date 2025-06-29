@@ -8,7 +8,8 @@
 </script>
 
 <script lang="ts">
-  import { createEventDispatcher, afterUpdate } from 'svelte';
+  import { createEventDispatcher, afterUpdate, onMount } from 'svelte';
+  import { _ } from 'svelte-i18n';
 
   export let logEntries: LogEntry[] = [];
   export let isCollapsed: boolean = false;
@@ -21,24 +22,33 @@
   let logContainer: HTMLElement;
   let previousLogCount = 0;
 
-  // Auto-scroll to bottom when new entries are added (newest entries appear at bottom)
-  afterUpdate(() => {
-    if (logContainer && logEntries.length > previousLogCount && previousLogCount > 0) {
-      // Check if user is already at or near the bottom (within 50px tolerance)
-      const scrolledDistance = logContainer.scrollTop + logContainer.clientHeight;
-      const tolerance = logContainer.scrollHeight - logContainer.clientHeight * 0.1;
+  // Local storage key
+  const COLLAPSE_STATE_KEY = 'gameLogCollapsed';
 
-      if (scrolledDistance >= tolerance) {
-        setTimeout(() => {
-          logContainer.scrollTop = logContainer.scrollHeight;
-        }, 10);
-      }
+  onMount(() => {
+    // Load collapse state from localStorage
+    const savedState = localStorage.getItem(COLLAPSE_STATE_KEY);
+    if (savedState !== null) {
+      isCollapsed = JSON.parse(savedState);
     }
-    previousLogCount = logEntries.length;
+
+    // Auto-scroll to bottom when new entries are added (newest entries appear at bottom)
+    if (logContainer) {
+      logContainer.scrollTop = logContainer.scrollHeight;
+    }
   });
+
+  // Watch for changes in log entries to auto-scroll
+  $: if (logContainer && logEntries.length > 0) {
+    // Use setTimeout to ensure DOM is updated
+    setTimeout(() => {
+      logContainer.scrollTop = logContainer.scrollHeight;
+    }, 0);
+  }
 
   function toggleCollapse() {
     isCollapsed = !isCollapsed;
+    localStorage.setItem(COLLAPSE_STATE_KEY, JSON.stringify(isCollapsed));
     dispatch('toggle', { collapsed: isCollapsed });
   }
 
@@ -74,14 +84,14 @@
 <div class="game-log" class:collapsed={isCollapsed}>
   <div class="log-header">
     {#if !isCollapsed}
-      <h3>Game Log</h3>
+      <h3>{$_('game.gameLog')}</h3>
     {/if}
     <div class="log-controls">
       {#if !isCollapsed}
         <button 
           class="log-control-btn" 
           on:click={clearLog} 
-          title="Clear log"
+          title={$_('game.clearLog')}
           disabled={logEntries.length === 0}
         >
           <span class="material-icons">delete</span>
@@ -90,7 +100,7 @@
       <button 
         class="log-control-btn" 
         on:click={toggleCollapse} 
-        title={isCollapsed ? 'Expand log' : 'Collapse log'}
+        title={isCollapsed ? $_('game.expandLog') : $_('game.collapseLog')}
       >
         <span class="material-icons">{isCollapsed ? 'open_in_full' : 'close_fullscreen'}</span>
       </button>
@@ -101,7 +111,7 @@
     <div class="log-content" bind:this={logContainer}>
       {#if logEntries.length === 0}
         <div class="log-empty">
-          <p>No game events yet...</p>
+          <p>{$_('game.noGameEventsYet')}</p>
         </div>
       {:else}
         {#each logEntries.slice().reverse() as entry (entry.id)}

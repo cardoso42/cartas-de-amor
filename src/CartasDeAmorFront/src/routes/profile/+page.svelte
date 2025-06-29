@@ -10,6 +10,7 @@
   import { goto } from '$app/navigation';
   import auth from '$lib/stores/authStore';
   import user from '$lib/stores/userStore';
+  import { _ } from 'svelte-i18n';
   
   // User data state
   let userData: UserData = {
@@ -61,13 +62,13 @@
   
   async function saveUsername() {
     if (!newUsername.trim()) {
-      message = 'Username cannot be empty';
+      message = $_('common.usernameCannotBeEmpty');
       messageType = 'error';
       return;
     }
     
     if (newUsername === userData.username) {
-      message = 'No changes were made';
+      message = $_('common.noChangesMade');
       messageType = 'error';
       return;
     }
@@ -93,7 +94,7 @@
         messageType = 'error';
       }
     } catch (error) {
-      message = 'An unexpected error occurred';
+      message = $_('common.unexpectedError');
       messageType = 'error';
       console.error('Username update error:', error);
     } finally {
@@ -132,7 +133,7 @@
         });
       } else {
         // If profile couldn't be loaded, show error
-        message = 'Could not load profile data. Please try again later.';
+        message = $_('common.couldNotLoadProfile');
         messageType = 'error';
       }
     }
@@ -140,12 +141,12 @@
 </script>
 
 <svelte:head>
-  <title>My Profile | Love Letter</title>
+  <title>{$_('navigation.profile')} | {$_('app.name')}</title>
 </svelte:head>
 
 <AuthGuard requireAuth={true} redirectTo="/login">
   <div class="profile-container">
-    <h1>My Profile</h1>
+    <h1>{$_('navigation.profile')}</h1>
     
     {#if message}
       <div class="message {messageType}">
@@ -166,11 +167,11 @@
       <div class="profile-content">
           <div class="profile-info">
             <div class="info-row">
-              <span class="info-label">Username</span>
+              <span class="info-label">{$_('auth.username')}</span>
               {#if !isEditingUsername}
                 <div class="info-value-container">
                   <span class="info-value">{userData.username}</span>
-                  <button class="edit-button" on:click={startEditingUsername} title="Edit username">
+                  <button class="edit-button" on:click={startEditingUsername} title={$_('common.editUsername')}>
                     <span class="material-icons">edit</span>
                   </button>
                 </div>
@@ -188,38 +189,38 @@
                       on:click={saveUsername}
                       disabled={isUpdatingUsername}
                     >
-                      {isUpdatingUsername ? 'Saving...' : 'Save'}
+                      {isUpdatingUsername ? $_('common.saving') : $_('common.save')}
                     </button>
                     <button 
                       class="cancel-button" 
                       on:click={cancelEditingUsername}
                       disabled={isUpdatingUsername}
                     >
-                      Cancel
+                      {$_('common.cancel')}
                     </button>
                   </div>
                 </div>
               {/if}
             </div>
             <div class="info-row">
-              <span class="info-label">Email</span>
+              <span class="info-label">{$_('auth.email')}</span>
               <span class="info-value">{userData.email}</span>
             </div>
             <div class="info-row">
-              <span class="info-label">Member Since</span>
+              <span class="info-label">{$_('common.memberSince')}</span>
               <span class="info-value">{userData.joinedDate ? new Date(userData.joinedDate).toLocaleDateString() : 'N/A'}</span>
             </div>
             
             <div class="button-group">
-              <button class="danger" on:click={toggleDeleteConfirm}>Delete Account</button>
+              <button class="danger" on:click={toggleDeleteConfirm}>{$_('common.deleteAccount')}</button>
             </div>
             
             {#if showDeleteConfirm}
               <div class="delete-confirmation">
-                <p>Are you sure you want to delete your account? This action cannot be undone.</p>
+                <p>{$_('common.deleteAccountConfirm')}</p>
                 <div class="button-group">
-                  <button class="primary" on:click={toggleDeleteConfirm}>Cancel</button>
-                  <button class="danger" on:click={confirmDeleteAccount}>Confirm Delete</button>
+                  <button class="primary" on:click={toggleDeleteConfirm}>{$_('common.cancel')}</button>
+                  <button class="danger" on:click={confirmDeleteAccount}>{$_('common.confirm')}</button>
                 </div>
               </div>
             {/if}

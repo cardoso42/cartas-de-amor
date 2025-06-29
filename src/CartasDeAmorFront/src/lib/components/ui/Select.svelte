@@ -1,13 +1,14 @@
 <!-- Select.svelte -->
 <script lang="ts">
   import { createEventDispatcher } from 'svelte';
+  import { _ } from 'svelte-i18n';
 
   export let id: string = '';
   export let name: string = '';
   export let label: string = '';
   export let value: string = '';
   export let options: { value: string; label: string; disabled?: boolean }[] = [];
-  export let placeholder: string = 'Select an option';
+  export let placeholder: string = $_('ui.selectOption');
   export let required: boolean = false;
   export let disabled: boolean = false;
   export let error: string = '';

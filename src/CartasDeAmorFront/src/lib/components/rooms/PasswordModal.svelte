@@ -1,5 +1,6 @@
 <script lang="ts">
   import { createEventDispatcher } from 'svelte';
+  import { _ } from 'svelte-i18n';
   
   export let open: boolean;
   
@@ -29,18 +30,18 @@
 {#if open}
   <div class="modal-overlay">
     <div class="modal">
-      <h3>Enter Password</h3>
-      <p>This room requires a password to join.</p>
+      <h3>{$_('auth.enterPassword')}</h3>
+      <p>{$_('rooms.roomRequiresPassword')}</p>
       <form on:submit|preventDefault={handleSubmit}>
         <input 
           type="text" 
-          placeholder="Room password" 
+          placeholder={$_('rooms.roomPassword')} 
           bind:value={password}
           use:focusOnMount
         />
         <div class="modal-actions">
-          <button type="button" class="secondary small" on:click={handleCancel}>Cancel</button>
-          <button type="submit" class="small">Join Room</button>
+          <button type="button" class="secondary small" on:click={handleCancel}>{$_('common.cancel')}</button>
+          <button type="submit" class="small">{$_('rooms.joinRoomButton')}</button>
         </div>
       </form>
     </div>

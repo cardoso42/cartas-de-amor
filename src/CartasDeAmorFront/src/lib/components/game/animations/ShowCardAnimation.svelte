@@ -1,6 +1,7 @@
 <!-- ShowCardAnimation.svelte -->
 <script lang="ts">
   import { onMount, createEventDispatcher } from 'svelte';
+  import { _ } from 'svelte-i18n';
   import { getCardName } from '$lib/utils/cardUtils';
   import type { CardType } from '$lib/types/game-types';
 
@@ -61,6 +62,9 @@
   $: if (isVisible && !animationComplete && !hasStarted) {
     startAnimation();
   }
+
+  // Get card name from type
+  $: cardName = getCardName(cardType);
 </script>
 
 {#if isVisible && !animationComplete}
@@ -89,8 +93,8 @@
       <!-- Card front (visible during second half of flipping and revealed) -->
       <div class="card-face card-front" class:visible={phase === 'revealed' || phase === 'returning'}>
         <div class="card-content">
-          <div class="card-number">{getCardName(cardType)}</div>
-          <div class="card-name">Card {cardType}</div>
+          <div class="card-number">{cardName}</div>
+          <div class="card-name">{cardName}</div>
         </div>
       </div>
     </div>
@@ -98,7 +102,7 @@
     <!-- Information text -->
     {#if phase === 'revealed'}
       <div class="info-text">
-        You saw {targetPlayerName}'s card!
+        {$_('game.youSawCard', { values: { playerName: targetPlayerName } })}
       </div>
     {/if}
   </div>

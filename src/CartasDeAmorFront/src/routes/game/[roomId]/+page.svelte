@@ -17,6 +17,7 @@
   import { InteractionBlocker, GameLog } from '$lib/components/game/ui';
   import type { LogEntry } from '$lib/components/game/ui/GameLog.svelte';
   import { NavigationGuard } from '$lib/utils/navigationGuard';
+  import { _ } from 'svelte-i18n';
   import type { 
     InitialGameStatusDto, 
     PrivatePlayerUpdateDto, 
@@ -95,7 +96,7 @@
         // Don't leave for normal navigation within the app
         if (reason === 'manual' || reason === 'page_close') {
           if (gameStatus) {
-            showNotification('Leaving game room...', 'info');
+            showNotification($_('rooms.leavingGameRoom'), 'info');
           }
           
           gameStore.set({
@@ -161,9 +162,9 @@
     // Check if game is in progress
     const isGameInProgress = gameStatus !== null;
     
-    let confirmMessage = 'Are you sure you want to leave the room?';
+    let confirmMessage = $_('game.confirmLeaveRoom');
     if (isGameInProgress) {
-      confirmMessage = 'Are you sure you want to leave the room?\n\nWarning: You will quit and automatically lose the game if you continue!';
+      confirmMessage = $_('game.confirmLeaveRoomGame');
     }
     
     const confirmed = confirm(confirmMessage);
@@ -224,12 +225,12 @@
     // Handle undefined or null email
     if (!email) {
       console.warn('getPlayerDisplayName called with undefined/null email');
-      return 'Unknown Player';
+      return $_('game.unknownPlayer');
     }
     
     // If it's the current user, return "You"
     if (email === userEmail) {
-      return 'You';
+      return $_('game.you');
     }
     
     // Try to find the player in the game status to get their username
@@ -409,8 +410,6 @@
     }
   }
 
-
-
   // Initialize SignalR and join room on mount
   onMount(async () => {
     try {
@@ -441,12 +440,12 @@
             players = [...players, playerEmail];
           }
           const playerName = getPlayerDisplayName(playerEmail);
-          showNotification(`Player joined: ${playerName}`, 'info');
+          showNotification($_('game.playerJoined', { values: { playerName } }), 'info');
         },
         onUserLeft: (playerEmail: string) => {
           const playerName = getPlayerDisplayName(playerEmail);
           removePlayerFromGame(playerEmail);
-          showNotification(`Player left: ${playerName}`, 'info');
+          showNotification($_('game.playerLeft', { values: { playerName } }), 'info');
         },
         onUsernameChanged: (userEmail: string, newUsername: string) => {
           const oldDisplayName = getPlayerDisplayName(userEmail);
@@ -465,7 +464,7 @@
             user.updateUser({ username: newUsername });
           }
           
-          showNotification(`${oldDisplayName} changed username to ${newUsername}`, 'info');
+          showNotification($_('game.usernameChanged', { values: { oldName: oldDisplayName, newName: newUsername } }), 'info');
         },
         onCurrentGameStatus: (initialGameStatus: InitialGameStatusDto | null) => {
           if (initialGameStatus) {           
@@ -565,19 +564,19 @@
             }
             
             // Add round started notification to log
-            showNotification('New round started!', 'success');
+            showNotification($_('game.newRoundStarted'), 'success');
             const firstPlayerName = getPlayerDisplayName(currentTurnPlayerEmail);
-            showNotification(`${firstPlayerName} will go first`, 'info');
+            showNotification($_('game.willGoFirst', { values: { playerName: firstPlayerName } }), 'info');
           });
         },
         onNextTurn: (playerEmail: string) => {
           currentTurnPlayerEmail = playerEmail;
           const playerName = getPlayerDisplayName(playerEmail);
-          showNotification(`Turn: ${playerName}`, 'info');
+          showNotification($_('game.turn', { values: { playerName } }), 'info');
         },
         onPlayerDrewCard: (playerEmail: string) => {
           const playerName = getPlayerDisplayName(playerEmail);
-          showNotification(`${playerName} drew a card`, 'info');
+          showNotification($_('game.cardDrawn', { values: { playerName } }), 'info');
           
           // Get deck position and player position for animation
           let deckPosition = { x: window.innerWidth / 2, y: window.innerHeight / 2, width: 70, height: 98 };
@@ -635,14 +634,14 @@
         },
         onDrawCardError: (error: string) => {
           console.error('Draw card error:', error);
-          showError(`Failed to draw card: ${error}`);
-          showNotification(`Draw card failed: ${error}`, 'error');
+          showError($_('game.failedToDrawCard', { values: { error } }));
+          showNotification($_('game.drawCardFailed', { values: { error } }), 'error');
         },
         onGameStartError: (error: string) => {
           console.error('Game start error:', error);
           isGameStarting = false;
-          showError(`Failed to start game: ${error}`);
-          showNotification(`Game start failed: ${error}`, 'error');
+          showError($_('game.failedToStartGame', { values: { error } }));
+          showNotification($_('game.gameStartFailed', { values: { error } }), 'error');
         },
         // New MessageFactory events replace old CardResult events
         onPlayCard: (data: { player: string; cardType: number }) => {
@@ -650,7 +649,7 @@
           const playedCard = data.cardType as CardType;
           const playerName = getPlayerDisplayName(playerEmail);
           
-          showNotification(`${playerName} played ${getCardName(playedCard)}`, 'info');
+          showNotification($_('game.playedCard', { values: { playerName, playedCard }}), 'info');
           
           // Get card source position from player's hand
           let sourcePosition = { x: window.innerWidth / 2, y: window.innerHeight / 2, width: 50, height: 70 };
@@ -689,7 +688,7 @@
           // Validate data before using it
           if (!data.invoker || !data.target || data.cardType === undefined) {
             console.error('GuessCard event received with invalid data:', data);
-            showNotification('Someone made a guess', 'info');
+            showNotification($_('game.someoneMadeGuess'), 'info');
             return;
           }
           
@@ -698,7 +697,7 @@
           const targetName = getPlayerDisplayName(data.target);
           const guessedCardType = data.cardType as CardType;
           
-          showNotification(`${invokerName} guessed ${targetName} has ${getCardName(data.cardType)}`, 'info');
+          showNotification($_('game.guessedCard', { values: { invokerName, targetName, cardName: getCardName(data.cardType) } }), 'info');
           
           // Queue guess card animation using animation manager
           animationManager.queueGuessCardAnimation({
@@ -714,7 +713,7 @@
           if (data.invoker === userEmail) return;
           
           // Show notification immediately to preserve event order
-          showNotification(`${invokerName} looked at ${targetName}'s card`, 'info');
+          showNotification($_('game.lookedAtCard', { values: { invokerName, targetName } }), 'info');
           
           // Get positions for the animation
           let targetPosition = { x: window.innerWidth / 2, y: window.innerHeight / 2, width: 50, height: 70 };
@@ -746,7 +745,7 @@
           // Only show animation if this is relevant to the current user
           // (i.e., the current user is the one who gets to see the card)
           const targetPlayerName = getPlayerDisplayName(data.target);
-          showNotification(`${targetPlayerName}'s card is ${data.cardType}'`, 'info');
+          showNotification($_('game.cardIs', { values: { playerName: targetPlayerName, cardType: data.cardType } }), 'info');
           
           // Get specific card position from GameTable
           let sourcePosition = { x: window.innerWidth / 2, y: window.innerHeight / 2 };
@@ -783,7 +782,7 @@
         onCompareCards: (data: { invoker: string; target: string }) => {
           const invokerName = getPlayerDisplayName(data.invoker);
           const targetName = getPlayerDisplayName(data.target);
-          showNotification(`${invokerName} compared cards with ${targetName}`, 'info');
+          showNotification($_('game.comparedCards', { values: { invokerName, targetName } }), 'info');
           
           // Get positions for the animation
           let targetPosition = { x: window.innerWidth / 2, y: window.innerHeight / 2, width: 50, height: 70 };
@@ -814,19 +813,19 @@
         onComparisonTie: (data: { invoker: string; target: string }) => {
           const invokerName = getPlayerDisplayName(data.invoker);
           const targetName = getPlayerDisplayName(data.target);
-          showNotification(`${invokerName} and ${targetName} tied in comparison`, 'info');
+          showNotification($_('game.tiedInComparison', { values: { invokerName, targetName } }), 'info');
         },
         onDiscardCard: (data: { target: string; cardType: number }) => {
           const targetName = getPlayerDisplayName(data.target);
           const cardName = getCardName(data.cardType);
-          showNotification(`${targetName} discarded ${cardName}`, 'info');
+          showNotification($_('game.discardedCard', { values: { playerName: targetName, cardName } }), 'info');
         },
         onDrawCard: (data: { player: string }) => {
           const playerEmail = data.player;
           const playerName = getPlayerDisplayName(playerEmail);
           
           // Show notification immediately to preserve event order
-          showNotification(`${playerName} drew a card`, 'info');
+          showNotification($_('game.cardDrawn', { values: { playerName } }), 'info');
           
           // Get deck position and player position for animation
           let deckPosition = { x: window.innerWidth / 2, y: window.innerHeight / 2, width: 70, height: 98 };
@@ -861,7 +860,7 @@
         },
         onCardReturnedToDeck: (data: { player: string; cardCount: number }) => {
           const playerName = getPlayerDisplayName(data.player);
-          showNotification(`${playerName} returned ${data.cardCount} card(s) to the deck`, 'info');
+          showNotification($_('game.returnedCardsToDeck', { values: { playerName, cardCount: data.cardCount } }), 'info');
           
           // Get player position and deck position for animation
           let playerPosition = { x: window.innerWidth / 2, y: window.innerHeight / 2, width: 65, height: 90 };
@@ -899,7 +898,7 @@
           const eliminatedPlayerName = getPlayerDisplayName(data.player);
           
           // Show notification immediately to preserve event order
-          showNotification(`${eliminatedPlayerName} was eliminated!`, 'warning');
+          showNotification($_('game.wasEliminated', { values: { playerName: eliminatedPlayerName } }), 'warning');
           
           const tableCenter = getGameTableCenter();
           
@@ -912,19 +911,19 @@
         onSwitchCards: (data: { invoker: string; target: string }) => {
           const invokerName = getPlayerDisplayName(data.invoker);
           const targetName = getPlayerDisplayName(data.target);
-          showNotification(`${invokerName} switched cards with ${targetName}`, 'info');
+          showNotification($_('game.switchedCards', { values: { invokerName, targetName } }), 'info');
         },
         onPlayerProtected: (data: { player: string }) => {
           const playerName = getPlayerDisplayName(data.player);
-          showNotification(`${playerName} is now protected for 1 turn`, 'info');
+          showNotification($_('game.nowProtected', { values: { playerName } }), 'info');
         },
         onChooseCard: (data: { player: string }) => {
           // This indicates the player needs to choose cards (like Chancellor effect)
           const playerName = getPlayerDisplayName(data.player);
           if (data.player === userEmail) {
-            showNotification('You need to choose which cards to keep', 'info');
+            showNotification($_('game.needToChooseCards'), 'info');
           } else {
-            showNotification(`${playerName} needs to choose cards`, 'info');
+            showNotification($_('game.needsToChooseCards', { values: { playerName } }), 'info');
           }
         },
         onPublicPlayerUpdate: (data: PublicPlayerUpdateDto) => {
@@ -932,20 +931,20 @@
         },
         // Other game events
         onCardChoiceSubmitted: (playerUpdate: PublicPlayerUpdateDto) => {
-          showNotification(`${getPlayerDisplayName(playerUpdate.userEmail)} submitted their card choice`, 'info');
+          showNotification($_('game.submittedCardChoice', { values: { playerName: getPlayerDisplayName(playerUpdate.userEmail) } }), 'info');
         },
         onCardChoiceError: (error: string) => {
           console.error('Card choice error:', error);
-          showError(`Failed to submit card choice: ${error}`);
-          showNotification(`Card choice failed: ${error}`, 'error');
+          showError($_('game.failedToSubmitCardChoice', { values: { error } }));
+          showNotification($_('game.cardChoiceFailed', { values: { error } }), 'error');
         },
         onMandatoryCardPlay: (message: string, requiredCardType: number) => {
-          showError(`You must play the ${getCardName(requiredCardType)} card! ${message}`);
-          showNotification(`You must play ${getCardName(requiredCardType)}! ${message}`, 'warning');
+          showError($_('game.mustPlayCard', { values: { cardName: getCardName(requiredCardType), message } }));
+          showNotification($_('game.mustPlayCard', { values: { cardName: getCardName(requiredCardType), message } }), 'warning');
         },
         onRoundWinners: (winners: string[]) => {
           const winnerNames = winners.map(email => getPlayerDisplayName(email));
-          showNotification(`Round won by: ${winnerNames.join(', ')}`, 'success');
+          showNotification($_('game.roundWonBy', { values: { winnerNames: winnerNames.join(', ') } }), 'success');
           
           // Queue round winners animation using animation manager
           animationManager.queueRoundWinnersAnimation({
@@ -955,7 +954,7 @@
         },
         onBonusPoints: (players: string[]) => {
           const playerNames = players.map(email => getPlayerDisplayName(email)).join(', ');
-          showNotification(`Bonus points awarded to: ${playerNames}`, 'success');
+          showNotification($_('game.bonusPointsAwarded', { values: { playerNames } }), 'success');
         },
         onGameOver: (winners: string[]) => {
           const winnerNames = winners.map(email => getPlayerDisplayName(email));
@@ -998,26 +997,26 @@
 <AuthGuard requireAuth={true} redirectTo="/login">
   <div class="game-container">
     <header class="game-header">
-      <h1>Game Room: {roomName}</h1>
+      <h1>{$_('game.gameRoom')}: {roomName}</h1>
       <div class="game-actions">
         {#if isRoomOwner && !gameStatus}
           <button on:click={startGame} disabled={isGameStarting || players.length < 2 || !isConnected} class="primary">
-            {#if isGameStarting}Starting...{:else}Start Game{/if}
+            {#if isGameStarting}{$_('game.starting')}{:else}{$_('game.startGame')}{/if}
           </button>
         {/if}
-        <button on:click={confirmLeaveRoom} class="danger small">Leave Room</button>
+        <button on:click={confirmLeaveRoom} class="danger small">{$_('rooms.leaveRoom')}</button>
       </div>
     </header>
 
     <div class="connection-status" class:connected={isConnected}>
       {#if isConnected}
-        <span class="status-indicator"></span> Connected to game server
+        <span class="status-indicator"></span> {$_('game.connected')}
       {:else}
         <span class="status-indicator"></span> 
         {#if connectionError}
-          Connection error: {connectionError}
+          {$_('game.connectionError')}: {connectionError}
         {:else}
-          Connecting to game server...
+          {$_('game.connecting')}
         {/if}
       {/if}
     </div>

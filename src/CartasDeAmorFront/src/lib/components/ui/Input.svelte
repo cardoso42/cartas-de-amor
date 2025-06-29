@@ -1,6 +1,7 @@
 <!-- Input.svelte - Reusable input component -->
 <script lang="ts">
   import { createEventDispatcher } from 'svelte';
+  import { _ } from 'svelte-i18n';
   
   // Props
   export let type: 'text' | 'email' | 'password' | 'number' | 'tel' | 'url' | 'search' = 'text';
@@ -61,7 +62,7 @@
     <label for={inputId} class="form-label">
       {label}
       {#if required}
-        <span class="form-required" aria-label="required">*</span>
+        <span class="form-required" aria-label={$_('common.required')}>*</span>
       {/if}
     </label>
   {/if}

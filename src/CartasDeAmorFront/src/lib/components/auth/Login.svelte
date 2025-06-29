@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { login } from '$lib/services/authService';
 	import { goto } from '$app/navigation';
+	import { _ } from 'svelte-i18n';
 
 	let email = '';
 	let password = '';
@@ -9,7 +10,7 @@
 
 	async function handleSubmit() {
 		if (!email || !password) {
-			errorMessage = 'Please enter both email and password.';
+			errorMessage = $_('auth.enterEmailPassword');
 			return;
 		}
 
@@ -23,11 +24,11 @@
 				// Redirect to the main page or dashboard after successful login
 				goto('/dashboard');
 			} else {
-				errorMessage = result.message || 'Login failed. Please check your credentials.';
+				errorMessage = result.message || $_('auth.loginFailed');
 			}
 		} catch (error) {
 			console.error('Login error:', error);
-			errorMessage = 'An error occurred during login. Please try again.';
+			errorMessage = $_('auth.loginError');
 		} finally {
 			loading = false;
 		}
@@ -36,7 +37,7 @@
 
 <div class="login-container">
 	<div class="login-form">
-		<h1>Login</h1>
+		<h1>{$_('auth.login')}</h1>
 
 		<form on:submit|preventDefault={handleSubmit}>
 			{#if errorMessage}
@@ -44,31 +45,31 @@
 			{/if}
 
 			<div class="form-group">
-				<label for="email">Email</label>
+				<label for="email">{$_('auth.email')}</label>
 				<input
 					type="text"
 					id="email"
 					bind:value={email}
 					disabled={loading}
-					placeholder="Enter your email"
+					placeholder={$_('auth.enterEmail')}
 					autocomplete="email"
 				/>
 			</div>
 
 			<div class="form-group">
-				<label for="password">Password</label>
+				<label for="password">{$_('auth.password')}</label>
 				<input
 					type="password"
 					id="password"
 					bind:value={password}
 					disabled={loading}
-					placeholder="Enter your password"
+					placeholder={$_('auth.enterPassword')}
 					autocomplete="current-password"
 				/>
 			</div>
 
 			<button type="submit" disabled={loading}>
-				{loading ? 'Logging in...' : 'Login'}
+				{loading ? $_('auth.loggingIn') : $_('auth.login')}
 			</button>
 		</form>
 	</div>

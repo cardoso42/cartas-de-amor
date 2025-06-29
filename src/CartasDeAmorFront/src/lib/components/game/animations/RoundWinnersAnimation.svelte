@@ -1,6 +1,7 @@
 <!-- RoundWinnersAnimation.svelte -->
 <script lang="ts">
   import { onMount, createEventDispatcher } from 'svelte';
+  import { _ } from 'svelte-i18n';
 
   export let center: { x: number; y: number };
   export let winnerNames: string[] = [];
@@ -52,8 +53,8 @@
 
   // Format winner names for display
   $: displayText = winnerNames.length === 1 
-    ? `🏆 ${winnerNames[0]} Wins! 🏆` 
-    : `🏆 Round Winners: ${winnerNames.join(', ')} 🏆`;
+    ? `🏆 ${winnerNames[0]} ${$_('game.wins')}! 🏆` 
+    : `🏆 ${$_('game.roundWinners')}: ${winnerNames.join(', ')} 🏆`;
 </script>
 
 {#if isVisible && !animationComplete}
@@ -80,7 +81,7 @@
 
         <!-- Winner announcement -->
         <div class="winner-announcement">
-          <h2 class="victory-title">Round Complete!</h2>
+          <h2 class="victory-title">{$_('game.roundComplete')}!</h2>
           <div class="winner-names">{displayText}</div>
         </div>
       </div>

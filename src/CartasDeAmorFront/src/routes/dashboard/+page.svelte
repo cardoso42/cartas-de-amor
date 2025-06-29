@@ -1,6 +1,7 @@
 <script lang="ts">
   import { logout } from '$lib/services/authService';
   import AuthGuard from '$lib/components/auth/AuthGuard.svelte';
+  import { _ } from 'svelte-i18n';
 
   function handleLogout() {
     logout();
@@ -8,33 +9,33 @@
 </script>
 
 <svelte:head>
-  <title>Dashboard | Love Letter</title>
+  <title>{$_('navigation.dashboard')} | {$_('app.name')}</title>
 </svelte:head>
 
 <AuthGuard requireAuth={true} redirectTo="/welcome">
   <div class="dashboard-container">
-    <h1>Welcome to Love Letter</h1>
+    <h1>{$_('common.welcome')} {$_('app.name')}</h1>
     
     <div class="dashboard-grid">
       <div class="dashboard-card">
         <div class="card-icon">🎮</div>
-        <h2>Play Game</h2>
-        <p>Join a game room or create a new one to play with friends.</p>
-        <a href="/rooms" class="button">Game Lobby</a>
+        <h2>{$_('common.playGame')}</h2>
+        <p>{$_('common.playGameDescription')}</p>
+        <a href="/rooms" class="button">{$_('navigation.rooms')}</a>
       </div>
       
       <div class="dashboard-card">
         <div class="card-icon">👤</div>
-        <h2>My Profile</h2>
-        <p>View and edit your profile information and game statistics.</p>
-        <a href="/profile" class="button">View Profile</a>
+        <h2>{$_('navigation.profile')}</h2>
+        <p>{$_('common.profileDescription')}</p>
+        <a href="/profile" class="button">{$_('common.viewProfile')}</a>
       </div>
       
       <div class="dashboard-card">
         <div class="card-icon">📜</div>
-        <h2>Game Rules</h2>
-        <p>Review the rules and learn how to play Love Letter.</p>
-        <a href="/rules" class="button">Read Rules</a>
+        <h2>{$_('navigation.rules')}</h2>
+        <p>{$_('common.rulesDescription')}</p>
+        <a href="/rules" class="button">{$_('common.readRules')}</a>
       </div>
       
       <!-- <div class="dashboard-card"> -->

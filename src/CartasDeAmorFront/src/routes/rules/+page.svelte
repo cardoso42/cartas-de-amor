@@ -1,95 +1,87 @@
 <script lang="ts">
   import AuthGuard from '$lib/components/auth/AuthGuard.svelte';
+  import { _ } from 'svelte-i18n';
 </script>
 
 <svelte:head>
-  <title>Game Rules | Love Letter</title>
+  <title>{$_('navigation.rules')} | {$_('app.name')}</title>
 </svelte:head>
 
 <AuthGuard requireAuth={false}>
   <div class="rules-container">
-    <h1>Love Letter - Game Rules</h1>
+    <h1>{$_('app.name')} - {$_('navigation.rules')}</h1>
     
     <section>
-      <h2>Overview</h2>
+      <h2>{$_('rules.overview')}</h2>
       <p>
-        In the game Love Letter, players take on the role of potential suitors seeking to deliver 
-        their love letter to the Princess. The player whose letter reaches the princess wins her heart and the game.
+        {$_('rules.overviewText')}
       </p>
     </section>
     
     <section>
-      <h2>Gameplay</h2>
+      <h2>{$_('rules.gameplay')}</h2>
       <p>
-        Players take turns clockwise around the table. On your turn:<br>
-        1. Draw the top card from the deck.<br>
-        2. Choose one of your two cards to play and place it face-up in front of you.<br>
-        3. Follow the instructions on the played card.<br>
-        4. After playing a card, if you are still in the round, you should have exactly one card in hand.
+        {$_('rules.gameplayText')}
       </p>
     </section>
     
     <section>
-      <h2>Card Types</h2>
+      <h2>{$_('rules.cardTypes')}</h2>
       <div class="cards-grid">
         <div class="card">
-          <h3>9 - Princess</h3>
-          <p>If you discard this card, you are out of the round.</p>
+          <h3>9 - {$_('cards.princess')}</h3>
+          <p>{$_('rules.princessDescription')}</p>
         </div>
         <div class="card">
-          <h3>8 - Countess</h3>
-          <p>If you have this card and the King or Prince in your hand, you must discard this card.</p>
+          <h3>8 - {$_('cards.countess')}</h3>
+          <p>{$_('rules.countessDescription')}</p>
         </div>
         <div class="card">
-          <h3>7 - King</h3>
-          <p>Trade hands with another player of your choice.</p>
+          <h3>7 - {$_('cards.king')}</h3>
+          <p>{$_('rules.kingDescription')}</p>
         </div>
         <div class="card">
-          <h3>6 - Chancellor</h3>
-          <p>Draw two additional cards from the deck, choose one of them to keep and return the other two to the bottom of the deck.</p>
+          <h3>6 - {$_('cards.chanceller')}</h3>
+          <p>{$_('rules.chancellorDescription')}</p>
         </div>
         <div class="card">
-          <h3>5 - Prince</h3>
-          <p>Choose any player (including yourself) to discard their hand and draw a new card.</p>
+          <h3>5 - {$_('cards.prince')}</h3>
+          <p>{$_('rules.princeDescription')}</p>
         </div>
         <div class="card">
-          <h3>4 - Handmaid</h3>
-          <p>Until your next turn, you are immune to the effects of other players' cards.</p>
+          <h3>4 - {$_('cards.handmaid')}</h3>
+          <p>{$_('rules.handmaidDescription')}</p>
         </div>
         <div class="card">
-          <h3>3 - Baron</h3>
-          <p>Compare hands with another player. The player with the lower-value card is out of the round.</p>
+          <h3>3 - {$_('cards.baron')}</h3>
+          <p>{$_('rules.baronDescription')}</p>
         </div>
         <div class="card">
-          <h3>2 - Priest</h3>
-          <p>Look at another player's hand.</p>
+          <h3>2 - {$_('cards.priest')}</h3>
+          <p>{$_('rules.priestDescription')}</p>
         </div>
         <div class="card">
-          <h3>1 - Guard</h3>
-          <p>Name a card (except Guard). If another player has that card, they are out of the round.</p>
+          <h3>1 - {$_('cards.guard')}</h3>
+          <p>{$_('rules.guardDescription')}</p>
         </div>
         <div class="card">
-          <h3>0 - Spy</h3>
-          <p>If you are the only non-eliminated player at the end of the round who played it, you get an extra point (even if you didn't win the round).</p>
+          <h3>0 - {$_('cards.spy')}</h3>
+          <p>{$_('rules.spyDescription')}</p>
         </div>
       </div>
     </section>
     
     <section>
-      <h2>End of a Round</h2>
+      <h2>{$_('rules.endOfRound')}</h2>
       <p>
-        A round ends when:<br>
-        - The deck is empty after a player's turn.<br>
-        - All players except one are out of the round.<br>
-        <br>
-        The player still in the round or the player with the highest-value card wins the round and receives a token of affection.
+        {$_('rules.endOfRoundText')}
       </p>
     </section>
     
     <section>
-      <h2>Winning the Game</h2>
+      <h2>{$_('rules.winningGame')}</h2>
       <p>
-        The first player to collect a certain number of tokens (depending on the number of players) wins the game.
+        {$_('rules.winningGameText')}
       </p>
     </section>
   </div>

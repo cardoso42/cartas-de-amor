@@ -41,6 +41,7 @@
 		"vitest": "^3.2.3"
 	},
 	"dependencies": {
-		"@microsoft/signalr": "^8.0.7"
+		"@microsoft/signalr": "^8.0.7",
+		"svelte-i18n": "^4.0.1"
 	}
 }

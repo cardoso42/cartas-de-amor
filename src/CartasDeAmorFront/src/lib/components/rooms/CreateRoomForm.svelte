@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { createEventDispatcher } from 'svelte';
 	import { Card, Button, Input } from '$lib/components/ui';
+	import { _ } from 'svelte-i18n';
 
 	export let isCreating = false;
 	export let error = '';
@@ -27,7 +28,7 @@
 </script>
 
 <Card padding="large">
-	<h2>Create New Room</h2>
+	<h2>{$_('rooms.createRoom')}</h2>
 
 	{#if error}
 		<div class="error-display">
@@ -39,16 +40,16 @@
 		<div class="form-fields">
 			<Input
 				type="text"
-				placeholder="Enter room name"
-				label="Room Name"
+				placeholder={$_('rooms.enterRoomName')}
+				label={$_('rooms.roomName')}
 				bind:value={roomName}
 				disabled={isCreating}
 				required
 			/>
 			<Input
 				type="text"
-				placeholder="Password (optional)"
-				label="Room Password"
+				placeholder={$_('rooms.passwordOptional')}
+				label={$_('rooms.roomPassword')}
 				bind:value={roomPassword}
 				disabled={isCreating}
 			/>
@@ -58,7 +59,7 @@
 				disabled={isCreating || !roomName.trim()}
 				loading={isCreating}
 			>
-				{isCreating ? 'Creating...' : 'Create Room'}
+				{isCreating ? $_('rooms.creating') : $_('rooms.createRoomButton')}
 			</Button>
 		</div>
 	</form>
