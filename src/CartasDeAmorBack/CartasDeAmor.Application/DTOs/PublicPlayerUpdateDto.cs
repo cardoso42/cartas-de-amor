@@ -6,6 +6,7 @@ namespace CartasDeAmor.Application.DTOs;
 public class PublicPlayerUpdateDto
 {
     public string UserEmail { get; set; } = string.Empty;
+    public string Username { get; set; } = string.Empty;
     public PlayerStatus Status { get; set; } = PlayerStatus.Active;
     public List<CardType> PlayedCards { get; set; } = [];
     public int HoldingCardsCount { get; set; } = 0;
@@ -13,9 +14,10 @@ public class PublicPlayerUpdateDto
     
     public PublicPlayerUpdateDto() { }
 
-    public PublicPlayerUpdateDto(Player player)
+    public PublicPlayerUpdateDto(User user, Player player)
     {
-        UserEmail = player.UserEmail;
+        UserEmail = user.Email;
+        Username = user.Username;
         Status = player.Status;
         HoldingCardsCount = player.HoldingCards.Count;
         PlayedCards = player.PlayedCards.ToList();
