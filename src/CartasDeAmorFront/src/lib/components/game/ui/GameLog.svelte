@@ -8,7 +8,7 @@
 </script>
 
 <script lang="ts">
-  import { createEventDispatcher, afterUpdate, onMount } from 'svelte';
+  import { createEventDispatcher, afterUpdate, onMount, onDestroy } from 'svelte';
   import { _ } from 'svelte-i18n';
 
   export let logEntries: LogEntry[] = [];
@@ -20,12 +20,16 @@
   }>();
 
   let logContainer: HTMLElement;
+  let isMounted = false;
   let previousLogCount = 0;
+  let userScrolling = false;
 
   // Local storage key
   const COLLAPSE_STATE_KEY = 'gameLogCollapsed';
 
   onMount(() => {
+    isMounted = true;
+    
     // Load collapse state from localStorage
     const savedState = localStorage.getItem(COLLAPSE_STATE_KEY);
     if (savedState !== null) {
@@ -38,12 +42,37 @@
     }
   });
 
+  onDestroy(() => {
+    isMounted = false;
+  });
+
   // Watch for changes in log entries to auto-scroll
-  $: if (logContainer && logEntries.length > 0) {
-    // Use setTimeout to ensure DOM is updated
-    setTimeout(() => {
-      logContainer.scrollTop = logContainer.scrollHeight;
-    }, 0);
+  $: if (isMounted && !isCollapsed && logContainer && logEntries && logEntries.length > 0) {
+    // Only auto-scroll if new entries were added (not when user is scrolling up)
+    if (logEntries.length > previousLogCount && !userScrolling) {
+      // Use setTimeout to ensure DOM is updated
+      setTimeout(() => {
+        try {
+          if (logContainer && logContainer.scrollHeight !== undefined) {
+            logContainer.scrollTop = logContainer.scrollHeight;
+          }
+        } catch (error) {
+          console.warn('GameLog scroll error:', error);
+        }
+      }, 0);
+    }
+    previousLogCount = logEntries.length;
+  }
+
+  // Handle scroll events to detect when user is manually scrolling
+  function handleScroll() {
+    if (!logContainer) return;
+    
+    const { scrollTop, scrollHeight, clientHeight } = logContainer;
+    const isAtBottom = scrollTop + clientHeight >= scrollHeight - 5; // 5px tolerance
+    
+    // If user is not at the bottom, they're scrolling up to view older logs
+    userScrolling = !isAtBottom;
   }
 
   function toggleCollapse() {
@@ -108,7 +137,7 @@
   </div>
   
   {#if !isCollapsed}
-    <div class="log-content" bind:this={logContainer}>
+    <div class="log-content" bind:this={logContainer} on:scroll={handleScroll}>
       {#if logEntries.length === 0}
         <div class="log-empty">
           <p>{$_('game.noGameEventsYet')}</p>
