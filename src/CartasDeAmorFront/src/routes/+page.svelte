@@ -3,6 +3,7 @@
   import { goto } from '$app/navigation';
   import { onMount } from 'svelte';
   import { browser } from '$app/environment';
+  import { _ } from 'svelte-i18n';
 
   let isLoading = true;
 
@@ -23,16 +24,16 @@
 </script>
 
 <svelte:head>
-  <title>Cartas de Amor | Redirecting...</title>
+  <title>{$_('app.name')} | {$_('common.loading')}...</title>
 </svelte:head>
 
 {#if isLoading}
   <div class="loading">
-    <p>Loading...</p>
+    <p>{$_('common.loading')}...</p>
   </div>
 {:else}
   <div class="loading">
-    <p>Redirecting...</p>
+    <p>{$_('common.loading')}...</p>
   </div>
 {/if}
 

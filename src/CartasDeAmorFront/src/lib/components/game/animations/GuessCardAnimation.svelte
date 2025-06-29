@@ -1,6 +1,7 @@
 <!-- GuessCardAnimation.svelte -->
 <script lang="ts">
   import { onMount, createEventDispatcher } from 'svelte';
+  import { _ } from 'svelte-i18n';
   import { getCardName } from '$lib/utils/cardUtils';
   import type { CardType } from '$lib/types/game-types';
 
@@ -67,7 +68,7 @@
           <!-- Elegant header with decorative elements -->
           <div class="parchment-header">
             <div class="decorative-line"></div>
-            <h2 class="announcement-title">Royal Decree</h2>
+            <h2 class="announcement-title">{$_('game.royalDecree')}</h2>
             <div class="decorative-line"></div>
           </div>
           
@@ -79,7 +80,7 @@
               </div>
               
               <p class="decree-line">
-                acused
+                {$_('game.accused')}
               </p>
               
               <div class="player-declaration">
@@ -87,7 +88,7 @@
               </div>
               
               <p class="decree-line">
-                of corrupting
+                {$_('game.ofCorrupting')}
               </p>
               
               <!-- Elegant card reveal -->

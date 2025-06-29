@@ -4,7 +4,9 @@
   import { goto } from '$app/navigation';
   import { logout } from '$lib/services/authService';
   import AnimationToggle from '$lib/components/ui/AnimationToggle.svelte';
+  import { LanguageSwitcher } from '$lib/components/ui';
   import { gameStore } from '$lib/stores/gameStore';
+  import { _ } from 'svelte-i18n';
 
   // Track authentication state
   let isAuthenticated = false;
@@ -35,31 +37,33 @@
   <div class="navbar-container">
 		<div class="navbar-logo">
 			{#if isAuthenticated}
-				<a href="/dashboard">Cartas de Amor</a>
+				<a href="/dashboard">{$_('app.name')}</a>
 			{:else}
-				<a href="/welcome">Cartas de Amor</a>
+				<a href="/welcome">{$_('app.name')}</a>
 			{/if}
 		</div>
     
     <div class="navbar-links">
       {#if isAuthenticated}
         <!-- Links for authenticated users -->
-        <a href="/dashboard" class:active={$page.url.pathname === '/dashboard'}>Home</a>
+        <a href="/dashboard" class:active={$page.url.pathname === '/dashboard'}>{$_('navigation.home')}</a>
         {#if isInGame && currentRoomId}
-          <a href="/game/{currentRoomId}" class:active={$page.url.pathname.startsWith('/game/')}>Current Game</a>
+          <a href="/game/{currentRoomId}" class:active={$page.url.pathname.startsWith('/game/')}>{$_('navigation.dashboard')}</a>
         {:else}
-          <a href="/rooms" class:active={$page.url.pathname === '/rooms'}>Game Lobby</a>
+          <a href="/rooms" class:active={$page.url.pathname === '/rooms'}>{$_('navigation.rooms')}</a>
         {/if}
-        <a href="/profile" class:active={$page.url.pathname === '/profile'}>My Profile</a>
-        <a href="/rules" class:active={$page.url.pathname === '/rules'}>Game Rules</a>
+        <a href="/profile" class:active={$page.url.pathname === '/profile'}>{$_('navigation.profile')}</a>
+        <a href="/rules" class:active={$page.url.pathname === '/rules'}>{$_('navigation.rules')}</a>
         <AnimationToggle />
-        <button class="navbar-button" on:click={handleLogout}>Logout</button>
+        <LanguageSwitcher />
+        <button class="navbar-button" on:click={handleLogout}>{$_('auth.logout')}</button>
       {:else}
         <!-- Links for non-authenticated users -->
-        <a href="/welcome" class:active={$page.url.pathname === '/welcome'}>Home</a>
-        <a href="/rules" class:active={$page.url.pathname === '/rules'}>Game Rules</a>
-        <a href="/login" class:active={$page.url.pathname === '/login'}>Login</a>
-        <a href="/register" class:active={$page.url.pathname === '/register'}>Register</a>
+        <a href="/welcome" class:active={$page.url.pathname === '/welcome'}>{$_('navigation.home')}</a>
+        <a href="/rules" class:active={$page.url.pathname === '/rules'}>{$_('navigation.rules')}</a>
+        <LanguageSwitcher />
+        <a href="/login" class:active={$page.url.pathname === '/login'}>{$_('auth.login')}</a>
+        <a href="/register" class:active={$page.url.pathname === '/register'}>{$_('auth.register')}</a>
       {/if}
     </div>
   </div>

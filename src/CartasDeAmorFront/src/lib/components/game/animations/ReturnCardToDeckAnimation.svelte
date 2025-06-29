@@ -1,6 +1,7 @@
 <!-- ReturnCardToDeckAnimation.svelte -->
 <script lang="ts">
   import { onMount, createEventDispatcher } from 'svelte';
+  import { _ } from 'svelte-i18n';
 
   export let playerName: string = '';
   export let cardCount: number = 1;
@@ -91,7 +92,7 @@
     <!-- Player name and action text -->
     {#if phase === 'arriving'}
       <div class="action-text">
-        <div class="player-action">{playerName} returned {cardCount} card{cardCount === 1 ? '' : 's'} to deck</div>
+        <div class="player-action">{$_('game.cardsReturned', { values: { playerName, cardCount } })}</div>
       </div>
     {/if}
   </div>

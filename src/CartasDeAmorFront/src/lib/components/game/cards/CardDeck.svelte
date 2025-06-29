@@ -1,6 +1,7 @@
 <!-- CardDeck.svelte -->
 <script lang="ts">
   import { createEventDispatcher } from 'svelte';
+  import { _ } from 'svelte-i18n';
 
   // Props
   export let isMyTurn: boolean = false;
@@ -30,10 +31,10 @@
     tabindex={isMyTurn && !isAnimationPlaying ? 0 : undefined}
     title={
       isAnimationPlaying 
-        ? 'Wait for animation to finish' 
+        ? $_('game.waitForAnimation') 
         : isMyTurn 
-          ? 'Click to draw a card' 
-          : 'Wait for your turn to draw a card'
+          ? $_('game.clickToDrawCard') 
+          : $_('game.waitForYourTurn')
     }
   >
     <div 
@@ -46,10 +47,10 @@
       <div class="deck-card"></div>
     </div>
     <div class="deck-label">
-      {isMyTurn ? 'Draw Card' : 'Deck'}
+      {isMyTurn ? $_('game.drawCard') : $_('game.deck')}
     </div>
     <div class="deck-counter">
-      {cardsRemainingInDeck} cards left
+      {$_('game.cardsLeft', { values: { count: cardsRemainingInDeck } })}
     </div>
   </div>
 </div>

@@ -1,6 +1,7 @@
 <!-- GameOverAnimation.svelte -->
 <script lang="ts">
   import { onMount, createEventDispatcher } from 'svelte';
+  import { _ } from 'svelte-i18n';
 
   export let winnerNames: string[] = [];
   export let winnerEmails: string[] = [];
@@ -38,7 +39,7 @@
   }
 
   $: displayText = winnerNames.length === 0 
-    ? 'Unknown Champion' 
+    ? $_('game.unknownChampion') 
     : winnerNames.length === 1 
       ? winnerNames[0] 
       : winnerNames.join(' & ');
@@ -48,8 +49,10 @@
   
   // Personalized congratulations message
   $: congratulationsText = isCurrentUserWinner 
-    ? 'Congratulations on your victory!' 
-    : `Congratulations to ${winnerNames.length > 1 ? 'the winners' : 'the winner'}!`;
+    ? $_('game.congratulations') 
+    : winnerNames.length > 1 
+      ? $_('game.congratulationsWinners') 
+      : $_('game.congratulationsWinner');
 </script>
 
 {#if isVisible && !animationComplete}
@@ -80,10 +83,10 @@
       
       <!-- Main announcement -->
       <div class="announcement-card">
-        <h1 class="game-over-title">🎉 GAME OVER! 🎉</h1>
+        <h1 class="game-over-title">🎉 {$_('game.gameOver')}! 🎉</h1>
         <div class="winner-section">
           <div class="winner-label">
-            {winnerNames.length > 1 ? 'Champions' : 'Champion'}:
+            {winnerNames.length > 1 ? $_('game.roundWinners') : $_('game.wins')}:
           </div>
           <div class="winner-names">{displayText}</div>
         </div>

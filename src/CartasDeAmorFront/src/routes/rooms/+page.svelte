@@ -6,6 +6,7 @@
   import { page } from '$app/stores';
   import { goto } from '$app/navigation';
   import { gameStore } from '$lib/stores/gameStore';
+  import { _ } from 'svelte-i18n';
 	import type { JoinRoomResultDto, InitialGameStatusDto } from '$lib/types/game-types';
   
   // Import new components
@@ -149,7 +150,7 @@
       
     } catch (err) {
       console.error('Error joining room:', err);
-      error = err instanceof Error ? err.message : 'Failed to join room. Please try again.';
+      error = err instanceof Error ? err.message : $_('rooms.failedToJoinRoom');
     } finally {
       isJoiningRoom = false;
       roomPassword = '';
@@ -232,7 +233,7 @@
 </script>
 
 <svelte:head>
-  <title>Game Lobby | Love Letter</title>
+  <title>{$_('navigation.rooms')} | {$_('app.name')}</title>
 </svelte:head>
 
 <AuthGuard requireAuth={true} redirectTo="/login">
@@ -240,24 +241,24 @@
     {#if checkingActiveGame}
       <!-- Show loading screen while checking for active games -->
       <div class="checking-games">
-        <h1>Love Letter</h1>
+        <h1>{$_('app.name')}</h1>
         <div class="loading-content">
           <div class="spinner"></div>
-          <p>Checking for active games...</p>
+          <p>{$_('rooms.checkingForActiveGames')}</p>
         </div>
       </div>
     {:else if hasActiveGame}
       <!-- Show joining active game screen -->
       <div class="joining-game">
-        <h1>Love Letter</h1>
+        <h1>{$_('app.name')}</h1>
         <div class="joining-content">
           <div class="spinner"></div>
-          <p>Rejoining your active game...</p>
+          <p>{$_('rooms.rejoiningActiveGame')}</p>
         </div>
       </div>
     {:else}
       <!-- Show normal lobby interface -->
-      <h1>Game Lobby</h1>
+      <h1>{$_('rooms.gameLobby')}</h1>
       
       <ErrorDisplay message={error} on:retry={refreshRooms} />
       

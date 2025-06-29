@@ -3,6 +3,7 @@
   import AuthGuard from '$lib/components/auth/AuthGuard.svelte';
   import { goto } from '$app/navigation';
   import { register } from '$lib/services/authService';
+  import { _ } from 'svelte-i18n';
 
   let formData = {
     username: '',
@@ -22,24 +23,24 @@
     
     // Basic validation
     if (!formData.username || !formData.email || !formData.password) {
-      errorMessage = 'Please fill in all required fields';
+      errorMessage = $_('auth.usernameRequired');
       return;
     }
     
     // Email validation
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(formData.email)) {
-      errorMessage = 'Please enter a valid email address';
+      errorMessage = $_('auth.invalidEmail');
       return;
     }
     
     if (formData.password !== formData.confirmPassword) {
-      errorMessage = 'Passwords do not match';
+      errorMessage = $_('auth.passwordMismatch');
       return;
     }
     
     if (formData.password.length < 8) {
-      errorMessage = 'Password must be at least 8 characters';
+      errorMessage = $_('auth.passwordMinLength');
       return;
     }
     
@@ -50,17 +51,17 @@
       const result = await register(formData.username, formData.email, formData.password);
       
       if (result.success) {
-        successMessage = result.message || 'Registration successful! Redirecting to dashboard...';
+        successMessage = result.message || $_('auth.accountCreated');
         
         // Redirect to dashboard after 1 second since we're already authenticated
         setTimeout(() => {
           goto('/dashboard');
         }, 1000);
       } else {
-        errorMessage = result.message || 'Registration failed. Please try again.';
+        errorMessage = result.message || $_('auth.registrationError');
       }
     } catch (error) {
-      errorMessage = 'An error occurred during registration. Please try again.';
+      errorMessage = $_('auth.registrationError');
       console.error('Registration error:', error);
     } finally {
       isLoading = false;
@@ -73,15 +74,15 @@
 </script>
 
 <svelte:head>
-  <title>Register | Love Letter</title>
+  <title>{$_('auth.register')} | {$_('app.name')}</title>
 </svelte:head>
 
 <AuthGuard requireAuth={false} redirectTo="/dashboard">
   <div class="register-container">
     <div class="register-card">
       <div class="register-header">
-        <h1>Create Account</h1>
-        <p>Join Love Letter and start playing!</p>
+        <h1>{$_('auth.createAccount')}</h1>
+        <p>{$_('auth.joinLoveLetter')}</p>
       </div>
       
       {#if errorMessage}
@@ -98,59 +99,57 @@
       
       <form on:submit|preventDefault={handleRegister} class="register-form">
         <div class="form-group">
-          <label for="username">Username*</label>
+          <label for="username">{$_('auth.username')}*</label>
           <input 
             type="text" 
             id="username" 
-            placeholder="Choose a username" 
+            placeholder={$_('auth.chooseUsername')} 
             bind:value={formData.username}
             required
           />
         </div>
         
         <div class="form-group">
-          <label for="email">Email Address*</label>
+          <label for="email">{$_('auth.email')}*</label>
           <input 
             type="email" 
             id="email" 
-            placeholder="Enter your email" 
+            placeholder={$_('auth.enterYourEmail')} 
             bind:value={formData.email}
             required
           />
         </div>
         
         <div class="form-group">
-          <label for="password">Password*</label>
+          <label for="password">{$_('auth.password')}*</label>
           <input 
             type="password" 
             id="password" 
-            placeholder="Create a password" 
+            placeholder={$_('auth.createPassword')} 
             bind:value={formData.password}
             required
             minlength="8"
           />
-          <small>Password must be at least 8 characters</small>
+          <small>{$_('auth.passwordMinLength')}</small>
         </div>
         
         <div class="form-group">
-          <label for="confirmPassword">Confirm Password*</label>
+          <label for="confirmPassword">{$_('auth.confirmPassword')}*</label>
           <input 
             type="password" 
             id="confirmPassword" 
-            placeholder="Confirm your password" 
+            placeholder={$_('auth.confirmPassword')} 
             bind:value={formData.confirmPassword}
             required
           />
         </div>
         
         <button type="submit" disabled={isLoading}>
-          {isLoading ? 'Creating Account...' : 'Register'}
+          {isLoading ? $_('common.loading') : $_('auth.register')}
         </button>
       </form>
       
-      <div class="login-link">
-        Already have an account? <a href="/login">Login here</a>
-      </div>
+      <p>{$_('common.alreadyHaveAccount')} <a href="/login">{$_('common.loginHere')}</a></p>
     </div>
   </div>
 </AuthGuard>

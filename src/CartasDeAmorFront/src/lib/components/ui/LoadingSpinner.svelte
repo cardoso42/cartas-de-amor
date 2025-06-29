@@ -1,8 +1,10 @@
 <!-- LoadingSpinner.svelte -->
 <script lang="ts">
+  import { _ } from 'svelte-i18n';
+  
   export let size: 'small' | 'medium' | 'large' = 'medium';
   export let color: string = 'var(--primary-color)';
-  export let text: string = '';
+  export let text: string = $_('common.loading');
 </script>
 
 <div class="loading-spinner-container" class:has-text={!!text}>

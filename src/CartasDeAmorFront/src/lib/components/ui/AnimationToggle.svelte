@@ -1,6 +1,7 @@
 <!-- AnimationToggle.svelte -->
 <script lang="ts">
 	import settings from '$lib/stores/settingsStore';
+	import { _ } from 'svelte-i18n';
 
 	// Subscribe to settings to get current state
 	$: animationsEnabled = $settings.animationsEnabled;
@@ -13,18 +14,18 @@
 <button
 	class="animation-toggle"
 	on:click={toggleAnimations}
-	title={animationsEnabled ? 'Disable animations' : 'Enable animations'}
-	aria-label={animationsEnabled ? 'Disable animations' : 'Enable animations'}
+	title={animationsEnabled ? $_('ui.disableAnimations') : $_('ui.enableAnimations')}
+	aria-label={animationsEnabled ? $_('ui.disableAnimations') : $_('ui.enableAnimations')}
 >
-	<span class="toggle-label">Animations</span>
+	<span class="toggle-label">{$_('ui.animations')}</span>
 	{#if animationsEnabled}
-		<span class="toggle-label toggle-on">ON</span>
+		<span class="toggle-label toggle-on">{$_('ui.on')}</span>
 		/
-		<span class="toggle-label toggle-off">OFF</span>
+		<span class="toggle-label toggle-off">{$_('ui.off')}</span>
 	{:else}
-		<span class="toggle-label toggle-off">ON</span>
+		<span class="toggle-label toggle-off">{$_('ui.on')}</span>
 		/
-		<span class="toggle-label toggle-on">OFF</span>
+		<span class="toggle-label toggle-on">{$_('ui.off')}</span>
 	{/if}
 </button>
 

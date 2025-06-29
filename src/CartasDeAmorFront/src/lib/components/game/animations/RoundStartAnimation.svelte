@@ -1,13 +1,13 @@
 <!-- RoundStartAnimation.svelte -->
 <script lang="ts">
   import { onMount, createEventDispatcher } from 'svelte';
+  import { _ } from 'svelte-i18n';
 
   export let players: Array<{
-    email: string;
     name: string;
     position: { x: number; y: number; width?: number; height?: number };
-    hadCards: boolean;
-  }> = [];
+    hasCards: boolean;
+  }>;
   export let deckPosition: { x: number; y: number; width?: number; height?: number };
   export let tableCenter: { x: number; y: number };
   export let isVisible: boolean = false;
@@ -21,19 +21,21 @@
   let hasStarted = false;
 
   // Animation phases
-  let phase: 'cardsReturn' | 'shuffling' | 'dealing' | 'finished' = 'cardsReturn';
-  
+  let phase: 'cardsReturn' | 'shuffling' | 'dealing' | 'complete' = 'cardsReturn';
+
   // Animated cards tracking
   let animatedCards: Array<{
     id: string;
-    x: number;
-    y: number;
-    width: number;
-    height: number;
+    startX: number;
+    startY: number;
+    startWidth: number;
+    startHeight: number;
     targetX: number;
     targetY: number;
-    phase: 'returning' | 'shuffling' | 'dealing' | 'arrived';
-    playerEmail?: string;
+    targetWidth: number;
+    targetHeight: number;
+    phase: 'returning' | 'dealing';
+    delay: number;
   }> = [];
 
   onMount(() => {
@@ -45,25 +47,23 @@
   async function startAnimation() {
     if (hasStarted) return; // Prevent duplicate starts
     hasStarted = true;
-    
+
     // Phase 1: Cards return to deck (1.5s)
     phase = 'cardsReturn';
-    createReturningCards();
     await new Promise(resolve => setTimeout(resolve, 1500));
-    
+
     // Phase 2: Deck shuffling animation (1s)
     phase = 'shuffling';
     await new Promise(resolve => setTimeout(resolve, 1000));
-    
+
     // Phase 3: Deal cards to players (2s)
     phase = 'dealing';
-    createDealingCards();
     await new Promise(resolve => setTimeout(resolve, 2000));
-    
-    // Phase 4: Finished (0.5s cleanup)
-    phase = 'finished';
+
+    // Phase 4: Brief pause (0.5s)
+    phase = 'complete';
     await new Promise(resolve => setTimeout(resolve, 500));
-    
+
     // Mark animation as complete and dispatch event
     if (!animationComplete) {
       animationComplete = true;
@@ -71,61 +71,66 @@
     }
   }
 
-  function createReturningCards() {
-    // Create animated cards for players who had cards
-    const playersWithCards = players.filter(p => p.hadCards);
-    
-    animatedCards = playersWithCards.map((player, index) => ({
-      id: `return-${player.email}-${index}`,
-      x: player.position.x,
-      y: player.position.y,
-      width: player.position.width || 65,
-      height: player.position.height || 90,
-      targetX: deckPosition.x,
-      targetY: deckPosition.y,
-      phase: 'returning',
-      playerEmail: player.email
-    }));
-  }
-
-  function createDealingCards() {
-    // Create animated cards for dealing to all players
-    animatedCards = players.map((player, index) => ({
-      id: `deal-${player.email}-${index}`,
-      x: deckPosition.x,
-      y: deckPosition.y,
-      width: deckPosition.width || 70,
-      height: deckPosition.height || 98,
-      targetX: player.position.x,
-      targetY: player.position.y,
-      phase: 'dealing',
-      playerEmail: player.email
-    }));
-  }
-
   $: if (isVisible && !animationComplete && !hasStarted) {
     startAnimation();
+  }
+
+  // Create animated cards for players who had cards
+  $: if (isVisible && phase === 'cardsReturn') {
+    animatedCards = players
+      .filter(player => player.hasCards)
+      .map((player, index) => ({
+        id: `return-${player.name}-${index}`,
+        startX: player.position.x,
+        startY: player.position.y,
+        startWidth: player.position.width || 65,
+        startHeight: player.position.height || 90,
+        targetX: deckPosition.x,
+        targetY: deckPosition.y,
+        targetWidth: deckPosition.width || 70,
+        targetHeight: deckPosition.height || 98,
+        phase: 'returning',
+        delay: index * 0.1
+      }));
+  }
+
+  // Create animated cards for dealing to all players
+  $: if (isVisible && phase === 'dealing') {
+    animatedCards = players.map((player, index) => ({
+      id: `deal-${player.name}-${index}`,
+      startX: deckPosition.x,
+      startY: deckPosition.y,
+      startWidth: deckPosition.width || 70,
+      startHeight: deckPosition.height || 98,
+      targetX: player.position.x,
+      targetY: player.position.y,
+      targetWidth: player.position.width || 65,
+      targetHeight: player.position.height || 90,
+      phase: 'dealing',
+      delay: index * 0.2
+    }));
   }
 </script>
 
 {#if isVisible && !animationComplete}
-  <div class="animation-overlay" bind:this={animationContainer}>
-    
+  <div 
+    class="animation-overlay" 
+    bind:this={animationContainer}
+  >
     <!-- Animated cards -->
     {#each animatedCards as card (card.id)}
       <div 
-        class="animated-card" 
-        class:returning={card.phase === 'returning'}
-        class:dealing={card.phase === 'dealing'}
+        class="animated-card {card.phase}"
         style="
-          --start-x: {card.x}px; 
-          --start-y: {card.y}px; 
-          --start-width: {card.width}px; 
-          --start-height: {card.height}px;
-          --target-x: {card.targetX}px; 
+          --start-x: {card.startX}px;
+          --start-y: {card.startY}px;
+          --start-width: {card.startWidth}px;
+          --start-height: {card.startHeight}px;
+          --target-x: {card.targetX}px;
           --target-y: {card.targetY}px;
-          --target-width: {card.phase === 'dealing' ? (players.find(p => p.email === card.playerEmail)?.position.width || 65) : (deckPosition.width || 70)}px;
-          --target-height: {card.phase === 'dealing' ? (players.find(p => p.email === card.playerEmail)?.position.height || 90) : (deckPosition.height || 98)}px;
+          --target-width: {card.targetWidth}px;
+          --target-height: {card.targetHeight}px;
+          animation-delay: {card.delay}s;
         "
       >
         <!-- Card back (since cards are face down during this animation) -->
@@ -142,13 +147,18 @@
         style="
           left: {deckPosition.x}px;
           top: {deckPosition.y}px;
-          width: {deckPosition.width || 70}px;
-          height: {deckPosition.height || 98}px;
         "
       >
         <div class="shuffle-particles">
-          {#each Array(8) as _, i}
-            <div class="particle" style="--delay: {i * 0.1}s"></div>
+          {#each Array.from({ length: 12 }, (_, i) => i) as i}
+            <div 
+              class="particle" 
+              style="
+                --delay: {i * 0.1}s;
+                --random-x: {Math.random()};
+                --random-y: {Math.random()};
+              "
+            ></div>
           {/each}
         </div>
       </div>
@@ -163,13 +173,13 @@
       "
     >
       {#if phase === 'cardsReturn'}
-        <div class="phase-text">Cards return to deck...</div>
+        <div class="phase-text">{$_('game.cardsReturnToDeck')}</div>
       {:else if phase === 'shuffling'}
         <div class="phase-text shuffle-text">
-          <span>🔀</span> Shuffling deck...
+          <span>🔀</span> {$_('game.shufflingDeck')}
         </div>
       {:else if phase === 'dealing'}
-        <div class="phase-text">Dealing new cards...</div>
+        <div class="phase-text">{$_('game.dealingNewCards')}</div>
       {/if}
     </div>
   </div>

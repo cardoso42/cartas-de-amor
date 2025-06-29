@@ -1,5 +1,6 @@
 <script lang="ts">
   import { createEventDispatcher } from 'svelte';
+  import { _ } from 'svelte-i18n';
   
   export let message: string = '';
   
@@ -11,7 +12,7 @@
 {#if message}
   <div class="error-message">
     <p>{message}</p>
-    <button class="danger small" on:click={() => dispatch('retry')}>Try Again</button>
+    <button class="danger small" on:click={() => dispatch('retry')}>{$_('common.retry')}</button>
   </div>
 {/if}
 

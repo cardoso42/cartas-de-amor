@@ -1,6 +1,7 @@
 <!-- EliminationAnimation.svelte -->
 <script lang="ts">
   import { onMount, createEventDispatcher } from 'svelte';
+  import { _ } from 'svelte-i18n';
 
   export let playerName: string = '';
   export let center: { x: number; y: number };
@@ -72,7 +73,7 @@
     <!-- Elimination text -->
     {#if phase === 'fade'}
       <div class="elimination-text" class:fading={phase === 'fade'}>
-        <div class="eliminated-label">ELIMINATED!</div>
+        <div class="eliminated-label">{$_('game.eliminated')}!</div>
         <div class="player-name">{playerName}</div>
       </div>
     {/if}

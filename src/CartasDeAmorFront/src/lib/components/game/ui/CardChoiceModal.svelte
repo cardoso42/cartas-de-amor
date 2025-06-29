@@ -2,6 +2,7 @@
   import { createEventDispatcher } from 'svelte';
   import { CardType } from '$lib/types/game-types';
   import { getCardName } from '$lib/utils/cardUtils';
+  import { _ } from 'svelte-i18n';
   
   const dispatch = createEventDispatcher<{
     close: void;
@@ -11,8 +12,12 @@
   // Props
   export let isOpen = false;
   export let cards: CardType[] = [];
-  export let title = "Choose a Card to Keep";
-  export let description = "Choose one card to keep. The remaining cards will be placed back on the deck in the order you arrange them.";
+  export let title = '';
+  export let description = '';
+  
+  // Set default values if not provided
+  $: if (!title) title = $_('game.chooseCardToKeep');
+  $: if (!description) description = $_('game.chooseCardDescription');
   
   // State
   let selectedKeepCard: CardType | null = null;
@@ -38,12 +43,12 @@
   
   function handleSubmit() {
     if (selectedKeepCard === null) {
-      alert('Please select a card to keep');
+      alert($_('game.pleaseSelectCard'));
       return;
     }
     
     if (sortableCards.length === 0 && cards.length > 1) {
-      alert('Please arrange the remaining cards');
+      alert($_('game.pleaseArrangeCards'));
       return;
     }
     
@@ -131,7 +136,7 @@
       <!-- Modal Header -->
       <div class="modal-header">
         <h2 id="modal-title">{title}</h2>
-        <button class="close-button" on:click={close} aria-label="Close modal">×</button>
+        <button class="close-button" on:click={close} aria-label={$_('game.closeModal')}>×</button>
       </div>
       
       <!-- Modal Description -->
@@ -141,17 +146,17 @@
       
       <!-- Instructions -->
       <div class="instructions">
-        <h3>Instructions:</h3>
+        <h3>{$_('game.instructions')}</h3>
         <ol>
-          <li>Select the card you want to keep by clicking on it</li>
-          <li>Arrange the remaining cards in the order they should go back on the deck (top to bottom)</li>
-          <li>Use drag & drop or the arrow buttons to reorder cards</li>
+          <li>{$_('game.selectCardToKeep')}</li>
+          <li>{$_('game.arrangeRemainingCards')}</li>
+          <li>{$_('game.useDragDropOrArrows')}</li>
         </ol>
       </div>
       
       <!-- Step 1: Select card to keep -->
       <div class="selection-step">
-        <h3>Step 1: Select card to keep</h3>
+        <h3>{$_('game.step1SelectCard')}</h3>
         <div class="card-options">
           {#each cards as cardType, index (`card-${index}-${cardType}`)}
             {@const isSelected = selectedKeepCardIndex === index}
@@ -162,7 +167,7 @@
               on:keydown={(e) => e.key === 'Enter' && selectCard(cardType, index)}
               role="button"
               tabindex="0"
-              title="Click to keep {getCardName(cardType)}"
+              title={$_('game.clickToKeep', { values: { cardName: getCardName(cardType) } })}
             >
               <div class="card-number">{cardType}</div>
               <div class="card-name">{getCardName(cardType)}</div>
@@ -177,8 +182,8 @@
       <!-- Step 2: Arrange remaining cards (only show if a card is selected) -->
       {#if selectedKeepCard !== null && sortableCards.length > 0}
         <div class="selection-step">
-          <h3>Step 2: Arrange remaining cards</h3>
-          <p class="step-description">Order these cards from top to bottom as they should be placed back on the deck:</p>
+          <h3>{$_('game.step2ArrangeCards')}</h3>
+          <p class="step-description">{$_('game.orderCardsTopToBottom')}</p>
           
           <div class="sortable-cards">
             {#each sortableCards as cardType, index (`sortable-${index}-${cardType}`)}
@@ -201,15 +206,15 @@
                     class="move-button" 
                     on:click={() => moveCardUp(index)}
                     disabled={index === 0}
-                    aria-label="Move {getCardName(cardType)} up"
-                    title="Move up"
+                    aria-label={$_('game.moveUp')}
+                    title={$_('game.moveUp')}
                   >↑</button>
                   <button 
                     class="move-button" 
                     on:click={() => moveCardDown(index)}
                     disabled={index === sortableCards.length - 1}
-                    aria-label="Move {getCardName(cardType)} down"
-                    title="Move down"
+                    aria-label={$_('game.moveDown')}
+                    title={$_('game.moveDown')}
                   >↓</button>
                 </div>
                 
@@ -222,13 +227,13 @@
       
       <!-- Modal Actions -->
       <div class="modal-actions">
-        <button class="cancel-button" on:click={close}>Cancel</button>
+        <button class="cancel-button" on:click={close}>{$_('game.cancel')}</button>
         <button 
           class="submit-button" 
           on:click={handleSubmit}
           disabled={selectedKeepCard === null}
         >
-          Submit Choice
+          {$_('game.submitChoice')}
         </button>
       </div>
     </div>

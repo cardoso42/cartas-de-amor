@@ -1,6 +1,7 @@
 <!-- PeekCardAnimation.svelte -->
 <script lang="ts">
   import { onMount, createEventDispatcher } from 'svelte';
+  import { _ } from 'svelte-i18n';
 
   export let invokerName: string = '';
   export let targetName: string = '';
@@ -84,7 +85,7 @@
     <!-- Action text overlay -->
     {#if phase === 'peeking'}
       <div class="action-text">
-        <div class="peek-action">{invokerName} is peeking at {targetName}'s card</div>
+        <div class="peek-action">{$_('game.isPeekingAt', { values: { invokerName, targetName } })}</div>
       </div>
     {/if}
   </div>

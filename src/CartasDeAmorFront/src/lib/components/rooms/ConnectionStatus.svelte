@@ -1,4 +1,6 @@
 <script lang="ts">
+  import { _ } from 'svelte-i18n';
+  
   export let status: string;
 </script>
 
@@ -6,13 +8,13 @@
   <span class="status-dot"></span>
   <span class="status-text">
     {#if status === 'connected'}
-      Connected to game server
+      {$_('game.connected')}
     {:else if status === 'connecting'}
-      Connecting...
+      {$_('game.connecting')}
     {:else if status === 'error'}
-      Connection error
+      {$_('game.connectionError')}
     {:else}
-      Disconnected
+      {$_('game.disconnected')}
     {/if}
   </span>
 </div>
