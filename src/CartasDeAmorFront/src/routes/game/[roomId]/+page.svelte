@@ -435,6 +435,12 @@
           showNotification($_('game.playerLeft', { values: { playerName } }), 'info');
         },
         onUsernameChanged: (userEmail: string, newUsername: string) => {
+          // If it's the current user, just update the user store
+          if (userEmail === $user.email) {
+            user.updateUser({ username: newUsername });
+            return;
+          }
+
           const oldDisplayName = getPlayerDisplayName(userEmail);
           
           // Update the username in gameStatus if it exists
@@ -444,11 +450,6 @@
               playerToUpdate.username = newUsername;
               gameStatus = { ...gameStatus }; // Trigger reactivity
             }
-          }
-          
-          // If it's the current user, update the user store as well
-          if (userEmail === $user.email) {
-            user.updateUser({ username: newUsername });
           }
           
           showNotification($_('game.usernameChanged', { values: { oldName: oldDisplayName, newName: newUsername } }), 'info');
