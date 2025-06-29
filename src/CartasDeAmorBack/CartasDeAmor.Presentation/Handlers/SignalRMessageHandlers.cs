@@ -19,7 +19,6 @@ public class SendUsernameChangedHandler : IRequestHandler<SendUsernameChangedCom
 
     public async Task Handle(SendUsernameChangedCommand request, CancellationToken cancellationToken)
     {
-        // Send to all connected users (for simplicity, since username changes are rare)
         await _hubContext.Clients.All
             .SendAsync("UsernameChanged", new { UserEmail = request.UserEmail, NewUsername = request.NewUsername }, cancellationToken);
     }
