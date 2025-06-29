@@ -156,7 +156,7 @@ function attachEventHandlers(connection: SignalR.HubConnection) {
   connection.on('JoinedRoom', (joinRoomResult: JoinRoomResultDto) => registeredHandlers.onJoinedRoom?.(joinRoomResult));
   connection.on('UserJoined', (playerEmail: string) => registeredHandlers.onUserJoined?.(playerEmail));
   connection.on('UserLeft', (playerEmail: string) => registeredHandlers.onUserLeft?.(playerEmail));
-  connection.on('UsernameChanged', (userEmail: string, newUsername: string) => registeredHandlers.onUsernameChanged?.(userEmail, newUsername));
+  connection.on('UsernameChanged', (data: { userEmail: string; newUsername: string }) => registeredHandlers.onUsernameChanged?.(data.userEmail, data.newUsername));
   connection.on('RoundStarted', (initialGameStatus: GameStatusDto) => registeredHandlers.onRoundStarted?.(initialGameStatus));
   connection.on('CurrentGameStatus', (initialGameStatus: GameStatusDto | null) => registeredHandlers.onCurrentGameStatus?.(initialGameStatus));
   connection.on('NextTurn', (playerEmail: string) => registeredHandlers.onNextTurn?.(playerEmail));
