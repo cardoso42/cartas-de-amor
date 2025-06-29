@@ -128,6 +128,11 @@ public class Game
         return GameState != GameStateEnum.WaitingForPlayers;
     }
 
+    public bool IsActive()
+    {
+        return GameState != GameStateEnum.Finished && Players.Count > 0;
+    }
+
     /// <summary>
     /// Gets the number of active (not eliminated) players
     /// </summary>
@@ -279,7 +284,8 @@ public class Game
     /// </summary>
     public IList<Player> GetGameWinner()
     {
-        return Players.Where(p => p.Score >= MaxTokens).ToList();
+        var maxTokens = Players.Max(p => p.Score);
+        return Players.Where(p => p.Score >= maxTokens).ToList();
     }
 
     /// <summary>
@@ -379,7 +385,7 @@ public class Game
         return GameState switch
         {
             GameStateEnum.WaitingForPlayers => newState == GameStateEnum.WaitingForDraw,
-            GameStateEnum.WaitingForDraw => newState == GameStateEnum.WaitingForPlay,
+            GameStateEnum.WaitingForDraw => newState == GameStateEnum.WaitingForPlay || newState == GameStateEnum.Finished,
             GameStateEnum.WaitingForPlay => newState == GameStateEnum.WaitingForDraw || newState == GameStateEnum.Finished,
             GameStateEnum.Finished => false,
             _ => false,

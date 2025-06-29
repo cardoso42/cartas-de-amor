@@ -37,12 +37,12 @@
         <a href="/rules" class="button">Read Rules</a>
       </div>
       
-      <div class="dashboard-card">
-        <div class="card-icon">🏆</div>
-        <h2>Leaderboard</h2>
-        <p>Check the top players and see where you stand.</p>
-        <a href="/leaderboard" class="button disabled">Coming Soon</a>
-      </div>
+      <!-- <div class="dashboard-card"> -->
+      <!--   <div class="card-icon">🏆</div> -->
+      <!--   <h2>Leaderboard</h2> -->
+      <!--   <p>Check the top players and see where you stand.</p> -->
+      <!--   <a href="/leaderboard" class="button disabled">Coming Soon</a> -->
+      <!-- </div> -->
     </div>
   </div>
 </AuthGuard>

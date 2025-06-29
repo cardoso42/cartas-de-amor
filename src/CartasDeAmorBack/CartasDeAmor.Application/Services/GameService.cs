@@ -462,16 +462,43 @@ public class GameService : IGameService
         return messages;
     }
 
-	Task<bool> VerifyGameValidity(Guid roomId) {
-        var game = _roomRepository.GetByIdAsync(roomId).Result ?? throw new InvalidOperationException("Room not found");
-		var players = game.Players;
-		if (players.Count <= 1) {
-			try {
-				var message = FinishGameAsync(roomId);
-				FinishRoundAsync(roomId);
-			} catch (Exception e) {
-				// blah
-			}
-		}
+    public async Task<InitialGameStatusDto?> GetCurrentGameStatusAsync(Guid roomId, string userEmail)
+    {
+        var game = await _roomRepository.GetByIdAsync(roomId);
+        if (game == null)
+        {
+            return null;
+        }
+
+        // Check if the user is a player in this game
+        var player = game.Players.FirstOrDefault(p => p.UserEmail == userEmail);
+        if (player == null)
+        {
+            return null;
+        }
+
+        // Only return game status if the game has started
+        if (!game.HasStarted())
+        {
+            return null;
+        }
+
+        return new InitialGameStatusDto(game, player);
+    }
+
+    public async Task<List<SpecialMessage>> VerifyGameValidity(Guid roomId)
+    {
+        var game = await _roomRepository.GetByIdAsync(roomId)
+            ?? throw new InvalidOperationException("Room not found");
+
+        var messages = new List<SpecialMessage>();
+
+        var players = game.Players;
+        if (players.Count <= 1)
+        {
+            messages.Add(await FinishGameAsync(roomId));
+        }
+
+        return messages;
 	}
 }

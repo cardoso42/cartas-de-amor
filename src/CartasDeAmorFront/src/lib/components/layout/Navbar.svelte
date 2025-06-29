@@ -1,17 +1,28 @@
 <script lang="ts">
-	import { page } from '$app/stores';
-	import { auth } from '$lib/stores/authStore';
-	import { goto } from '$app/navigation';
-	import { logout } from '$lib/services/authService';
-	import AnimationToggle from '$lib/components/ui/AnimationToggle.svelte';
+  import { page } from '$app/stores';
+  import { auth } from '$lib/stores/authStore';
+  import { goto } from '$app/navigation';
+  import { logout } from '$lib/services/authService';
+  import AnimationToggle from '$lib/components/ui/AnimationToggle.svelte';
+  import { gameStore } from '$lib/stores/gameStore';
 
-	// Track authentication state
-	let isAuthenticated = false;
+  // Track authentication state
+  let isAuthenticated = false;
+  
+  // Track game state to determine if user is in a game
+  let isInGame = false;
+  let currentRoomId: string | null = null;
 
-	// Subscribe to auth store
-	auth.subscribe((state) => {
-		isAuthenticated = state.isAuthenticated;
-	});
+  // Subscribe to auth store
+  auth.subscribe((state) => {
+    isAuthenticated = state.isAuthenticated;
+  });
+
+  // Subscribe to game store to track when user joins/leaves a game
+  gameStore.subscribe((state) => {
+    isInGame = !!state.roomId;
+    currentRoomId = state.roomId;
+  });
 
 	// Handle logout
 	function handleLogout() {
@@ -21,7 +32,7 @@
 </script>
 
 <nav class="navbar">
-	<div class="navbar-container">
+  <div class="navbar-container">
 		<div class="navbar-logo">
 			{#if isAuthenticated}
 				<a href="/dashboard">Cartas de Amor</a>
@@ -29,25 +40,29 @@
 				<a href="/welcome">Cartas de Amor</a>
 			{/if}
 		</div>
-
-		<div class="navbar-links">
-			{#if isAuthenticated}
-				<!-- Links for authenticated users -->
-				<a href="/dashboard" class:active={$page.url.pathname === '/dashboard'}>Dashboard</a>
-				<a href="/rooms" class:active={$page.url.pathname === '/rooms'}>Game Lobby</a>
-				<a href="/profile" class:active={$page.url.pathname === '/profile'}>My Profile</a>
-				<a href="/rules" class:active={$page.url.pathname === '/rules'}>Game Rules</a>
-				<AnimationToggle />
-				<button class="navbar-button" on:click={handleLogout}>Logout</button>
-			{:else}
-				<!-- Links for non-authenticated users -->
-				<a href="/welcome" class:active={$page.url.pathname === '/welcome'}>Home</a>
-				<a href="/rules" class:active={$page.url.pathname === '/rules'}>Game Rules</a>
-				<a href="/login" class:active={$page.url.pathname === '/login'}>Login</a>
-				<a href="/register" class:active={$page.url.pathname === '/register'}>Register</a>
-			{/if}
-		</div>
-	</div>
+    
+    <div class="navbar-links">
+      {#if isAuthenticated}
+        <!-- Links for authenticated users -->
+        <a href="/dashboard" class:active={$page.url.pathname === '/dashboard'}>Home</a>
+        {#if isInGame && currentRoomId}
+          <a href="/game/{currentRoomId}" class:active={$page.url.pathname.startsWith('/game/')}>Current Game</a>
+        {:else}
+          <a href="/rooms" class:active={$page.url.pathname === '/rooms'}>Game Lobby</a>
+        {/if}
+        <a href="/profile" class:active={$page.url.pathname === '/profile'}>My Profile</a>
+        <a href="/rules" class:active={$page.url.pathname === '/rules'}>Game Rules</a>
+        <AnimationToggle />
+        <button class="navbar-button" on:click={handleLogout}>Logout</button>
+      {:else}
+        <!-- Links for non-authenticated users -->
+        <a href="/welcome" class:active={$page.url.pathname === '/welcome'}>Home</a>
+        <a href="/rules" class:active={$page.url.pathname === '/rules'}>Game Rules</a>
+        <a href="/login" class:active={$page.url.pathname === '/login'}>Login</a>
+        <a href="/register" class:active={$page.url.pathname === '/register'}>Register</a>
+      {/if}
+    </div>
+  </div>
 </nav>
 
 <style>

@@ -5,12 +5,13 @@ namespace CartasDeAmor.Application.Services;
 
 public class ConnectionMappingService : IConnectionMappingService
 {
-    private readonly ConcurrentDictionary<string, HashSet<string>> _connections = new();
+    private readonly ConcurrentDictionary<string, HashSet<string>> _emailConnections = new();
+    private readonly ConcurrentDictionary<string, Guid> _connectionsRooms = new();
 
-    public void AddConnection(string userEmail, string connectionId)
+    public void AddConnection(string userEmail, string connectionId, Guid roomId)
     {
-        _connections.AddOrUpdate(userEmail, 
-            new HashSet<string> { connectionId }, 
+        _emailConnections.AddOrUpdate(userEmail,
+            new HashSet<string> { connectionId },
             (key, existingConnections) =>
             {
                 lock (existingConnections)
@@ -19,18 +20,20 @@ public class ConnectionMappingService : IConnectionMappingService
                     return existingConnections;
                 }
             });
+
+        _connectionsRooms.AddOrUpdate(connectionId, roomId, (key, existingRoomId) => roomId);
     }
 
     public void RemoveConnection(string userEmail, string connectionId)
     {
-        if (_connections.TryGetValue(userEmail, out var connections))
+        if (_emailConnections.TryGetValue(userEmail, out var connections))
         {
             lock (connections)
             {
                 connections.Remove(connectionId);
                 if (connections.Count == 0)
                 {
-                    _connections.TryRemove(userEmail, out _);
+                    _emailConnections.TryRemove(userEmail, out _);
                 }
             }
         }
@@ -38,19 +41,20 @@ public class ConnectionMappingService : IConnectionMappingService
 
     public IEnumerable<string> GetConnections(string userEmail)
     {
-        if (_connections.TryGetValue(userEmail, out var connections))
+        if (_emailConnections.TryGetValue(userEmail, out var connections))
         {
             lock (connections)
             {
                 return connections.ToList();
             }
         }
-        return Enumerable.Empty<string>();
+
+        return [];
     }
 
     public void RemoveConnectionById(string connectionId)
     {
-        var userToRemove = _connections.FirstOrDefault(kvp =>
+        var userToRemove = _emailConnections.FirstOrDefault(kvp =>
         {
             lock (kvp.Value)
             {
@@ -62,5 +66,12 @@ public class ConnectionMappingService : IConnectionMappingService
         {
             RemoveConnection(userToRemove.Key, connectionId);
         }
+    }
+
+    public Guid? GetRoomIdByConnectionId(string connectionId)
+    {
+        var found = _connectionsRooms.TryGetValue(connectionId, out var roomId);
+
+        return found ? roomId : null;
     }
 }

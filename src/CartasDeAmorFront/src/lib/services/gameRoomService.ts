@@ -37,6 +37,16 @@ export async function createGameRoom(roomName: string, password?: string | null)
   }
 }
 
+// Get user's active (unfinished) game rooms
+export async function getUserActiveRooms(): Promise<GameRoom[]> {
+  try {
+    return await apiGet<GameRoom[]>(`${API_CONFIG.baseUrl}/GameRoom/user`);
+  } catch (error) {
+    console.error('Failed to fetch user active rooms:', error);
+    return [];
+  }
+}
+
 // Delete a game room
 export async function deleteGameRoom(roomId: string): Promise<boolean> {
   try {
