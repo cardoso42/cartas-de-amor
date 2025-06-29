@@ -1,4 +1,4 @@
-@startuml Reconnect to Room
+@startuml ReconnectToRoom
 
 actor "Player" as Player
 participant "Frontend" as FE

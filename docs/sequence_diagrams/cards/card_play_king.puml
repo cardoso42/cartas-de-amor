@@ -1,0 +1,13 @@
+@startuml KingCardPlay
+
+participant "GameService" as GameSvc
+participant "King Card" as King
+
+GameSvc -> King: Execute King effect
+activate King
+King -> King: Create play event
+King -> King: Create switch cards event
+King --> GameSvc: King result
+deactivate King
+
+@enduml 

@@ -1,0 +1,19 @@
+@startuml PrinceCardPlay
+
+participant "GameService" as GameSvc
+participant "Prince Card" as Prince
+
+GameSvc -> Prince: Execute Prince effect
+activate Prince
+Prince -> Prince: Create play event
+Prince -> Prince: Create discard event
+alt Discarded card is Princess
+    Prince -> Prince: Eliminate target
+    Prince -> Prince: Create elimination event
+else Draw new card
+    Prince -> Prince: Create draw card event
+end
+Prince --> GameSvc: Prince result
+deactivate Prince
+
+@enduml 

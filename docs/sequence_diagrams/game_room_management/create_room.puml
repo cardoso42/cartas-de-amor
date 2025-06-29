@@ -1,4 +1,4 @@
-@startuml Create Room
+@startuml CreateRoom
 
 actor "Player" as Player
 participant "Frontend" as FE

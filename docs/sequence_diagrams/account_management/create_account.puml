@@ -1,4 +1,4 @@
-@startuml Create Account
+@startuml CreateAccount
 
 actor "Player" as Player
 participant "Frontend" as FE

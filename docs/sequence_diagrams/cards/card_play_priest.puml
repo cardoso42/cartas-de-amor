@@ -1,0 +1,14 @@
+@startuml PriestCardPlay
+
+participant "GameService" as GameSvc
+participant "Priest Card" as Priest
+
+GameSvc -> Priest: Execute Priest effect
+activate Priest
+Priest -> Priest: Create play event
+Priest -> Priest: Create peek event\n(public event)
+Priest -> Priest: Create show card event\n(private event)
+Priest --> GameSvc: Priest result
+deactivate Priest
+
+@enduml 

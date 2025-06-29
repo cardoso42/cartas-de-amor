@@ -1,0 +1,44 @@
+@startuml AdvanceTurnFlow
+
+actor "Other Players" as Others
+actor "Player" as Player
+participant "GameHub" as Hub
+participant "GameService" as GameSvc
+
+== Check Round End ==
+
+GameSvc -> GameSvc: Check if round is over
+
+alt Round is over
+    GameSvc -> GameSvc: Determine round winners
+    GameSvc --> Hub: Round winners
+    Hub --> Player: Round winners event
+    Hub --> Others: Round winners event
+
+    GameSvc -> GameSvc: Check for bonus points
+    alt Bonus points awarded
+        GameSvc --> Hub: Bonus points
+        Hub --> Player: Bonus points event
+        Hub --> Others: Bonus points event
+    end
+    
+    GameSvc -> GameSvc: Check if game is over
+    alt Game is over
+        GameSvc -> GameSvc: Get game winners
+        GameSvc --> Hub: Game over
+        Hub --> Player: Game over event
+        Hub --> Others: Game over event
+    else Start new round
+        GameSvc -> GameSvc: Start new round
+        GameSvc --> Hub: Round started
+        Hub --> Player: Round started event
+        Hub --> Others: Round started event
+    end
+else Continue current round
+    GameSvc -> GameSvc: Get next player
+    GameSvc -> Hub: Next turn
+    Hub -> Player: Turn change
+    Hub -> Others: Turn change
+end
+
+@enduml 

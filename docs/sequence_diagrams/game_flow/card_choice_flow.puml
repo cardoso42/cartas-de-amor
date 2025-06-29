@@ -1,0 +1,41 @@
+@startuml CardChoiceFlow
+
+actor "Other Players" as Others
+actor "Player" as Player
+participant "GameHub" as Hub
+participant "GameService" as GameSvc
+
+== Request Card Choice ==
+
+GameSvc -> Hub: Choose card
+Hub -> Player: Choose card event
+
+== Player Submits Choice ==
+
+Player -> Hub: Submit card choice
+activate Hub
+Hub -> GameSvc: Process card choice
+activate GameSvc
+
+alt Valid choice
+    GameSvc -> GameSvc: Process choice
+    GameSvc -> Hub: Card choice submitted
+    Hub -> Player: Card choice submitted event
+    Hub -> Others: Card choice submitted event
+    
+    GameSvc -> Hub: Update public info
+    Hub -> Player: Public update
+    Hub -> Others: Public update
+    
+    GameSvc -> Hub: Update private info
+    Hub -> Player: Private update
+    
+else Invalid choice
+    GameSvc -> Hub: Card choice error
+    Hub -> Player: Card choice error event
+end
+
+deactivate GameSvc
+deactivate Hub
+
+@enduml 

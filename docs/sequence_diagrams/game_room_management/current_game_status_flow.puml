@@ -1,0 +1,27 @@
+@startuml CurrentGameStatusFlow
+
+actor "Player" as Player
+participant "GameHub" as Hub
+participant "GameService" as GameSvc
+
+Player -> Hub: Get current game status
+activate Hub
+Hub -> GameSvc: Get current game status
+activate GameSvc
+
+GameSvc -> GameSvc: Check if game exists
+alt Game exists and has started
+    GameSvc -> GameSvc: Get game state
+    GameSvc -> GameSvc: Get player data
+    GameSvc -> GameSvc: Get other players data
+    GameSvc --> Hub: Current game status
+    Hub --> Player: Current game status event
+else No active game
+    GameSvc --> Hub: No game status
+    Hub --> Player: Current game status event (null)
+end
+
+deactivate GameSvc
+deactivate Hub
+
+@enduml 

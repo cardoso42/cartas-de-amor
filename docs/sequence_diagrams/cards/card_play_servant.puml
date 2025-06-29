@@ -1,0 +1,13 @@
+@startuml HandmaidCardPlay
+
+participant "GameService" as GameSvc
+participant "Handmaid Card" as Handmaid
+
+GameSvc -> Handmaid: Execute Handmaid effect
+activate Handmaid
+Handmaid -> Handmaid: Create play event
+Handmaid -> Handmaid: Create protection\nevent
+Handmaid --> GameSvc: Handmaid result
+deactivate Handmaid
+
+@enduml 
