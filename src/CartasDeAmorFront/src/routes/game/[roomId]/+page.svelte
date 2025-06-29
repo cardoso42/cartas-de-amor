@@ -11,19 +11,13 @@
   import { getCardName } from '$lib/utils/cardUtils';
   import { get as getStore } from 'svelte/store';
   import { getPlayerPlayedCardsPosition, getPlayerScreenPosition, getGameTableCenter } from '$lib/utils/gameUtils';
-  import { isPlayerProtected } from '$lib/utils/gameDataProcessor';
   import GameTable from '$lib/components/game/core/GameTable.svelte';
   import AnimationManager from '$lib/components/game/animations/AnimationManager.svelte';
   import { InteractionBlocker, GameLog } from '$lib/components/game/ui';
   import type { LogEntry } from '$lib/components/game/ui/GameLog.svelte';
   import { NavigationGuard } from '$lib/utils/navigationGuard';
   import { _ } from 'svelte-i18n';
-  import type { 
-    InitialGameStatusDto, 
-    PrivatePlayerUpdateDto, 
-    PublicPlayerUpdateDto,
-    CardType
-  } from '$lib/types/game-types';
+  import type { GameStatusDto, PublicPlayerUpdateDto, CardType, PrivatePlayerUpdateDto } from '$lib/types/game-types';
 
   // Get room ID from URL params
   const roomId = $page.data.roomId;
@@ -35,7 +29,7 @@
   });
   
   // Game state
-  let gameStatus: InitialGameStatusDto | null = null;
+  let gameStatus: GameStatusDto | null = null;
   let localPlayerPlayedCards: number[] = []; // Track local player's played cards
   let isConnected = false;
   let connectionError = '';
@@ -233,7 +227,6 @@
       return $_('game.you');
     }
     
-    // Try to find the player in the game status to get their username
     if (gameStatus?.otherPlayersPublicData) {
       const player = gameStatus.otherPlayersPublicData.find(p => p.userEmail === email);
       if (player?.username) {
@@ -327,25 +320,19 @@
       return;
     }
     
-    // Handle any additional player data updates that don't involve card playing
-    // For example, status changes, protection status, etc.
     const playerEmail = playerPublicData.userEmail;
     
-    // Update player's data
     if (playerEmail !== userEmail) {
       // Update other players' public data
       const otherPlayers = gameStatus.otherPlayersPublicData || [];
       const playerToUpdate = otherPlayers.find(p => p.userEmail === playerEmail);
       
       if (playerToUpdate) {
-        // Update player's status, which includes protection status
         playerToUpdate.status = playerPublicData.status;
         playerToUpdate.score = playerPublicData.score;
-        playerToUpdate.cardsInHand = playerPublicData.holdingCardsCount;
+        playerToUpdate.holdingCardsCount = playerPublicData.holdingCardsCount;
         playerToUpdate.playedCards = playerPublicData.playedCards;
-        
-        // Since PlayerStatusDto has both status and isProtected, we need to derive isProtected from status
-        playerToUpdate.isProtected = isPlayerProtected(playerPublicData.status);
+        playerToUpdate.username = playerPublicData.username;
       }
     }
     
@@ -466,11 +453,12 @@
           
           showNotification($_('game.usernameChanged', { values: { oldName: oldDisplayName, newName: newUsername } }), 'info');
         },
-        onCurrentGameStatus: (initialGameStatus: InitialGameStatusDto | null) => {
+        onCurrentGameStatus: (initialGameStatus: GameStatusDto | null) => {
           if (initialGameStatus) {           
             // Game is in progress, set the game state and display it
             gameStatus = initialGameStatus;
-            localPlayerPlayedCards = []; // Reset played cards, will be populated by PrivatePlayerUpdate if needed
+            // Update local player's played cards from the initial game status
+            localPlayerPlayedCards = initialGameStatus.yourData?.playedCards || [];
             eliminatedPlayers.clear();
             eliminatedPlayers = new Set(eliminatedPlayers); // Trigger reactivity
             
@@ -480,7 +468,7 @@
             }
           }
         },
-        onRoundStarted: (initialGameStatus: InitialGameStatusDto) => {
+        onRoundStarted: (initialGameStatus: GameStatusDto) => {
           // Store the current state before updating
           const oldGameStatus = gameStatus;
           
@@ -507,7 +495,7 @@
           // Collect animation data for all players
           if (oldGameStatus) {
             // Add current user
-            const userHadCards = (oldGameStatus.yourCards || []).length > 0;
+            const userHadCards = (oldGameStatus.yourData?.holdingCards || []).length > 0;
             let userPosition = { x: window.innerWidth / 2, y: window.innerHeight / 2, width: 65, height: 90 };
             if (gameTableComponent) {
               const userPos = gameTableComponent.getPlayerHandPosition(userEmail);
@@ -525,7 +513,7 @@
 
             // Add other players
             (oldGameStatus.otherPlayersPublicData || []).forEach(player => {
-              const playerHadCards = (player.cardsInHand || 0) > 0;
+              const playerHadCards = (player.holdingCardsCount || 0) > 0;
               let playerPosition = { x: window.innerWidth / 2, y: window.innerHeight / 2, width: 65, height: 90 };
               
               if (gameTableComponent) {
@@ -613,22 +601,25 @@
           // Update the game status with the player's new cards and status
           if (gameStatus) {
             if (playerUpdate.holdingCards) {
-              gameStatus.yourCards = playerUpdate.holdingCards;
+              gameStatus.yourData.holdingCards = playerUpdate.holdingCards;
             }
 
             if (playerUpdate.playedCards) {
               // Update local player's played cards
               localPlayerPlayedCards = playerUpdate.playedCards;
+              gameStatus.yourData.playedCards = playerUpdate.playedCards;
             }
-            
-            // Update protection status derived from player status
-            gameStatus.isProtected = isPlayerProtected(playerUpdate.status);
-            
+
+            // Update status
+            if (playerUpdate.status !== undefined) {
+              gameStatus.yourData.status = playerUpdate.status;
+            }
+
             // Update score if provided
             if (playerUpdate.score !== undefined) {
-              gameStatus.score = playerUpdate.score;
+              gameStatus.yourData.score = playerUpdate.score;
             }
-            
+
             gameStatus = { ...gameStatus }; // Trigger reactivity
           }
         },
@@ -649,7 +640,7 @@
           const playedCard = data.cardType as CardType;
           const playerName = getPlayerDisplayName(playerEmail);
           
-          showNotification($_('game.playedCard', { values: { playerName, playedCard }}), 'info');
+          showNotification($_('game.playedCard', { values: { playerName: playerName, cardName: getCardName(playedCard) }}), 'info');
           
           // Get card source position from player's hand
           let sourcePosition = { x: window.innerWidth / 2, y: window.innerHeight / 2, width: 50, height: 70 };
@@ -745,7 +736,7 @@
           // Only show animation if this is relevant to the current user
           // (i.e., the current user is the one who gets to see the card)
           const targetPlayerName = getPlayerDisplayName(data.target);
-          showNotification($_('game.cardIs', { values: { playerName: targetPlayerName, cardType: data.cardType } }), 'info');
+          showNotification($_('game.cardIs', { values: { playerName: targetPlayerName, cardType: getCardName(data.cardType) } }), 'info');
           
           // Get specific card position from GameTable
           let sourcePosition = { x: window.innerWidth / 2, y: window.innerHeight / 2 };

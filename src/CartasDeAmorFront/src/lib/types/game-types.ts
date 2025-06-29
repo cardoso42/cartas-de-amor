@@ -52,15 +52,13 @@ export interface PlayerStatusDto {
 
 /**
  * Initial game status DTO interface
- * Matches the C# InitialGameStatusDto class
+ * Matches the C# GameStatusDto class
  */
-export interface InitialGameStatusDto {
-  otherPlayersPublicData: PlayerStatusDto[];
-  yourCards: CardType[];
-  isProtected: boolean;
+export interface GameStatusDto {
+  otherPlayersPublicData: PublicPlayerUpdateDto[];
+  yourData: PrivatePlayerUpdateDto;
   allPlayersInOrder: string[];
   firstPlayerIndex: number;
-  score: number;
   cardsRemainingInDeck: number;
 }
 
@@ -80,6 +78,7 @@ export interface PrivatePlayerUpdateDto {
  */
 export interface PublicPlayerUpdateDto {
   userEmail: string;
+  username: string;
   status: number; // PlayerStatus enum
   playedCards: CardType[];
   holdingCardsCount: number;
