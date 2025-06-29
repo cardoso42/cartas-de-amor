@@ -22,5 +22,5 @@ public interface IGameService
     Task FinishRoundAsync(Guid roomId);
 	Task VerifyGameValidity(Guid roomId);
     Task FinishGameAsync(Guid roomdId);
-    Task<InitialGameStatusDto?> GetCurrentGameStatusAsync(Guid roomId, string userEmail);
+    Task<GameStatusDto?> GetCurrentGameStatusAsync(Guid roomId, string userEmail);
 }

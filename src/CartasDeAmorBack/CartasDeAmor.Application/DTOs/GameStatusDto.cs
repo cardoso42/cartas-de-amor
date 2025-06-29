@@ -3,25 +3,20 @@ using CartasDeAmor.Domain.Enums;
 
 namespace CartasDeAmor.Application.DTOs;
 
-public class InitialGameStatusDto
+public class GameStatusDto
 {
-    public ICollection<PlayerStatusDto> OtherPlayersPublicData { get; set; } = [];
-    public ICollection<CardType> YourCards { get; set; } = [];
-    public bool IsProtected { get; set; } = false;
+    public ICollection<PublicPlayerUpdateDto> OtherPlayersPublicData { get; set; } = [];
+    public PrivatePlayerUpdateDto YourData { get; set; }
     public IList<string> AllPlayersInOrder { get; set; } = [];
     public int FirstPlayerIndex { get; set; } = 0;
-    public int Score { get; set; } = 0;
     public int CardsRemainingInDeck { get; set; } = 0;
 
-    public InitialGameStatusDto() { }
-    public InitialGameStatusDto(Game game, ICollection<PlayerStatusDto> players, Player player)
+    public GameStatusDto(Game game, ICollection<PublicPlayerUpdateDto> players, Player player)
     {
         OtherPlayersPublicData = players;
-        YourCards = player.HoldingCards;
+        YourData = new PrivatePlayerUpdateDto(player);
         AllPlayersInOrder = game.Players.Select(p => p.UserEmail).ToList();
         FirstPlayerIndex = game.CurrentPlayerIndex;
-        IsProtected = player.IsProtected();
-        Score = player.Score;
         CardsRemainingInDeck = game.CardsDeck.Count;
     }
 }

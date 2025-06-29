@@ -44,19 +44,11 @@ public class GameService : IGameService
             // Get other players' data for this specific player
             var otherPlayers = game.Players
                 .Where(p => p.UserEmail != player.UserEmail)
-                .Select(p => new PlayerStatusDto 
-                {
-                    UserEmail = p.UserEmail, 
-                    Username = users.ContainsKey(p.UserEmail) ? users[p.UserEmail].Username : p.UserEmail, // Use actual username if available, fallback to email
-                    Status = p.Status,
-                    IsProtected = p.IsProtected(),
-                    Score = p.Score,
-                    CardsInHand = p.HoldingCards.Count
-                })
+                .Select(p => new PublicPlayerUpdateDto(users[p.UserEmail], p))
                 .ToList();
 
             // Send round start data to the specific player (this is the main message the frontend expects)
-            await _mediator.SendRoundStartAsync(player.UserEmail, new InitialGameStatusDto(game, otherPlayers, player));
+            await _mediator.SendRoundStartAsync(player.UserEmail, new GameStatusDto(game, otherPlayers, player));
         }
     }
 
@@ -489,7 +481,7 @@ public class GameService : IGameService
         await _mediator.SendPlayerUpdatePrivateAsync(player);
     }
 
-    public async Task<InitialGameStatusDto?> GetCurrentGameStatusAsync(Guid roomId, string userEmail)
+    public async Task<GameStatusDto?> GetCurrentGameStatusAsync(Guid roomId, string userEmail)
     {
         var game = await _roomRepository.GetByIdAsync(roomId);
         if (game == null)
@@ -517,7 +509,6 @@ public class GameService : IGameService
         // Get all user emails for other players
         var otherPlayerEmails = otherPlayers.Select(p => p.UserEmail).ToList();
         
-        // Fetch all users in a single query to avoid N+1 problem
         var users = (await _userRepository.GetByEmailsAsync(otherPlayerEmails))
             .ToDictionary(u => u.Email, u => u);
 
@@ -532,10 +523,10 @@ public class GameService : IGameService
         // Create PlayerStatusDto objects for players that have corresponding users
         var otherPlayersPublicData = otherPlayers
             .Where(player => users.ContainsKey(player.UserEmail))
-            .Select(player => new PlayerStatusDto(users[player.UserEmail], player))
+            .Select(player => new PublicPlayerUpdateDto(users[player.UserEmail], player))
             .ToList();
 
-        return new InitialGameStatusDto(game, otherPlayersPublicData, player);
+        return new GameStatusDto(game, otherPlayersPublicData, player);
     }
 
     public async Task VerifyGameValidity(Guid roomId)
