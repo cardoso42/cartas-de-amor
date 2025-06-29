@@ -72,8 +72,8 @@
     "enterPassword": "Ingresar Contraseña"
   },
   "navigation": {
-    "home": "Inicio",
-    "dashboard": "Panel",
+    "dashboard": "Inicio",
+    "game": "Juego Actual",
     "rooms": "Salas de juego",
     "profile": "Perfil",
     "rules": "Reglas",
