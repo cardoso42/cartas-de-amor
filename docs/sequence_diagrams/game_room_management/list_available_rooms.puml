@@ -1,4 +1,4 @@
-@startuml List All Available Rooms
+@startuml ListAllAvailableRooms
 
 actor "Player" as Player
 participant "Frontend" as FE

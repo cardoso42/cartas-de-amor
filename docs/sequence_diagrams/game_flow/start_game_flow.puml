@@ -1,4 +1,4 @@
-@startuml Start Game
+@startuml StartGame
 
 actor "Host Player" as Host
 participant "Frontend" as FE
@@ -9,25 +9,26 @@ Host -> FE: Start game
 activate FE
 FE -> API: SignalR: StartGame(roomId)
 activate API
-API -> DB: Get room details
+API -> DB: Get game from repository
 activate DB
-DB --> API: Room details
+DB --> API: Game data
 deactivate DB
 alt Not enough players
     API --> FE: SignalR: GameStartError event
-    FE --> Host: Not enough players
+    FE --> Host: "At least 2 players are required"
 else Not host
     API --> FE: SignalR: GameStartError event
-    FE --> Host: Not authorized
+    FE --> Host: "Only the host can start the game"
 else Can start
-    API -> API: Initialize game\n(shuffle deck, deal cards)
-    API -> DB: Store initial game state
+    API -> API: Configure game\n(shuffle deck, deal cards)
+    API -> API: Start new round\n(set current player index)
+    API -> DB: Update game state
     activate DB
-    DB --> API: Game initialized
+    DB --> API: Game updated
     deactivate DB
     
+    API -> API: SendGameStatusDtos\n(for each player)
     API --> FE: SignalR: RoundStarted event
-    API --> FE: SignalR: NextTurn event
     FE --> Host: Game started successfully
 end
 deactivate API

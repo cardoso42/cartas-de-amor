@@ -1,4 +1,4 @@
-@startuml Delete Room
+@startuml DeleteRoom
 
 actor "Player" as Player
 participant "Frontend" as FE
@@ -9,14 +9,14 @@ Player -> FE: Delete room
 activate FE
 FE -> API: DELETE /api/GameRoom/{roomId}
 activate API
-API -> DB: Check if user is Player
+API -> DB: Check if user is Host
 activate DB
 DB --> API: Verification result
 deactivate DB
-alt Not the Player
+alt Not the Host
     API --> FE: 403 Forbidden
     FE --> Player: Not authorized
-else Is Player
+else Is Host
     API -> DB: Delete room
     activate DB
     DB --> API: Room deleted

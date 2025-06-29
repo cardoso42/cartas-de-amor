@@ -1,4 +1,4 @@
-@startuml Join Room
+@startuml JoinRoom
 
 actor "Player" as Player
 participant "Frontend" as FE

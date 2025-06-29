@@ -1,0 +1,17 @@
+@startuml GuardCardPlay
+
+participant "GameService" as GameSvc
+participant "Guard Card" as Guard
+
+GameSvc -> Guard: Execute Guard effect
+activate Guard
+Guard -> Guard: Create play event
+Guard -> Guard: Create guess event
+alt Correct guess
+    Guard -> Guard: Eliminate target
+    Guard -> Guard: Create elimination event
+end
+Guard --> GameSvc: Guard result
+deactivate Guard
+
+@enduml 

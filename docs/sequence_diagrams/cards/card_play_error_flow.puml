@@ -1,0 +1,36 @@
+@startuml CardPlayErrorFlow
+
+actor "Other Players" as Others
+actor "Player" as Player
+participant "GameHub" as Hub
+participant "GameService" as GameSvc
+
+== Card Play Error ==
+
+Player -> Hub: Play card
+activate Hub
+Hub -> GameSvc: Process card play
+activate GameSvc
+
+alt Invalid operation
+    GameSvc -> Hub: Play card error
+    Hub -> Player: Play card error event
+else Mandatory card play violation
+    GameSvc -> Hub: Mandatory card play
+    Hub -> Player: Mandatory card play event
+else Card requirements not met
+    GameSvc -> GameSvc: Get card requirements
+    GameSvc -> Hub: Card requirements
+    Hub -> Player: Card requirements event
+else Draw card error
+    GameSvc -> Hub: Draw card error
+    Hub -> Player: Draw card error event
+else Game start error
+    GameSvc -> Hub: Game start error
+    Hub -> Player: Game start error event
+end
+
+deactivate GameSvc
+deactivate Hub
+
+@enduml 

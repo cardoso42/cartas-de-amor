@@ -1,0 +1,12 @@
+@startuml CountessCardPlay
+
+participant "GameService" as GameSvc
+participant "Countess Card" as Countess
+
+GameSvc -> Countess: Execute Countess effect
+activate Countess
+Countess -> Countess: Create play event
+Countess --> GameSvc: Countess result
+deactivate Countess
+
+@enduml 

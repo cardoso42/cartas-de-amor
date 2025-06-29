@@ -1,0 +1,16 @@
+@startuml ChangeUsername
+
+actor "Other Players" as Others
+actor "Player" as Player
+participant "Backend" as API
+database "Database" as DB
+
+Player -> API: Enter new username
+activate API
+API -> DB: Update username
+DB --> API: Username updated
+API --> Player: Username updated successfully
+API -> Others: Username changed event
+deactivate API
+
+@enduml

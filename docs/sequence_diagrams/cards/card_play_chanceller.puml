@@ -1,0 +1,17 @@
+@startuml ChancellorCardPlay
+
+participant "GameService" as GameSvc
+participant "Chancellor Card" as Chancellor
+
+GameSvc -> Chancellor: Execute Chancellor effect
+activate Chancellor
+loop while card deck > 0 and\ndrawn_cards <= 2
+    Chancellor -> Chancellor: Draw card event
+end
+Chancellor -> Chancellor: Choose card event
+
+Chancellor --> GameSvc: Chancellor result
+
+deactivate Chancellor
+
+@enduml 

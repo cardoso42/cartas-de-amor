@@ -1,0 +1,33 @@
+@startuml GenericCardPlay
+
+actor "Other Players" as Others
+actor "Player" as Player
+participant "GameHub" as Hub
+participant "GameService" as GameSvc
+participant "Card" as Card
+
+Player -> Hub: Play card
+activate Hub
+Hub -> GameSvc: Process card play
+activate GameSvc
+
+GameSvc -> Card: Execute card effect
+activate Card
+Card --> GameSvc: Card result
+deactivate Card
+
+GameSvc --> Hub: Card Result
+Hub -> Player: Public update
+Hub -> Player: Private update
+Hub -> Player: Card results
+Hub -> Player: Turn change
+
+Hub -> Others: Public update
+Hub -> Others: Target player private\nupdate (if any)
+Hub -> Others: Card results
+Hub -> Others: Turn change
+
+deactivate GameSvc
+deactivate Hub
+
+@enduml 

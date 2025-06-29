@@ -1,0 +1,25 @@
+@startuml GetRoomsFromUser
+
+participant "Frontend" as FE
+participant "GameRoomController" as Controller
+participant "GameRoomService" as Service
+participant "GameRoomRepository" as Repository
+
+FE -> Controller: GET /api/GameRoom/user
+activate Controller
+
+Controller -> Service: Get Rooms with User
+activate Service
+Service -> Repository: GetAllAsync()
+activate Repository
+Repository --> Service: List<Game>
+deactivate Repository
+
+Service -> Service: Filter rooms where:\n- room.HasPlayer(userEmail)\n- room.IsActive()
+Service --> Controller: List<GameRoomDto>
+deactivate Service
+
+Controller --> FE: 200 OK (user's active rooms)
+deactivate Controller
+
+@enduml 

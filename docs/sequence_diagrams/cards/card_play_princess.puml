@@ -1,0 +1,14 @@
+@startuml PrincessCardPlay
+
+participant "GameService" as GameSvc
+participant "Princess Card" as Princess
+
+GameSvc -> Princess: Execute Princess effect
+activate Princess
+Princess -> Princess: Eliminate player
+Princess -> Princess: Create play event
+Princess -> Princess: Create elimination event
+Princess --> GameSvc: Princess result
+deactivate Princess
+
+@enduml 

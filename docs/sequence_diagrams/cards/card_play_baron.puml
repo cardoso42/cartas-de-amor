@@ -1,0 +1,21 @@
+@startuml BaronCardPlay
+
+participant "GameService" as GameSvc
+participant "Baron Card" as Baron
+
+GameSvc -> Baron: Play Baron
+activate Baron
+Baron -> Baron: Create play event
+alt Invoker card > Target card
+    Baron -> Baron: Eliminate target player
+    Baron -> Baron: Create elimination event
+else Invoker card < Target card
+    Baron -> Baron: Eliminate invoker player
+    Baron -> Baron: Create elimination event
+else Cards are equal
+    Baron -> Baron: Create tie event
+end
+Baron --> GameSvc: Baron result
+deactivate Baron
+
+@enduml 

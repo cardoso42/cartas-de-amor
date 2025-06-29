@@ -1,4 +1,4 @@
-@startuml Leave Room
+@startuml LeaveRoom
 
 actor "Player" as Player
 participant "Frontend" as FE
