@@ -74,7 +74,6 @@ public class AccountService : IAccountService
         user.Username = username;
         await _userRepository.UpdateAsync(user);
 
-        // Send SignalR notification using the convenient extension method
         await _mediator.SendUsernameChangedAsync(email, username);
     }
 
