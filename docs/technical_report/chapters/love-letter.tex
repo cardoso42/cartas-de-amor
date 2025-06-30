@@ -1,0 +1,43 @@
+\chapter{Regras do Jogo}\label{appendix:love-letter}
+\section{Visão Geral}
+Love Letter é um jogo de dedução, risco e eliminação onde os jogadores competem para entregar uma carta de amor à princesa. Cada carta tem um valor diferente e habilidades especiais que podem ajudar ou atrapalhar os jogadores. É um jogo de cartas jogado com 2 a 6 jogadores. O objetivo é vencer um certo número de rodadas (tokens de afeição) sendo o último jogador restante ou segurando a carta de maior valor ao final de uma rodada.
+
+\section{Fluxo do Jogo}
+\begin{itemize}
+    \item Cada jogador começa com uma carta.
+    \item Em seu turno, o jogador compra uma carta e escolhe uma das duas cartas para jogar.
+    \item O efeito da carta jogada é aplicado imediatamente.
+    \item Jogadores podem ser eliminados durante a rodada com base nos efeitos das cartas.
+    \item A rodada termina quando resta apenas um jogador ou quando o baralho acaba.
+    \item O jogador com a carta de maior valor vence a rodada.
+\end{itemize}
+
+\section{Lista de Cartas e Efeitos}
+\begin{itemize}
+    \item \textbf{Spy (0)}: Ao final da rodada, se o jogador for o \emph{único} restante que jogou ou descartou um Spy durante aquela rodada, recebe 1 token de afeição, mesmo que não tenha vencido a rodada.
+    \item \textbf{Guard (1)}: Adivinhe a carta na mão de outro jogador (exceto Guard). Se acertar, o jogador é eliminado.
+    \item \textbf{Priest (2)}: Veja a carta na mão de outro jogador.
+    \item \textbf{Baron (3)}: Compare a mão com outro jogador; quem tiver a carta de menor valor é eliminado.
+    \item \textbf{Handmaid (4)}: Proteção contra todos os efeitos até seu próximo turno.
+    \item \textbf{Prince (5)}: Escolha qualquer jogador (inclusive você) para descartar a mão (revelando a carta, mas sem aplicar seus efeitos) e comprar uma nova carta.
+    \item \textbf{Chancellor (6)}: Compre 2 cartas e escolha apenas uma das três cartas na mão para manter. As outras duas cartas retornam ao final do baralho.
+    \item \textbf{King (7)}: Troque de mão com outro jogador.
+    \item \textbf{Countess (8)}: Deve ser jogada se estiver na mão junto com Prince ou King.
+    \item \textbf{Princess (9)}: Se descartada ou jogada, o jogador é eliminado.
+\end{itemize}
+
+\section{Como Vencer o Jogo}
+
+Um jogador ganha um token de afeição a cada rodada vencida. O número de tokens necessários para vencer depende do número de jogadores, conforme a tabela abaixo:
+
+\begin{center}
+\begin{tabular}{|c|c|c|c|c|c|}
+\hline
+\textbf{Jogadores} & 2 & 3 & 4 & 5 & 6 \\
+\hline
+\textbf{Tokens para Vencer} & 6 & 5 & 4 & 3 & 3 \\
+\hline
+\end{tabular}
+\end{center}
+
+Por exemplo, em um jogo para 2 jogadores, o primeiro a conquistar 6 tokens vence a partida. Em jogos com 5 ou 6 jogadores, apenas 3 tokens são necessários.

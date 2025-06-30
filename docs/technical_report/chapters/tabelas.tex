@@ -1,0 +1,49 @@
+\chapter{Tabelas da Base de Dados}
+
+\section{Visão Geral das Tabelas}
+A base de dados do sistema é composta por três tabelas principais: \textbf{Users}, \textbf{Games} e \textbf{Players}. A seguir, detalhamos cada uma delas:
+
+\subsection{Tabela Users}
+\begin{itemize}
+    \item \textbf{Email}: identificador único do usuário (chave primária).
+    \item \textbf{Username}: nome de exibição do usuário.
+    \item \textbf{PasswordHash}: senha do usuário armazenada de forma segura (hash).
+\end{itemize}
+
+\subsection{Tabela Games}
+\begin{itemize}
+    \item \textbf{Id}: identificador único da partida (UUID, chave primária).
+    \item \textbf{Name}: nome da partida.
+    \item \textbf{HostEmail}: email do usuário que criou a partida (chave estrangeira para Users).
+    \item \textbf{Password}: senha da sala (opcional).
+    \item \textbf{MaxTokens}: número máximo de tokens para vencer.
+    \item \textbf{GameState}: estado atual da partida (ex: aguardando, em andamento, finalizada).
+    \item \textbf{CurrentPlayerIndex}: índice do jogador da vez.
+    \item \textbf{CardsDeck}: baralho de cartas da partida (array de inteiros).
+    \item \textbf{ReservedCard}: carta reservada.
+    \item \textbf{CreatedAt} / \textbf{UpdatedAt}: datas de criação e atualização.
+\end{itemize}
+\textbf{Relações:}
+\begin{itemize}
+    \item \textbf{HostEmail} referencia Users.
+    \item Relação 1:N com Players (uma partida possui vários jogadores).
+\end{itemize}
+
+\subsection{Tabela Players}
+\begin{itemize}
+    \item \textbf{GameId}: identificador da partida (chave primária composta).
+    \item \textbf{UserEmail}: email do usuário (chave primária composta).
+    \item \textbf{Id}: identificador interno do jogador na partida.
+    \item \textbf{HoldingCards}: cartas na mão do jogador (array de inteiros).
+    \item \textbf{PlayedCards}: cartas já jogadas pelo jogador (array de inteiros).
+    \item \textbf{Score}: pontuação do jogador.
+    \item \textbf{Status}: status do jogador na partida (ex: ativo, eliminado).
+\end{itemize}
+\textbf{Relações:}
+\begin{itemize}
+    \item \textbf{GameId} referencia Games.
+    \item \textbf{UserEmail} referencia Users.
+\end{itemize}
+
+Essas tabelas e seus relacionamentos garantem o controle de usuários, partidas e jogadores, permitindo o gerenciamento eficiente do jogo e suas regras.
+

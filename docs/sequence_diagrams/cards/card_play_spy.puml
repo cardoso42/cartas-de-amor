@@ -1,0 +1,12 @@
+@startuml SpyCardPlay
+
+participant "GameService" as GameSvc
+participant "Spy Card" as  Spy
+
+GameSvc ->  Spy: Execute  Spy effect
+activate  Spy
+    Spy ->  Spy: Create play event
+    Spy --> GameSvc:  Spy result
+deactivate  Spy
+
+@enduml 

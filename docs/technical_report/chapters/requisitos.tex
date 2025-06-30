@@ -1,0 +1,55 @@
+\chapter{Requisitos}
+
+\section{Requisitos Funcionais}
+
+\begin{itemize}
+    \item \textbf{RF01}: O sistema deve permitir o registro de novos usuários com nome de usuário, e-mail e senha.
+    \item \textbf{RF02}: O sistema deve permitir autenticação de usuários e manutenção de sessões seguras.
+    \item \textbf{RF03}: Usuários autenticados devem poder criar novas salas de jogo.
+    \item \textbf{RF04}: O sistema deve listar salas de jogo disponíveis para entrada.
+    \item \textbf{RF05}: Cada sala de jogo deve suportar de 2 a 6 jogadores simultâneos.
+    \item \textbf{RF06}: O estado do jogo deve ser sincronizado em tempo real entre todos os jogadores, utilizando WebSockets.
+    \item \textbf{RF07}: O sistema deve implementar e aplicar as regras oficiais do jogo \textit{Love Letter}, conforme especificado no Apêndice~\ref{appendix:love-letter}.
+    \item \textbf{RF08}: O sistema deve permitir que o usuário exclua sua própria conta.
+    \item \textbf{RF09}: O sistema deve permitir que o usuário altere seu nome de usuário.
+    \item \textbf{RF10}: O usuário deve poder sair de uma sala de jogo a qualquer momento.
+    \item \textbf{RF11}: O usuário não pode participar de múltiplas salas simultaneamente.
+    \item \textbf{RF12}: O sistema deve notificar os jogadores quando alguém sair da sala.
+    \item \textbf{RF13}: O usuário deve poder acessar as regras do jogo a qualquer momento durante a partida.
+    \item \textbf{RF14}: O sistema deve exibir logs de ações do jogo de forma compreensível.
+\end{itemize}
+
+\section{Requisitos Não-Funcionais}
+
+\subsection{Desempenho}
+\begin{itemize}
+    \item \textbf{RNF01}: A latência da comunicação em tempo real deve ser inferior a 1 segundo durante as partidas.
+    \item \textbf{RNF02}: O sistema deve suportar pelo menos 10 usuários simultâneos sem degradação perceptível de desempenho.
+    \item \textbf{RNF03}: O usuário deve poder desabilitar animações para melhorar a performance em dispositivos menos potentes.
+\end{itemize}
+
+\subsection{Segurança}
+\begin{itemize}
+    \item \textbf{RNF04}: Senhas devem ser armazenadas utilizando algoritmos de hash seguros (ex: bcrypt, Argon2).
+    \item \textbf{RNF05}: Toda comunicação entre cliente e servidor deve ser criptografada (HTTPS/WSS).
+    \item \textbf{RNF06}: Sessões de usuários devem expirar após um período e utilizar tokens de autenticação seguros.
+\end{itemize}
+
+\subsection{Usabilidade e Acessibilidade}
+\begin{itemize}
+    \item \textbf{RNF07}: O sistema deve ser acessível, suportando navegação por teclado e leitores de tela.
+    \item \textbf{RNF08}: O sistema deve estar disponível em, pelo menos, português e inglês.
+\end{itemize}
+
+\subsection{Portabilidade e Manutenção}
+\begin{itemize}
+    \item \textbf{RNF09}: O sistema deve funcionar nos principais navegadores modernos (Chrome, Firefox, Edge, Safari) e sistemas operacionais (Windows, Linux, macOS).
+    \item \textbf{RNF10}: O código deve seguir princípios de design modular, com documentação e comentários adequados.
+    \item \textbf{RNF11}: O sistema deve possuir mecanismos de logging e monitoramento para facilitar manutenção e auditoria.
+\end{itemize}
+
+\subsection{Confiabilidade}
+\begin{itemize}
+    \item \textbf{RNF12}: A sincronização do estado do jogo deve ser testada quanto à consistência e tolerância a falhas de conexão.
+    \item \textbf{RNF13}: O sistema deve permitir recuperação de sessões em caso de desconexão temporária.
+\end{itemize}

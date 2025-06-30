@@ -1,0 +1,144 @@
+\chapter{Endpoints da Aplicação}
+
+\section{Endpoints HTTP}
+
+Abaixo estão listados os principais endpoints HTTP disponíveis na API do backend, organizados por funcionalidade:
+
+% --- Gerenciamento de Conta ---
+
+% Autenticação: Os endpoints que requerem autenticação utilizam JWT Bearer Token, enviado no header Authorization: Bearer <token>.
+
+\subsection{Gerenciamento de Conta}
+\begin{itemize}
+    \item \textbf{POST /api/Account/create}
+    \begin{itemize}
+        \item Cria uma nova conta de usuário.
+        \item \textbf{Requer autenticação?} Não
+        \item \textbf{Body:} username, email, password
+        \item \textbf{Retorno:} 200 (token de acesso e mensagem de sucesso), 409 (usuário já existe)
+    \end{itemize}
+    \item \textbf{POST /api/Account/login}
+    \begin{itemize}
+        \item Realiza login do usuário.
+        \item \textbf{Requer autenticação?} Não
+        \item \textbf{Body:} email, password
+        \item \textbf{Retorno:} 200 (token de acesso), 401 (credenciais inválidas)
+    \end{itemize}
+    \item \textbf{PUT /api/Account/{email}}
+    \begin{itemize}
+        \item Atualiza os dados da conta do usuário autenticado.
+        \item \textbf{Requer autenticação?} Sim (JWT Bearer Token)
+        \item \textbf{Body:} username
+        \item \textbf{Retorno:} 200 (sucesso), 401 (não autenticado), 403 (proibido), 404 (usuário não encontrado)
+    \end{itemize}
+    \item \textbf{DELETE /api/Account/{email}}
+    \begin{itemize}
+        \item Deleta a conta do usuário autenticado.
+        \item \textbf{Requer autenticação?} Sim (JWT Bearer Token)
+        \item \textbf{Retorno:} 200 (sucesso), 401 (não autenticado), 403 (proibido), 404 (usuário não encontrado)
+    \end{itemize}
+\end{itemize}
+
+% --- Salas de Jogo ---
+
+\subsection{Salas de Jogo}
+\begin{itemize}
+    \item \textbf{POST /api/GameRoom}
+    \begin{itemize}
+        \item Cria uma nova sala de jogo.
+        \item \textbf{Requer autenticação?} Sim (JWT Bearer Token)
+        \item \textbf{Body:} nome da sala, senha (opcional)
+        \item \textbf{Retorno:} 200 (ID da sala), 400 (erro de validação), 500 (erro interno)
+    \end{itemize}
+    \item \textbf{GET /api/GameRoom}
+    \begin{itemize}
+        \item Lista todas as salas de jogo disponíveis.
+        \item \textbf{Requer autenticação?} Sim (JWT Bearer Token)
+        \item \textbf{Retorno:} 200 (lista de salas), 500 (erro interno)
+    \end{itemize}
+    \item \textbf{GET /api/GameRoom/user}
+    \begin{itemize}
+        \item Lista as salas em que o usuário autenticado está participando.
+        \item \textbf{Requer autenticação?} Sim (JWT Bearer Token)
+        \item \textbf{Retorno:} 200 (lista de salas do usuário), 500 (erro interno)
+    \end{itemize}
+    \item \textbf{DELETE /api/GameRoom/{roomId}}
+    \begin{itemize}
+        \item Deleta uma sala de jogo (se o usuário for o host).
+        \item \textbf{Requer autenticação?} Sim (JWT Bearer Token)
+        \item \textbf{Retorno:} 204 (sucesso), 404 (sala não encontrada ou não autorizado), 500 (erro interno)
+    \end{itemize}
+\end{itemize}
+
+% --- Saúde da Aplicação ---
+
+\subsection{Saúde da Aplicação}
+\begin{itemize}
+    \item \textbf{GET /Health}
+    \begin{itemize}
+        \item Verifica se a aplicação está funcionando corretamente.
+        \item \textbf{Requer autenticação?} Não
+        \item \textbf{Retorno:} 200 (status e timestamp)
+    \end{itemize}
+\end{itemize}
+
+\section{Mensagens WebSocket (SignalR)}
+
+A aplicação utiliza WebSocket via SignalR para comunicação em tempo real durante as partidas. Abaixo estão listadas as principais mensagens (eventos) trocadas entre cliente e servidor, organizadas por funcionalidade:
+
+\subsection{Mensagens Recebidas do Servidor}
+\begin{itemize}
+    \item \textbf{JoinedRoom}: Confirmação de entrada em uma sala de jogo.
+    \item \textbf{UserJoined}: Notifica que um novo jogador entrou na sala.
+    \item \textbf{UserLeft}: Notifica que um jogador saiu da sala.
+    \item \textbf{UsernameChanged}: Informa alteração de nome de usuário de um participante.
+    \item \textbf{RoundStarted}: Início de uma nova rodada.
+    \item \textbf{CurrentGameStatus}: Atualização do estado atual da partida.
+    \item \textbf{NextTurn}: Indica de quem é a vez de jogar.
+    \item \textbf{PlayerDrewCard}: Notifica que um jogador comprou uma carta.
+    \item \textbf{GameStartError}: Erro ao tentar iniciar a partida.
+    \item \textbf{PlayerUpdatePrivate}: Atualização privada do estado do jogador (cartas na mão, etc).
+    \item \textbf{DrawCardError}: Erro ao tentar comprar carta.
+    \item \textbf{CardRequirements}: Informa requisitos para jogar determinada carta.
+    \item \textbf{PlayCardError}: Erro ao tentar jogar uma carta.
+    % Eventos de ações de cartas
+    \item \textbf{PlayCard}: Alguém jogou uma carta (tipo e jogador).
+    \item \textbf{GuessCard}: Alguém fez uma tentativa de adivinhar carta de outro jogador.
+    \item \textbf{PeekCard}: Alguém olhou a carta de outro jogador.
+    \item \textbf{ShowCard}: Uma carta foi revelada.
+    \item \textbf{CompareCards}: Comparação de cartas entre jogadores.
+    \item \textbf{ComparisonTie}: Empate na comparação de cartas.
+    \item \textbf{DiscardCard}: Um jogador descartou uma carta.
+    \item \textbf{DrawCard}: Um jogador comprou uma carta.
+    \item \textbf{CardReturnedToDeck}: Cartas devolvidas ao baralho.
+    \item \textbf{PlayerEliminated}: Um jogador foi eliminado.
+    \item \textbf{SwitchCards}: Troca de cartas entre jogadores.
+    \item \textbf{PlayerProtected}: Jogador protegido por efeito de carta.
+    \item \textbf{ChooseCard}: Jogador deve escolher uma carta.
+    % Atualizações públicas
+    \item \textbf{PublicPlayerUpdate}: Atualização pública do estado de um jogador.
+    % Outros eventos de jogo
+    \item \textbf{CardChoiceSubmitted}: Jogador submeteu escolha de carta.
+    \item \textbf{CardChoiceError}: Erro ao submeter escolha de carta.
+    \item \textbf{MandatoryCardPlay}: Jogada obrigatória de carta específica.
+    \item \textbf{RoundWinners}: Fim de rodada, vencedores.
+    \item \textbf{BonusPoints}: Jogadores que receberam pontos bônus.
+    \item \textbf{GameOver}: Fim de jogo, vencedores.
+\end{itemize}
+
+\subsection{Mensagens Enviadas ao Servidor}
+\begin{itemize}
+    \item \textbf{JoinRoom}: Entrar em uma sala de jogo (parâmetros: roomId, senha).
+    \item \textbf{LeaveRoom}: Sair da sala de jogo.
+    \item \textbf{ReconnectToRoom}: Reconectar-se a uma sala.
+    \item \textbf{StartGame}: Iniciar a partida.
+    \item \textbf{DrawCard}: Comprar carta.
+    \item \textbf{GetCardRequirements}: Solicitar requisitos para jogar uma carta.
+    \item \textbf{PlayCard}: Jogar uma carta (parâmetros: tipo, alvo, etc).
+    \item \textbf{SubmitCardChoice}: Submeter escolha de carta após efeitos especiais.
+    \item \textbf{GetCurrentGameStatus}: Solicitar status atual da partida.
+\end{itemize}
+
+Cada mensagem pode conter parâmetros específicos, conforme a ação desejada. Essas mensagens permitem a sincronização em tempo real do estado do jogo entre todos os participantes.
+
+
