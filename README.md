@@ -2,6 +2,10 @@
 
 Implementação do jogo *Love Letter* em Sistema Distribuído com uma interface Web.
 
+## Acesse Online
+
+Você pode acessar a versão online do jogo diretamente em: [https://www.cardoso42.site](https://www.cardoso42.site)
+
 ## Sobre o Projeto
 
 Este projeto é uma implementação digital do jogo de cartas "Love Letter" (Cartas de Amor), desenvolvido como um sistema distribuído com uma interface web interativa. O jogo permite que múltiplos jogadores participem remotamente através de uma aplicação web, utilizando uma arquitetura cliente-servidor.
@@ -36,10 +40,10 @@ O projeto segue uma arquitetura em camadas:
 - SignalR
 - JWT Authentication
 - Serilog para logging
+- MediatR
 
 ### Frontend
-- HTML5/CSS3
-- JavaScript (ES6+)
+- Svelte
 - Comunicação assíncrona com a API
 
 ## Como Executar
@@ -90,18 +94,6 @@ make migration
 make undo-last-migration
 ```
 
-#### Gerar Documentação
-```bash
-# Gerar diagramas e PDF do SRS (Software Requirements Specification)
-make srs
-
-# Gerar apenas os diagramas PlantUML
-make srs-diagrams
-
-# Gerar apenas o PDF do SRS
-make srs-pdf
-```
-
 ### Execução Manual
 
 Se preferir não usar o makefile, você pode executar os comandos diretamente:
@@ -117,6 +109,44 @@ dotnet run
 cd src/CartasDeAmorFrontTest
 python3 -m http.server 8080
 ```
+
+## Executando com Docker
+
+O projeto pode ser executado facilmente usando Docker e Docker Compose, sem a necessidade de instalar dependências locais além do Docker.
+
+### Pré-requisitos
+- [Docker](https://docs.docker.com/get-docker/)
+- [Docker Compose](https://docs.docker.com/compose/install/)
+
+### Ambiente de Desenvolvimento
+
+Para subir todos os serviços (backend, frontend e banco de dados) em modo desenvolvimento:
+
+```bash
+docker-compose up --build
+```
+
+Acesse a aplicação web em: [http://localhost:5173](http://localhost:5173)
+
+O backend estará disponível em: [http://localhost:5000](http://localhost:5000)
+
+### Ambiente de Produção
+
+Para rodar em modo produção (usando as configurações do arquivo `docker-compose.prod.yml`):
+
+```bash
+docker-compose -f docker-compose.prod.yml up --build
+```
+
+### Parar os containers
+
+Para parar todos os containers:
+
+```bash
+docker-compose down
+```
+
+> Certifique-se de configurar as variáveis de ambiente necessárias nos arquivos `.env` ou diretamente nos arquivos de compose, se necessário.
 
 ## Regras do Jogo
 
