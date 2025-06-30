@@ -2,59 +2,31 @@
 
 actor "Other Players" as Others
 actor "Player" as Player
-participant "GameHub" as Hub
+participant "LoveLetter" as Lov
 
-== Turn Start ==
+Lov -> Player: Turn change event
+Lov -> Others: Turn change event
 
-Hub -> Hub: Next turn
-Hub -> Player: Turn change event
-Hub -> Others: Turn change event
+Player -> Lov: Draw card
+Lov -> Player: Private update
+Lov -> Others: Public update
 
-== Draw Card ==
+Player -> Lov: Get card requirements
+Lov -> Player: Requirements (if any)
 
-Player -> Hub: Draw card
-activate Hub
-Hub -> Hub: Draw card for player
+Player -> Lov: Play card
+Lov -> Player: Private update
+Lov -> Others: Public update
 
-Hub -> Player: Player drew card event
-Hub -> Player: Private update
-
-Hub -> Others: Player drew card event
-Hub -> Others: Player public update
-
-== Get Card Requirements ==
-
-Player -> Hub: Get requirements for card
-alt Card has requirements
-    Hub -> Player: Card requirements event
-else No requirements
-    Hub -> Player: Empty requirements event
+opt Additional actions needed
+    Lov -> Player: Request action
+    Player -> Lov: Submit action
 end
 
-== Play Card ==
-
-Player -> Hub: Play card
-Hub -> Hub: Execute card effect
-Hub -> Player: Public update
-Hub -> Others: Public update
-
-Hub -> Hub: Update private info
-Hub -> Player: Private update
-
-opt Card has special effects
-    Hub -> Player: Card effect events
-    Hub -> Others: Card effect events
+Lov -> Lov: Check game state
+alt Continue
+    Lov -> Player: Turn change event
+    Lov -> Others: Turn change event
 end
-
-== Turn End ==
-
-Hub -> Hub: Check if game/round is over
-
-alt Turn should advance
-    Hub -> Player: Turn change event
-    Hub -> Others: Turn change event
-end
-
-deactivate Hub
 
 @enduml 

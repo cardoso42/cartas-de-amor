@@ -12,13 +12,14 @@ INFRAESTRUCTURE_PROJ = $(BACKEND_DIR)/CartasDeAmor.Infrastructure/CartasDeAmor.I
 
 # Arquivos .puml da seção SRS
 SRS_PUMLS := $(wildcard docs/srs/diagrams/*.puml)
+SD_PUMLS := $(wildcard docs/sequence_diagrams/**/*.puml)
 
 # Alvo padrão — não faz nada
 all:
 	@echo "Use an explicit target, e.g.: make srs"
 
 # Geração completa do SRS (diagramas + PDF)
-srs: srs-diagrams srs-pdf clean
+srs: srs-diagrams srs-pdf clean-srs
 
 # Gera os diagramas do SRS
 srs-diagrams:
@@ -31,9 +32,26 @@ srs-pdf:
 	cd docs/srs && latexmk -pdf -interaction=nonstopmode main.tex
 
 # Limpa os PNGs gerados em todas as subpastas diagrams
-clean:
+clean-srs:
 	@echo "Removendo arquivos auxiliares do LaTeX..."
 	cd docs/srs && rm -f *.aux *.log *.out *.toc *.fls *.fdb_latexmk *.synctex.gz *.bbl *.blg
+
+report:
+	cd docs/technical_report && latexmk -pdf -interaction=nonstopmode main.tex
+	cd docs/technical_report && rm -f *.aux *.log *.out *.toc *.fls *.fdb_latexmk *.synctex.gz *.bbl *.blg
+
+sd-diagrams:
+	rm -rf docs/sequence_diagrams/**/*.png
+
+	@echo "Gerando diagramas de sequência..."
+	java -jar $(PLANTUML_JAR) $(SD_PUMLS)
+
+	@set -- docs/sequence_diagrams/**/*.png; \
+	if [ -e "$$1" ]; then \
+		mv "$$@" docs/technical_report/diagrams/; \
+	fi
+
+report-update: sd-diagrams report
 
 database:
 	psql -h localhost -U princess -d love_letter
