@@ -12,7 +12,7 @@ INFRAESTRUCTURE_PROJ = $(BACKEND_DIR)/CartasDeAmor.Infrastructure/CartasDeAmor.I
 
 # Arquivos .puml da seção SRS
 SRS_PUMLS := $(wildcard docs/srs/diagrams/*.puml)
-SD_PUMLS := $(wildcard docs/sequence_diagrams/**/*.puml)
+SD_PUMLS := $(wildcard docs/diagrams/**/*.puml)
 
 # Alvo padrão — não faz nada
 all:
@@ -41,12 +41,12 @@ report:
 	cd docs/technical_report && rm -f *.aux *.log *.out *.toc *.fls *.fdb_latexmk *.synctex.gz *.bbl *.blg
 
 sd-diagrams:
-	rm -rf docs/sequence_diagrams/**/*.png
+	rm -rf docs/diagrams/**/*.png
 
 	@echo "Gerando diagramas de sequência..."
 	java -jar $(PLANTUML_JAR) $(SD_PUMLS)
 
-	@set -- docs/sequence_diagrams/**/*.png; \
+	@set -- docs/diagrams/**/*.png; \
 	if [ -e "$$1" ]; then \
 		mv "$$@" docs/technical_report/diagrams/; \
 	fi

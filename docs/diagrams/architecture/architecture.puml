@@ -1,0 +1,37 @@
+@startuml Architecture
+skinparam linetype ortho
+
+' Docker agrupando os serviços
+frame "Docker" {
+  package "Banco de Dados" as DB {
+    database PostgreSQL as PostgreSQL
+  }
+
+  package "Backend (.NET)" as BE {
+    [Apresentação] as Presentation
+    [Aplicação] as Application
+    [Domínio] as Domain
+    [Infraestrutura] as Infrastructure
+    [Mediator] as Mediator
+
+    Presentation --> Application
+    Application --> Infrastructure
+    Infrastructure --> Domain
+  }
+
+  package "Frontend (Svelte)" as FE {
+    [Svelte App] as SvelteApp
+  }
+}
+
+SvelteApp -right-> Presentation 
+
+Application .up.> Mediator : MediatR
+Mediator .up.> Presentation : MediatR
+
+Infrastructure -left-> PostgreSQL
+
+FE -down[hidden]-> PostgreSQL
+
+
+@enduml

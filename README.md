@@ -49,7 +49,7 @@ O projeto segue uma arquitetura em camadas:
 ## Como Executar
 
 ### Pré-requisitos
-- [.NET 6 SDK](https://dotnet.microsoft.com/download)
+- [.NET 8 SDK](https://dotnet.microsoft.com/download)
 - [PostgreSQL](https://www.postgresql.org/download/)
 - Um navegador web moderno
 - Make (para usar os comandos do makefile)
